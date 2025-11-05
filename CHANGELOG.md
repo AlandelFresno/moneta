@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **BREAKING**: Downgraded TailwindCSS from v4 to v3 for better stability
+- **BREAKING**: Restructured project to use pages/ and components/ directories
+- **BREAKING**: All components now require separated files (.ts, .html, .scss)
+- Moved from CSS to SCSS for all styling
+- Dashboard moved from features/dashboard to pages/dashboard
+- All inline templates converted to separate HTML files
+- Added tailwind.config.js configuration
+- Updated angular.json to support SCSS by default
+
+### Fixed
+- TailwindCSS styles now loading correctly
+- PrimeNG components displaying properly
+- Build process optimized with better style handling
+
 ## [0.1.0] - 2025-11-05
 
 ### Added
@@ -31,13 +48,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Technical
 - Angular 20 with standalone components
-- TailwindCSS v4 for styling
+- TailwindCSS v3 + SCSS for styling
 - PrimeNG component library integration
 - Capacitor for native mobile builds
 - TypeScript strict mode
 - Signal-based state management
-
-## [Unreleased]
+- Separated file structure (no inline templates)
+- Version tracking system
 
 ### Planned Features
 - Transaction management (add, edit, delete)
