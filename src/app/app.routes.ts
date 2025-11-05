@@ -3,11 +3,37 @@ import { Routes } from '@angular/router';
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: '/dashboard',
-    pathMatch: 'full'
-  },
-  {
-    path: 'dashboard',
-    loadComponent: () => import('../pages/dashboard/dashboard.page').then(m => m.DashboardPage)
+    loadComponent: () => import('../components/layout/layout.component').then(m => m.LayoutComponent),
+    children: [
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full'
+      },
+      {
+        path: 'dashboard',
+        loadComponent: () => import('../pages/dashboard/dashboard.page').then(m => m.DashboardPage)
+      },
+      {
+        path: 'transactions',
+        loadComponent: () => import('../pages/transactions/transactions.page').then(m => m.TransactionsPage)
+      },
+      {
+        path: 'budgets',
+        loadComponent: () => import('../pages/budgets/budgets.page').then(m => m.BudgetsPage)
+      },
+      {
+        path: 'categories',
+        loadComponent: () => import('../pages/categories/categories.page').then(m => m.CategoriesPage)
+      },
+      {
+        path: 'reports',
+        loadComponent: () => import('../pages/reports/reports.page').then(m => m.ReportsPage)
+      },
+      {
+        path: 'settings',
+        loadComponent: () => import('../pages/settings/settings.page').then(m => m.SettingsPage)
+      }
+    ]
   }
 ];

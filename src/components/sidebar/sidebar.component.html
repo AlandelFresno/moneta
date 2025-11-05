@@ -1,0 +1,56 @@
+<div class="sidebar" [class.collapsed]="isCollapsed()">
+  <!-- Logo / Header -->
+  <div class="sidebar-header">
+    <div class="logo">
+      <div class="logo-icon">
+        <i class="pi pi-wallet"></i>
+      </div>
+      <span class="logo-text" *ngIf="!isCollapsed()">Budget Tracker</span>
+    </div>
+    <button
+      class="collapse-btn"
+      (click)="toggleSidebar()"
+      pButton
+      icon="pi pi-bars"
+      [text]="true"
+      [rounded]="true">
+    </button>
+  </div>
+
+  <!-- Navigation Menu -->
+  <nav class="sidebar-nav">
+    <a
+      *ngFor="let item of menuItems"
+      [routerLink]="item.route"
+      routerLinkActive="active"
+      class="nav-item"
+      [class.collapsed]="isCollapsed()">
+      <i [class]="'pi pi-' + item.icon"></i>
+      <span class="nav-text" *ngIf="!isCollapsed()">{{ item.label }}</span>
+      <span class="badge" *ngIf="item.badge && !isCollapsed()">{{ item.badge }}</span>
+    </a>
+  </nav>
+
+  <!-- Footer / User -->
+  <div class="sidebar-footer">
+    <div class="user-section" [class.collapsed]="isCollapsed()">
+      <p-avatar
+        label="U"
+        styleClass="bg-purple-500"
+        shape="circle"
+        [size]="isCollapsed() ? 'normal' : 'large'">
+      </p-avatar>
+      <div class="user-info" *ngIf="!isCollapsed()">
+        <p class="user-name">Usuario</p>
+        <p class="user-email">user@example.com</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile Overlay -->
+<div
+  class="sidebar-overlay"
+  *ngIf="isMobileMenuOpen()"
+  (click)="closeMobileMenu()">
+</div>

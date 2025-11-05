@@ -1,3 +1,9 @@
+.dashboard-page {
+  padding: 2rem;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+}
+
 :host ::ng-deep {
   .stat-card {
     transition: all 0.3s ease;

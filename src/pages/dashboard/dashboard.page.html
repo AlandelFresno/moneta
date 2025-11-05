@@ -1,227 +1,202 @@
-<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-  <!-- Header / Navbar -->
-  <div class="bg-white shadow-sm border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between items-center py-4">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-            <i class="pi pi-wallet text-white text-xl"></i>
-          </div>
-          <div>
-            <h1 class="text-2xl font-bold text-gray-800">Budget Tracker</h1>
-            <p class="text-sm text-gray-500">Manage your finances</p>
-          </div>
-        </div>
+<div class="dashboard-page">
+  <!-- Welcome Section -->
+  <div class="mb-8">
+    <h2 class="text-3xl font-bold text-gray-900 mb-2">Welcome back! 👋</h2>
+    <p class="text-gray-600">Here's what's happening with your finances today.</p>
+  </div>
 
-        <div class="flex items-center gap-4">
-          <p-button icon="pi pi-bell" [text]="true" [rounded]="true" severity="secondary" pBadge value="3" />
-          <p-avatar label="U" styleClass="bg-purple-500" shape="circle" />
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Income Card -->
+    <div class="stat-card rounded-xl overflow-hidden">
+      <div class="gradient-green p-6 text-white">
+        <div class="flex justify-between items-start mb-4">
+          <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+            <i class="pi pi-arrow-down text-2xl"></i>
+          </div>
+          <p-tag value="+12%" severity="success" styleClass="bg-white/20 text-white border-0" />
         </div>
+        <h3 class="text-sm font-medium opacity-90 mb-1">Total Income</h3>
+        <p class="text-3xl font-bold">${{ budgetService.getTotalIncome().toFixed(2) }}</p>
+      </div>
+    </div>
+
+    <!-- Expenses Card -->
+    <div class="stat-card rounded-xl overflow-hidden">
+      <div class="gradient-red p-6 text-white">
+        <div class="flex justify-between items-start mb-4">
+          <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+            <i class="pi pi-arrow-up text-2xl"></i>
+          </div>
+          <p-tag value="-8%" severity="danger" styleClass="bg-white/20 text-white border-0" />
+        </div>
+        <h3 class="text-sm font-medium opacity-90 mb-1">Total Expenses</h3>
+        <p class="text-3xl font-bold">${{ budgetService.getTotalExpenses().toFixed(2) }}</p>
+      </div>
+    </div>
+
+    <!-- Balance Card -->
+    <div class="stat-card rounded-xl overflow-hidden">
+      <div class="gradient-blue p-6 text-white">
+        <div class="flex justify-between items-start mb-4">
+          <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+            <i class="pi pi-wallet text-2xl"></i>
+          </div>
+          <i class="pi pi-chart-line text-2xl"></i>
+        </div>
+        <h3 class="text-sm font-medium opacity-90 mb-1">Current Balance</h3>
+        <p class="text-3xl font-bold">${{ budgetService.getBalance().toFixed(2) }}</p>
+      </div>
+    </div>
+
+    <!-- Savings Goal Card -->
+    <div class="stat-card rounded-xl overflow-hidden">
+      <div class="gradient-purple p-6 text-white">
+        <div class="flex justify-between items-start mb-4">
+          <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+            <i class="pi pi-star text-2xl"></i>
+          </div>
+          <p-tag value="75%" styleClass="bg-white/20 text-white border-0" />
+        </div>
+        <h3 class="text-sm font-medium opacity-90 mb-1">Savings Goal</h3>
+        <p class="text-3xl font-bold">$750.00</p>
       </div>
     </div>
   </div>
 
-  <!-- Main Content -->
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Welcome Section -->
-    <div class="mb-8">
-      <h2 class="text-3xl font-bold text-gray-900 mb-2">Welcome back! 👋</h2>
-      <p class="text-gray-600">Here's what's happening with your finances today.</p>
+  <!-- Two Column Layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Recent Activity -->
+    <div class="lg:col-span-2">
+      <p-card styleClass="shadow-md">
+        <ng-template pTemplate="header">
+          <div class="px-6 pt-6 pb-4 border-b border-gray-100">
+            <div class="flex justify-between items-center">
+              <div>
+                <h3 class="text-xl font-bold text-gray-900">Recent Activity</h3>
+                <p class="text-sm text-gray-500 mt-1">Your latest transactions</p>
+              </div>
+              <p-button label="View All" icon="pi pi-arrow-right" iconPos="right" [text]="true" />
+            </div>
+          </div>
+        </ng-template>
+
+        <div class="text-center py-12">
+          <div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center mx-auto mb-4">
+            <i class="pi pi-inbox text-4xl text-gray-400"></i>
+          </div>
+          <h4 class="text-lg font-semibold text-gray-700 mb-2">No transactions yet</h4>
+          <p class="text-gray-500 mb-6 max-w-sm mx-auto">Start tracking your finances by adding your first transaction</p>
+          <p-button
+            label="Add Transaction"
+            icon="pi pi-plus"
+            styleClass="bg-gradient-to-r from-blue-500 to-purple-600 border-0"
+            [raised]="true" />
+        </div>
+      </p-card>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <!-- Income Card -->
-      <div class="stat-card rounded-xl overflow-hidden">
-        <div class="gradient-green p-6 text-white">
-          <div class="flex justify-between items-start mb-4">
-            <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <i class="pi pi-arrow-down text-2xl"></i>
-            </div>
-            <p-tag value="+12%" severity="success" styleClass="bg-white/20 text-white border-0" />
+    <!-- Budget Overview -->
+    <div class="lg:col-span-1">
+      <p-card styleClass="shadow-md mb-6">
+        <ng-template pTemplate="header">
+          <div class="px-6 pt-6 pb-4 border-b border-gray-100">
+            <h3 class="text-xl font-bold text-gray-900">Budget Overview</h3>
+            <p class="text-sm text-gray-500 mt-1">Monthly limits</p>
           </div>
-          <h3 class="text-sm font-medium opacity-90 mb-1">Total Income</h3>
-          <p class="text-3xl font-bold">${{ budgetService.getTotalIncome().toFixed(2) }}</p>
-        </div>
-      </div>
+        </ng-template>
 
-      <!-- Expenses Card -->
-      <div class="stat-card rounded-xl overflow-hidden">
-        <div class="gradient-red p-6 text-white">
-          <div class="flex justify-between items-start mb-4">
-            <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <i class="pi pi-arrow-up text-2xl"></i>
+        <div class="space-y-6">
+          <!-- Category 1 -->
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <i class="pi pi-shopping-cart text-blue-600"></i>
+                </div>
+                <span class="font-semibold text-gray-700">Shopping</span>
+              </div>
+              <span class="text-sm text-gray-600">$0 / $500</span>
             </div>
-            <p-tag value="-8%" severity="danger" styleClass="bg-white/20 text-white border-0" />
+            <p-progressBar [value]="0" [showValue]="false" styleClass="h-2" />
           </div>
-          <h3 class="text-sm font-medium opacity-90 mb-1">Total Expenses</h3>
-          <p class="text-3xl font-bold">${{ budgetService.getTotalExpenses().toFixed(2) }}</p>
-        </div>
-      </div>
 
-      <!-- Balance Card -->
-      <div class="stat-card rounded-xl overflow-hidden">
-        <div class="gradient-blue p-6 text-white">
-          <div class="flex justify-between items-start mb-4">
-            <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <i class="pi pi-wallet text-2xl"></i>
+          <!-- Category 2 -->
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                  <i class="pi pi-home text-green-600"></i>
+                </div>
+                <span class="font-semibold text-gray-700">Housing</span>
+              </div>
+              <span class="text-sm text-gray-600">$0 / $1200</span>
             </div>
-            <i class="pi pi-chart-line text-2xl"></i>
+            <p-progressBar [value]="0" [showValue]="false" styleClass="h-2" />
           </div>
-          <h3 class="text-sm font-medium opacity-90 mb-1">Current Balance</h3>
-          <p class="text-3xl font-bold">${{ budgetService.getBalance().toFixed(2) }}</p>
-        </div>
-      </div>
 
-      <!-- Savings Goal Card -->
-      <div class="stat-card rounded-xl overflow-hidden">
-        <div class="gradient-purple p-6 text-white">
-          <div class="flex justify-between items-start mb-4">
-            <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <i class="pi pi-star text-2xl"></i>
+          <!-- Category 3 -->
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                  <i class="pi pi-car text-orange-600"></i>
+                </div>
+                <span class="font-semibold text-gray-700">Transport</span>
+              </div>
+              <span class="text-sm text-gray-600">$0 / $300</span>
             </div>
-            <p-tag value="75%" styleClass="bg-white/20 text-white border-0" />
+            <p-progressBar [value]="0" [showValue]="false" styleClass="h-2" />
           </div>
-          <h3 class="text-sm font-medium opacity-90 mb-1">Savings Goal</h3>
-          <p class="text-3xl font-bold">$750.00</p>
         </div>
-      </div>
+
+        <ng-template pTemplate="footer">
+          <p-button
+            label="Manage Budgets"
+            icon="pi pi-cog"
+            [text]="true"
+            styleClass="w-full" />
+        </ng-template>
+      </p-card>
+
+      <!-- Quick Actions -->
+      <p-card styleClass="shadow-md">
+        <ng-template pTemplate="header">
+          <div class="px-6 pt-6 pb-4 border-b border-gray-100">
+            <h3 class="text-xl font-bold text-gray-900">Quick Actions</h3>
+          </div>
+        </ng-template>
+
+        <div class="space-y-3">
+          <p-button
+            label="Add Income"
+            icon="pi pi-plus-circle"
+            severity="success"
+            [outlined]="true"
+            styleClass="w-full justify-start" />
+          <p-button
+            label="Add Expense"
+            icon="pi pi-minus-circle"
+            severity="danger"
+            [outlined]="true"
+            styleClass="w-full justify-start" />
+          <p-button
+            label="View Reports"
+            icon="pi pi-chart-bar"
+            severity="info"
+            [outlined]="true"
+            styleClass="w-full justify-start" />
+        </div>
+      </p-card>
     </div>
+  </div>
 
-    <!-- Two Column Layout -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Recent Activity -->
-      <div class="lg:col-span-2">
-        <p-card styleClass="shadow-md">
-          <ng-template pTemplate="header">
-            <div class="px-6 pt-6 pb-4 border-b border-gray-100">
-              <div class="flex justify-between items-center">
-                <div>
-                  <h3 class="text-xl font-bold text-gray-900">Recent Activity</h3>
-                  <p class="text-sm text-gray-500 mt-1">Your latest transactions</p>
-                </div>
-                <p-button label="View All" icon="pi pi-arrow-right" iconPos="right" [text]="true" />
-              </div>
-            </div>
-          </ng-template>
-
-          <div class="text-center py-12">
-            <div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center mx-auto mb-4">
-              <i class="pi pi-inbox text-4xl text-gray-400"></i>
-            </div>
-            <h4 class="text-lg font-semibold text-gray-700 mb-2">No transactions yet</h4>
-            <p class="text-gray-500 mb-6 max-w-sm mx-auto">Start tracking your finances by adding your first transaction</p>
-            <p-button
-              label="Add Transaction"
-              icon="pi pi-plus"
-              styleClass="bg-gradient-to-r from-blue-500 to-purple-600 border-0"
-              [raised]="true" />
-          </div>
-        </p-card>
-      </div>
-
-      <!-- Budget Overview -->
-      <div class="lg:col-span-1">
-        <p-card styleClass="shadow-md mb-6">
-          <ng-template pTemplate="header">
-            <div class="px-6 pt-6 pb-4 border-b border-gray-100">
-              <h3 class="text-xl font-bold text-gray-900">Budget Overview</h3>
-              <p class="text-sm text-gray-500 mt-1">Monthly limits</p>
-            </div>
-          </ng-template>
-
-          <div class="space-y-6">
-            <!-- Category 1 -->
-            <div>
-              <div class="flex justify-between items-center mb-2">
-                <div class="flex items-center gap-2">
-                  <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <i class="pi pi-shopping-cart text-blue-600"></i>
-                  </div>
-                  <span class="font-semibold text-gray-700">Shopping</span>
-                </div>
-                <span class="text-sm text-gray-600">$0 / $500</span>
-              </div>
-              <p-progressBar [value]="0" [showValue]="false" styleClass="h-2" />
-            </div>
-
-            <!-- Category 2 -->
-            <div>
-              <div class="flex justify-between items-center mb-2">
-                <div class="flex items-center gap-2">
-                  <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
-                    <i class="pi pi-home text-green-600"></i>
-                  </div>
-                  <span class="font-semibold text-gray-700">Housing</span>
-                </div>
-                <span class="text-sm text-gray-600">$0 / $1200</span>
-              </div>
-              <p-progressBar [value]="0" [showValue]="false" styleClass="h-2" />
-            </div>
-
-            <!-- Category 3 -->
-            <div>
-              <div class="flex justify-between items-center mb-2">
-                <div class="flex items-center gap-2">
-                  <div class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
-                    <i class="pi pi-car text-orange-600"></i>
-                  </div>
-                  <span class="font-semibold text-gray-700">Transport</span>
-                </div>
-                <span class="text-sm text-gray-600">$0 / $300</span>
-              </div>
-              <p-progressBar [value]="0" [showValue]="false" styleClass="h-2" />
-            </div>
-          </div>
-
-          <ng-template pTemplate="footer">
-            <p-button
-              label="Manage Budgets"
-              icon="pi pi-cog"
-              [text]="true"
-              styleClass="w-full" />
-          </ng-template>
-        </p-card>
-
-        <!-- Quick Actions -->
-        <p-card styleClass="shadow-md">
-          <ng-template pTemplate="header">
-            <div class="px-6 pt-6 pb-4 border-b border-gray-100">
-              <h3 class="text-xl font-bold text-gray-900">Quick Actions</h3>
-            </div>
-          </ng-template>
-
-          <div class="space-y-3">
-            <p-button
-              label="Add Income"
-              icon="pi pi-plus-circle"
-              severity="success"
-              [outlined]="true"
-              styleClass="w-full justify-start" />
-            <p-button
-              label="Add Expense"
-              icon="pi pi-minus-circle"
-              severity="danger"
-              [outlined]="true"
-              styleClass="w-full justify-start" />
-            <p-button
-              label="View Reports"
-              icon="pi pi-chart-bar"
-              severity="info"
-              [outlined]="true"
-              styleClass="w-full justify-start" />
-          </div>
-        </p-card>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="mt-12 text-center pb-8">
-      <p class="text-sm text-gray-500">
-        Budget Tracker v{{ version.full }} - {{ version.codename }}
-        <span class="mx-2">•</span>
-        <span class="text-gray-400">{{ version.releaseDate }}</span>
-      </p>
-    </div>
+  <!-- Footer -->
+  <div class="mt-12 text-center pb-8">
+    <p class="text-sm text-gray-500">
+      Budget Tracker v{{ version.full }} - {{ version.codename }}
+      <span class="mx-2">•</span>
+      <span class="text-gray-400">{{ version.releaseDate }}</span>
+    </p>
   </div>
 </div>
