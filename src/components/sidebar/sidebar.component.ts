@@ -40,14 +40,14 @@ export class SidebarComponent {
       route: '/budgets'
     },
     {
+      label: 'Analytics',
+      icon: 'chart-line',
+      route: '/analytics'
+    },
+    {
       label: 'Categories',
       icon: 'tags',
       route: '/categories'
-    },
-    {
-      label: 'Reports',
-      icon: 'chart-bar',
-      route: '/reports'
     },
     {
       label: 'Settings',

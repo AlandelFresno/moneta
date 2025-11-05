@@ -23,12 +23,12 @@ export const routes: Routes = [
         loadComponent: () => import('../pages/budgets/budgets.page').then(m => m.BudgetsPage)
       },
       {
-        path: 'categories',
-        loadComponent: () => import('../pages/categories/categories.page').then(m => m.CategoriesPage)
+        path: 'analytics',
+        loadComponent: () => import('../pages/analytics/analytics.page').then(m => m.AnalyticsPage)
       },
       {
-        path: 'reports',
-        loadComponent: () => import('../pages/reports/reports.page').then(m => m.ReportsPage)
+        path: 'categories',
+        loadComponent: () => import('../pages/categories/categories.page').then(m => m.CategoriesPage)
       },
       {
         path: 'settings',

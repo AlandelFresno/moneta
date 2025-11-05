@@ -1,0 +1,190 @@
+<div class="analytics-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Analytics</h1>
+      <p class="page-subtitle">Financial insights and trends</p>
+    </div>
+    <div class="header-actions">
+      <p-button label="Export" icon="pi pi-download" [outlined]="true" severity="secondary" />
+      <p-button label="Filter" icon="pi pi-filter" [outlined]="true" severity="secondary" />
+    </div>
+  </div>
+
+  <!-- Time Period Selector -->
+  <div class="period-selector mb-6">
+    <p-button
+      *ngFor="let period of periods"
+      [label]="period.label"
+      [outlined]="selectedPeriod !== period.value"
+      [text]="selectedPeriod !== period.value"
+      (click)="selectPeriod(period.value)"
+      styleClass="period-btn" />
+  </div>
+
+  <!-- Summary Stats Cards -->
+  <div class="stats-grid mb-8">
+    <div class="stat-card">
+      <div class="stat-icon income">
+        <i class="pi pi-arrow-up"></i>
+      </div>
+      <div class="stat-content">
+        <p class="stat-label">Total Income</p>
+        <h3 class="stat-value">${{ stats.totalIncome | number:'1.2-2' }}</h3>
+        <p class="stat-change positive">
+          <i class="pi pi-arrow-up"></i> {{ stats.incomeChange }}% vs last period
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon expense">
+        <i class="pi pi-arrow-down"></i>
+      </div>
+      <div class="stat-content">
+        <p class="stat-label">Total Expenses</p>
+        <h3 class="stat-value">${{ stats.totalExpenses | number:'1.2-2' }}</h3>
+        <p class="stat-change negative">
+          <i class="pi pi-arrow-down"></i> {{ stats.expenseChange }}% vs last period
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon savings">
+        <i class="pi pi-chart-line"></i>
+      </div>
+      <div class="stat-content">
+        <p class="stat-label">Net Savings</p>
+        <h3 class="stat-value">${{ stats.netSavings | number:'1.2-2' }}</h3>
+        <p class="stat-change positive">
+          <i class="pi pi-arrow-up"></i> {{ stats.savingsRate }}% savings rate
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon transactions">
+        <i class="pi pi-list"></i>
+      </div>
+      <div class="stat-content">
+        <p class="stat-label">Transactions</p>
+        <h3 class="stat-value">{{ stats.transactionCount }}</h3>
+        <p class="stat-change neutral">
+          {{ stats.avgTransaction | number:'1.2-2' }} avg per transaction
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Grid -->
+  <div class="charts-grid">
+    <!-- Income vs Expenses Over Time -->
+    <p-card class="chart-card full-width">
+      <ng-template pTemplate="header">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">Income vs Expenses</h3>
+            <p class="card-subtitle">Monthly trend analysis</p>
+          </div>
+          <i class="pi pi-ellipsis-v"></i>
+        </div>
+      </ng-template>
+      <div class="chart-container">
+        <canvas #lineChart></canvas>
+      </div>
+    </p-card>
+
+    <!-- Expenses by Category -->
+    <p-card class="chart-card">
+      <ng-template pTemplate="header">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">Expenses by Category</h3>
+            <p class="card-subtitle">This month breakdown</p>
+          </div>
+          <i class="pi pi-ellipsis-v"></i>
+        </div>
+      </ng-template>
+      <div class="chart-container">
+        <canvas #doughnutChart></canvas>
+      </div>
+    </p-card>
+
+    <!-- Monthly Comparison -->
+    <p-card class="chart-card">
+      <ng-template pTemplate="header">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">Monthly Comparison</h3>
+            <p class="card-subtitle">Last 6 months</p>
+          </div>
+          <i class="pi pi-ellipsis-v"></i>
+        </div>
+      </ng-template>
+      <div class="chart-container">
+        <canvas #barChart></canvas>
+      </div>
+    </p-card>
+
+    <!-- Top Categories Table -->
+    <p-card class="chart-card">
+      <ng-template pTemplate="header">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">Top Spending Categories</h3>
+            <p class="card-subtitle">Highest expenses</p>
+          </div>
+          <i class="pi pi-ellipsis-v"></i>
+        </div>
+      </ng-template>
+      <div class="categories-list">
+        <div class="category-item" *ngFor="let category of topCategories">
+          <div class="category-info">
+            <div class="category-icon" [style.background]="category.color">
+              <i [class]="category.icon"></i>
+            </div>
+            <div class="category-details">
+              <p class="category-name">{{ category.name }}</p>
+              <p class="category-count">{{ category.transactions }} transactions</p>
+            </div>
+          </div>
+          <div class="category-amount">
+            <p class="amount">${{ category.amount | number:'1.2-2' }}</p>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="category.percentage"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </p-card>
+
+    <!-- Budget Progress -->
+    <p-card class="chart-card full-width">
+      <ng-template pTemplate="header">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">Budget Progress</h3>
+            <p class="card-subtitle">Current month status</p>
+          </div>
+          <i class="pi pi-ellipsis-v"></i>
+        </div>
+      </ng-template>
+      <div class="budget-progress-list">
+        <div class="budget-item" *ngFor="let budget of budgetProgress">
+          <div class="budget-header">
+            <div class="budget-info">
+              <span class="budget-name">{{ budget.name }}</span>
+              <span class="budget-status" [class]="budget.status">{{ budget.statusText }}</span>
+            </div>
+            <span class="budget-amount">${{ budget.spent | number:'1.0-0' }} / ${{ budget.limit | number:'1.0-0' }}</span>
+          </div>
+          <p-progressBar
+            [value]="budget.percentage"
+            [showValue]="false"
+            [styleClass]="'budget-bar ' + budget.status" />
+        </div>
+      </div>
+    </p-card>
+  </div>
+</div>
