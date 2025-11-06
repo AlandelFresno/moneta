@@ -77,6 +77,14 @@
   flex-shrink: 0;
 }
 
+.mobile-only {
+  display: none;
+}
+
+.desktop-only {
+  display: block;
+}
+
 .sidebar-nav {
   flex: 1;
   padding: 1.5rem 0.75rem;
@@ -137,7 +145,6 @@
   &:hover {
     background: #f3f4f6;
     color: #3b82f6;
-    transform: translateX(2px);
   }
 
   &.active {
@@ -165,10 +172,39 @@
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
+    width: 280px !important;
 
     &.mobile-open {
       transform: translateX(0);
     }
+
+    &.collapsed {
+      width: 280px !important;
+
+      .sidebar-header {
+        justify-content: space-between;
+      }
+
+      .nav-text,
+      .badge {
+        opacity: 1;
+        width: auto;
+        overflow: visible;
+      }
+
+      .nav-item {
+        justify-content: flex-start;
+        padding: 0.875rem 1rem;
+      }
+    }
+  }
+
+  .mobile-only {
+    display: block;
+  }
+
+  .desktop-only {
+    display: none;
   }
 
   .sidebar-overlay {

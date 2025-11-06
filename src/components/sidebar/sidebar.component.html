@@ -1,17 +1,25 @@
 <div class="sidebar" [class.collapsed]="isCollapsed()" [class.mobile-open]="isMobileMenuOpen()">
   <!-- Logo / Header -->
   <div class="sidebar-header">
-    <div class="logo" *ngIf="!isCollapsed()">
+    <div class="logo" *ngIf="!isCollapsed() || isMobileMenuOpen()">
       <div class="logo-icon">
         <i class="pi pi-wallet"></i>
       </div>
       <span class="logo-text">Budget Tracker</span>
     </div>
     <button
-      class="collapse-btn"
+      class="collapse-btn desktop-only"
       (click)="toggleSidebar()"
       pButton
       icon="pi pi-bars"
+      [text]="true"
+      [rounded]="true">
+    </button>
+    <button
+      class="collapse-btn mobile-only"
+      (click)="closeMobileMenu()"
+      pButton
+      icon="pi pi-times"
       [text]="true"
       [rounded]="true">
     </button>
@@ -27,8 +35,8 @@
       [class.collapsed]="isCollapsed()"
       (click)="closeMobileMenu()">
       <i [class]="'pi pi-' + item.icon"></i>
-      <span class="nav-text" *ngIf="!isCollapsed()">{{ item.label }}</span>
-      <span class="badge" *ngIf="item.badge && !isCollapsed()">{{ item.badge }}</span>
+      <span class="nav-text" *ngIf="!isCollapsed() || isMobileMenuOpen()">{{ item.label }}</span>
+      <span class="badge" *ngIf="item.badge && (!isCollapsed() || isMobileMenuOpen())">{{ item.badge }}</span>
     </a>
   </nav>
 </div>
