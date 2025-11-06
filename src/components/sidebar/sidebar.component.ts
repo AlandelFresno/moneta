@@ -1,8 +1,4 @@
 import { Component, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { AvatarModule } from 'primeng/avatar';
 
 export interface MenuItem {
   label: string;
@@ -13,10 +9,9 @@ export interface MenuItem {
 
 @Component({
   selector: 'app-sidebar',
-  standalone: true,
-  imports: [CommonModule, RouterModule, ButtonModule, AvatarModule],
   templateUrl: './sidebar.component.html',
-  styleUrls: ['./sidebar.component.scss']
+  styleUrls: ['./sidebar.component.scss'],
+  standalone: false
 })
 export class SidebarComponent {
   isCollapsed = signal(false);

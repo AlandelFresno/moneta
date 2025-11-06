@@ -1,9 +1,10 @@
 import { Routes } from '@angular/router';
+import { LayoutComponent } from '../components/layout/layout.component';
 
 export const routes: Routes = [
   {
     path: '',
-    loadComponent: () => import('../components/layout/layout.component').then(m => m.LayoutComponent),
+    component: LayoutComponent,
     children: [
       {
         path: '',
@@ -12,27 +13,27 @@ export const routes: Routes = [
       },
       {
         path: 'dashboard',
-        loadComponent: () => import('../pages/dashboard/dashboard.page').then(m => m.DashboardPage)
+        loadChildren: () => import('../pages/dashboard/dashboard.module').then(m => m.DashboardModule)
       },
       {
         path: 'transactions',
-        loadComponent: () => import('../pages/transactions/transactions.page').then(m => m.TransactionsPage)
+        loadChildren: () => import('../pages/transactions/transactions.module').then(m => m.TransactionsModule)
       },
       {
         path: 'budgets',
-        loadComponent: () => import('../pages/budgets/budgets.page').then(m => m.BudgetsPage)
+        loadChildren: () => import('../pages/budgets/budgets.module').then(m => m.BudgetsModule)
       },
       {
         path: 'analytics',
-        loadComponent: () => import('../pages/analytics/analytics.page').then(m => m.AnalyticsPage)
+        loadChildren: () => import('../pages/analytics/analytics.module').then(m => m.AnalyticsModule)
       },
       {
         path: 'categories',
-        loadComponent: () => import('../pages/categories/categories.page').then(m => m.CategoriesPage)
+        loadChildren: () => import('../pages/categories/categories.module').then(m => m.CategoriesModule)
       },
       {
         path: 'settings',
-        loadComponent: () => import('../pages/settings/settings.page').then(m => m.SettingsPage)
+        loadChildren: () => import('../pages/settings/settings.module').then(m => m.SettingsModule)
       }
     ]
   }

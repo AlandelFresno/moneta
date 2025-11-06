@@ -1,11 +1,9 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-transactions',
-  standalone: true,
-  imports: [CommonModule],
   templateUrl: './transactions.page.html',
-  styleUrls: ['./transactions.page.scss']
+  styleUrls: ['./transactions.page.scss'],
+  standalone: false
 })
 export class TransactionsPage {}

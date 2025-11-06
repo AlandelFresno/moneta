@@ -1,11 +1,9 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-categories',
-  standalone: true,
-  imports: [CommonModule],
   templateUrl: './categories.page.html',
-  styleUrls: ['./categories.page.scss']
+  styleUrls: ['./categories.page.scss'],
+  standalone: false
 })
 export class CategoriesPage {}
