@@ -15,10 +15,6 @@
   &.collapsed {
     width: 80px;
 
-    .sidebar-header {
-      justify-content: center;
-    }
-
     .nav-text,
     .badge {
       opacity: 0;
@@ -34,43 +30,12 @@
 }
 
 .sidebar-header {
-  padding: 1.5rem 1.25rem;
+  padding: 1rem;
   border-bottom: 1px solid #f3f4f6;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  min-height: 73px;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex: 1;
-}
-
-.logo-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-  display: flex;
-  align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-
-  i {
-    color: white;
-    font-size: 1.25rem;
-  }
-}
-
-.logo-text {
-  font-weight: 700;
-  font-size: 1.125rem;
-  color: #1f2937;
-  white-space: nowrap;
-  transition: opacity 0.3s ease;
+  min-height: 60px;
 }
 
 .collapse-btn {
@@ -180,10 +145,6 @@
 
     &.collapsed {
       width: 280px !important;
-
-      .sidebar-header {
-        justify-content: space-between;
-      }
 
       .nav-text,
       .badge {

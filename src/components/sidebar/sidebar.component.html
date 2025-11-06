@@ -1,12 +1,6 @@
 <div class="sidebar" [class.collapsed]="isCollapsed()" [class.mobile-open]="isMobileMenuOpen()">
-  <!-- Logo / Header -->
+  <!-- Header -->
   <div class="sidebar-header">
-    <div class="logo" *ngIf="!isCollapsed() || isMobileMenuOpen()">
-      <div class="logo-icon">
-        <i class="pi pi-wallet"></i>
-      </div>
-      <span class="logo-text">Budget Tracker</span>
-    </div>
     <button
       class="collapse-btn desktop-only"
       (click)="toggleSidebar()"
