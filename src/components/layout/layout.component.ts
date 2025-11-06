@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
+import { SidebarComponent } from '../sidebar/sidebar.component';
 
 @Component({
   selector: 'app-layout',
@@ -7,5 +8,10 @@ import { Component } from '@angular/core';
   standalone: false
 })
 export class LayoutComponent {
+  @ViewChild(SidebarComponent) sidebar!: SidebarComponent;
   sidebarCollapsed = false;
+
+  openMobileMenu() {
+    this.sidebar.openMobileMenu();
+  }
 }

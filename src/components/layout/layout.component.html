@@ -1,6 +1,16 @@
 <div class="app-layout">
   <app-sidebar></app-sidebar>
 
+  <!-- Mobile Menu Button -->
+  <button
+    class="mobile-menu-btn"
+    (click)="openMobileMenu()"
+    pButton
+    icon="pi pi-bars"
+    [text]="true"
+    [rounded]="true">
+  </button>
+
   <main class="main-content" [class.sidebar-collapsed]="sidebarCollapsed">
     <router-outlet></router-outlet>
   </main>

@@ -1,11 +1,11 @@
-<div class="sidebar" [class.collapsed]="isCollapsed()">
+<div class="sidebar" [class.collapsed]="isCollapsed()" [class.mobile-open]="isMobileMenuOpen()">
   <!-- Logo / Header -->
   <div class="sidebar-header">
-    <div class="logo">
+    <div class="logo" *ngIf="!isCollapsed()">
       <div class="logo-icon">
         <i class="pi pi-wallet"></i>
       </div>
-      <span class="logo-text" *ngIf="!isCollapsed()">Budget Tracker</span>
+      <span class="logo-text">Budget Tracker</span>
     </div>
     <button
       class="collapse-btn"
@@ -24,28 +24,13 @@
       [routerLink]="item.route"
       routerLinkActive="active"
       class="nav-item"
-      [class.collapsed]="isCollapsed()">
+      [class.collapsed]="isCollapsed()"
+      (click)="closeMobileMenu()">
       <i [class]="'pi pi-' + item.icon"></i>
       <span class="nav-text" *ngIf="!isCollapsed()">{{ item.label }}</span>
       <span class="badge" *ngIf="item.badge && !isCollapsed()">{{ item.badge }}</span>
     </a>
   </nav>
-
-  <!-- Footer / User -->
-  <div class="sidebar-footer">
-    <div class="user-section" [class.collapsed]="isCollapsed()">
-      <p-avatar
-        label="U"
-        styleClass="bg-purple-500"
-        shape="circle"
-        [size]="isCollapsed() ? 'normal' : 'large'">
-      </p-avatar>
-      <div class="user-info" *ngIf="!isCollapsed()">
-        <p class="user-name">Usuario</p>
-        <p class="user-email">user@example.com</p>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- Mobile Overlay -->

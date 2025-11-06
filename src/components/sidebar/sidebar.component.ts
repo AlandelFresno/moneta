@@ -55,6 +55,10 @@ export class SidebarComponent {
     this.isCollapsed.update(v => !v);
   }
 
+  openMobileMenu() {
+    this.isMobileMenuOpen.set(true);
+  }
+
   closeMobileMenu() {
     this.isMobileMenuOpen.set(false);
   }
