@@ -37,7 +37,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     type: 'expense' as 'income' | 'expense',
     amount: 0,
     description: '',
-    date: new Date()
+    date: ''
   };
 
   filters = {
@@ -154,13 +154,14 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   openCreateDialog(): void {
     this.editingTransaction = null;
+    const today = new Date().toISOString().split('T')[0];
     this.formData = {
       accountId: this.accounts[0]?.id || '',
       categoryId: this.categories.filter(c => c.type === 'expense')[0]?.id || '',
       type: 'expense',
       amount: 0,
       description: '',
-      date: new Date()
+      date: today
     };
     this.showDialog = true;
   }
@@ -173,7 +174,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       type: transaction.type,
       amount: transaction.amount,
       description: transaction.description,
-      date: new Date(transaction.date)
+      date: new Date(transaction.date).toISOString().split('T')[0]
     };
     this.showDialog = true;
   }
@@ -188,10 +189,15 @@ export class TransactionsPage implements OnInit, OnDestroy {
       return;
     }
 
+    const txnData = {
+      ...this.formData,
+      date: new Date(this.formData.date)
+    };
+
     if (this.editingTransaction) {
-      this.transactionService.updateTransaction(this.editingTransaction.id, this.formData);
+      this.transactionService.updateTransaction(this.editingTransaction.id, txnData);
     } else {
-      this.transactionService.createTransaction(this.formData);
+      this.transactionService.createTransaction(txnData);
     }
 
     this.closeDialog();

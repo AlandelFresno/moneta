@@ -1,12 +1,200 @@
 <div class="page-container">
+  <!-- Header -->
   <div class="page-header">
-    <h1 class="page-title">Transactions</h1>
-    <p class="page-subtitle">Manage your income and expenses</p>
+    <div class="header-left">
+      <h1 class="page-title">Transactions</h1>
+      <p class="page-subtitle">Track your income and expenses</p>
+    </div>
+    <div class="header-actions">
+      <button pButton label="Import CSV" icon="pi pi-upload" class="btn-secondary" (click)="openImportDialog()"></button>
+      <button pButton label="Export CSV" icon="pi pi-download" class="btn-secondary" (click)="exportToCSV()"></button>
+      <button pButton label="New Transaction" icon="pi pi-plus" class="btn-primary" (click)="openCreateDialog()"></button>
+    </div>
   </div>
 
-  <div class="coming-soon">
-    <i class="pi pi-list" style="font-size: 4rem; color: #6b7280;"></i>
-    <h2>Coming Soon</h2>
-    <p>This feature is under development</p>
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card income">
+      <div class="stat-icon"><i class="pi pi-arrow-down"></i></div>
+      <div class="stat-info">
+        <p class="stat-label">Total Income</p>
+        <p class="stat-value">{{ formatCurrency(stats.totalIncome) }}</p>
+      </div>
+    </div>
+    <div class="stat-card expense">
+      <div class="stat-icon"><i class="pi pi-arrow-up"></i></div>
+      <div class="stat-info">
+        <p class="stat-label">Total Expense</p>
+        <p class="stat-value">{{ formatCurrency(stats.totalExpense) }}</p>
+      </div>
+    </div>
+    <div class="stat-card balance" [class.positive]="stats.balance >= 0" [class.negative]="stats.balance < 0">
+      <div class="stat-icon"><i class="pi pi-wallet"></i></div>
+      <div class="stat-info">
+        <p class="stat-label">Balance</p>
+        <p class="stat-value">{{ formatCurrency(stats.balance) }}</p>
+      </div>
+    </div>
+    <div class="stat-card count">
+      <div class="stat-icon"><i class="pi pi-list"></i></div>
+      <div class="stat-info">
+        <p class="stat-label">Transactions</p>
+        <p class="stat-value">{{ stats.count }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-card">
+    <div class="filters-row">
+      <div class="filter-group">
+        <label>Type</label>
+        <select [(ngModel)]="filters.type" (ngModelChange)="applyFilters()" class="macos-select">
+          <option value="all">All</option>
+          <option value="income">Income</option>
+          <option value="expense">Expense</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Account</label>
+        <select [(ngModel)]="filters.accountId" (ngModelChange)="applyFilters()" class="macos-select">
+          <option value="all">All Accounts</option>
+          <option *ngFor="let account of accounts" [value]="account.id">{{ account.name }}</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Category</label>
+        <select [(ngModel)]="filters.categoryId" (ngModelChange)="applyFilters()" class="macos-select">
+          <option value="all">All Categories</option>
+          <option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</option>
+        </select>
+      </div>
+      <div class="filter-group flex-2">
+        <label>Search</label>
+        <input type="text" [(ngModel)]="filters.searchText" (ngModelChange)="applyFilters()" placeholder="Search transactions..." class="macos-input" />
+      </div>
+      <div class="filter-group">
+        <label>&nbsp;</label>
+        <button pButton label="Clear" icon="pi pi-filter-slash" class="btn-secondary" (click)="clearFilters()"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transactions List -->
+  <div class="transactions-card">
+    <div class="transactions-header">
+      <h2>Transactions</h2>
+      <span class="count">{{ filteredTransactions.length }} results</span>
+    </div>
+
+    <div class="transactions-list" *ngIf="filteredTransactions.length > 0">
+      <div *ngFor="let txn of filteredTransactions" class="transaction-item">
+        <div class="transaction-icon" [style.background-color]="txn.categoryColor">
+          <i [class]="'pi pi-' + txn.categoryIcon"></i>
+        </div>
+        <div class="transaction-main">
+          <div class="transaction-info">
+            <h3>{{ txn.description || 'No description' }}</h3>
+            <div class="transaction-meta">
+              <span class="category"><i [class]="'pi pi-' + txn.categoryIcon"></i> {{ txn.categoryName }}</span>
+              <span class="account"><i class="pi pi-building"></i> {{ txn.accountName }}</span>
+              <span class="date"><i class="pi pi-calendar"></i> {{ formatDate(txn.date) }}</span>
+            </div>
+          </div>
+          <div class="transaction-amount">
+            <span class="amount" [class.income]="txn.type === 'income'" [class.expense]="txn.type === 'expense'">
+              {{ txn.type === 'income' ? '+' : '-' }}{{ formatCurrency(txn.amount) }}
+            </span>
+            <div class="transaction-actions">
+              <button pButton icon="pi pi-pencil" [text]="true" [rounded]="true" class="btn-icon" (click)="openEditDialog(txn)"></button>
+              <button pButton icon="pi pi-trash" [text]="true" [rounded]="true" class="btn-icon btn-danger" (click)="deleteTransaction(txn)"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="filteredTransactions.length === 0" class="empty-state">
+      <i class="pi pi-inbox"></i>
+      <h3>No transactions found</h3>
+      <p>Try adjusting your filters or create a new transaction</p>
+    </div>
   </div>
 </div>
+
+<!-- Create/Edit Dialog -->
+<p-dialog [(visible)]="showDialog" [modal]="true" [closable]="true" [draggable]="false" [resizable]="false" styleClass="macos-dialog" [style]="{ width: '550px' }" (onHide)="closeDialog()">
+  <ng-template pTemplate="header">
+    <h3>{{ editingTransaction ? 'Edit Transaction' : 'New Transaction' }}</h3>
+  </ng-template>
+
+  <div class="dialog-content">
+    <div class="form-group">
+      <label>Type</label>
+      <div class="type-selector">
+        <button type="button" class="type-btn" [class.active]="formData.type === 'income'" (click)="formData.type = 'income'; onTypeChange()">
+          <i class="pi pi-arrow-down"></i> Income
+        </button>
+        <button type="button" class="type-btn" [class.active]="formData.type === 'expense'" (click)="formData.type = 'expense'; onTypeChange()">
+          <i class="pi pi-arrow-up"></i> Expense
+        </button>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Account</label>
+        <select [(ngModel)]="formData.accountId" class="macos-select">
+          <option value="">Select account</option>
+          <option *ngFor="let account of accounts" [value]="account.id">{{ account.name }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select [(ngModel)]="formData.categoryId" class="macos-select">
+          <option value="">Select category</option>
+          <option *ngFor="let category of getAvailableCategories()" [value]="category.id">{{ category.name }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Amount</label>
+        <input type="number" [(ngModel)]="formData.amount" placeholder="0.00" step="0.01" min="0" class="macos-input" />
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" [(ngModel)]="formData.date" class="macos-input" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Description</label>
+      <textarea [(ngModel)]="formData.description" rows="3" placeholder="Enter description (optional)" class="macos-input"></textarea>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button pButton label="Cancel" class="btn-secondary" (click)="closeDialog()"></button>
+    <button pButton [label]="editingTransaction ? 'Save Changes' : 'Create Transaction'" class="btn-primary" (click)="saveTransaction()" [disabled]="!formData.accountId || !formData.categoryId || formData.amount <= 0"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Import CSV Dialog -->
+<p-dialog [(visible)]="showImportDialog" [modal]="true" header="Import Transactions from CSV" [closable]="true" [draggable]="false" [resizable]="false" styleClass="macos-dialog" [style]="{ width: '500px' }">
+  <div class="dialog-content">
+    <p class="import-info">Upload a CSV file with the following format:</p>
+    <code class="csv-format">Date,Type,Account,Category,Amount,Description</code>
+
+    <div class="file-upload">
+      <input type="file" #fileInput accept=".csv" (change)="onFileSelected($event)" style="display: none" />
+      <button pButton [label]="selectedFile ? selectedFile.name : 'Choose CSV File'" icon="pi pi-file" class="btn-secondary w-full" (click)="fileInput.click()"></button>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button pButton label="Cancel" class="btn-secondary" (click)="showImportDialog = false"></button>
+    <button pButton label="Import" class="btn-primary" (click)="importCSV()" [disabled]="!selectedFile"></button>
+  </ng-template>
+</p-dialog>
