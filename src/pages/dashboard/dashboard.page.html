@@ -1,12 +1,182 @@
 <div class="page-container">
+  <!-- Page Header -->
   <div class="page-header">
-    <h1 class="page-title">Dashboard</h1>
-    <p class="page-subtitle">Your financial overview</p>
+    <div class="header-left">
+      <h1 class="page-title">Dashboard</h1>
+      <p class="page-subtitle">Tu resumen financiero</p>
+    </div>
+    <div class="header-actions">
+      <button
+        pButton
+        class="btn-primary"
+        icon="pi pi-plus"
+        label="Nueva Transacción"
+        (click)="navigateToTransactions()"
+      ></button>
+    </div>
   </div>
 
-  <div class="coming-soon">
-    <i class="pi pi-home" style="font-size: 4rem; color: #6b7280;"></i>
-    <h2>Coming Soon</h2>
-    <p>This feature is under development</p>
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card balance">
+      <div class="stat-icon">
+        <i class="pi pi-wallet"></i>
+      </div>
+      <div class="stat-info">
+        <p class="stat-label">Balance Total</p>
+        <h2 class="stat-value" [class.positive]="totalBalance > 0" [class.negative]="totalBalance < 0">
+          {{ formatCurrency(totalBalance) }}
+        </h2>
+      </div>
+    </div>
+
+    <div class="stat-card income">
+      <div class="stat-icon">
+        <i class="pi pi-arrow-down"></i>
+      </div>
+      <div class="stat-info">
+        <p class="stat-label">Ingresos del Mes</p>
+        <h2 class="stat-value">{{ formatCurrency(monthIncome) }}</h2>
+      </div>
+    </div>
+
+    <div class="stat-card expense">
+      <div class="stat-icon">
+        <i class="pi pi-arrow-up"></i>
+      </div>
+      <div class="stat-info">
+        <p class="stat-label">Gastos del Mes</p>
+        <h2 class="stat-value">{{ formatCurrency(monthExpense) }}</h2>
+      </div>
+    </div>
+
+    <div class="stat-card accounts">
+      <div class="stat-icon">
+        <i class="pi pi-credit-card"></i>
+      </div>
+      <div class="stat-info">
+        <p class="stat-label">Cuentas Totales</p>
+        <h2 class="stat-value">{{ totalAccounts }}</h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <!-- Accounts Summary -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Mis Cuentas</h2>
+        <span class="count">{{ accounts.length }}</span>
+      </div>
+      <div class="card-body">
+        <div class="empty-state" *ngIf="accounts.length === 0">
+          <i class="pi pi-wallet"></i>
+          <h3>No hay cuentas</h3>
+          <p>Crea una cuenta para comenzar</p>
+        </div>
+
+        <div class="accounts-list" *ngIf="accounts.length > 0">
+          <div class="account-item" *ngFor="let account of accounts">
+            <div class="account-icon" [style.background]="account.color">
+              <i [class]="'pi ' + getAccountIcon(account.type)"></i>
+            </div>
+            <div class="account-info">
+              <h3>{{ account.name }}</h3>
+              <p>{{ account.type | titlecase }}</p>
+            </div>
+            <div class="account-balance">
+              <span
+                class="amount"
+                [class.positive]="account.balance > 0"
+                [class.negative]="account.balance < 0"
+              >
+                {{ formatCurrency(account.balance) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Transacciones Recientes</h2>
+        <button
+          pButton
+          class="p-button-text p-button-sm"
+          label="Ver todas"
+          (click)="navigateToTransactions()"
+        ></button>
+      </div>
+      <div class="card-body">
+        <div class="empty-state" *ngIf="recentTransactions.length === 0">
+          <i class="pi pi-list"></i>
+          <h3>No hay transacciones</h3>
+          <p>Crea tu primera transacción</p>
+        </div>
+
+        <div class="transactions-list" *ngIf="recentTransactions.length > 0">
+          <div class="transaction-item" *ngFor="let tx of recentTransactions">
+            <div class="transaction-icon" [style.background]="tx.categoryColor">
+              <i [class]="'pi ' + tx.categoryIcon"></i>
+            </div>
+            <div class="transaction-info">
+              <h3>{{ tx.description }}</h3>
+              <div class="transaction-meta">
+                <span>
+                  <i class="pi pi-tag"></i>
+                  {{ tx.categoryName }}
+                </span>
+                <span>
+                  <i class="pi pi-wallet"></i>
+                  {{ tx.accountName }}
+                </span>
+                <span>
+                  <i class="pi pi-calendar"></i>
+                  {{ formatDate(tx.date) }}
+                </span>
+              </div>
+            </div>
+            <div class="transaction-amount">
+              <span
+                class="amount"
+                [class.income]="tx.type === 'income'"
+                [class.expense]="tx.type === 'expense'"
+              >
+                {{ tx.type === 'income' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <div class="action-card" (click)="navigateToTransactions()">
+      <div class="action-icon">
+        <i class="pi pi-plus-circle"></i>
+      </div>
+      <h3>Nueva Transacción</h3>
+      <p>Registra un ingreso o gasto</p>
+    </div>
+
+    <div class="action-card" (click)="navigateToCategories()">
+      <div class="action-icon">
+        <i class="pi pi-tags"></i>
+      </div>
+      <h3>Categorías</h3>
+      <p>Gestiona tus categorías</p>
+    </div>
+
+    <div class="action-card" (click)="navigateToAccounts()">
+      <div class="action-icon">
+        <i class="pi pi-wallet"></i>
+      </div>
+      <h3>Cuentas</h3>
+      <p>Administra tus cuentas</p>
+    </div>
   </div>
 </div>
