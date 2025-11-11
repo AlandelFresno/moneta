@@ -348,7 +348,7 @@
 .dialog-content {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .form-group {
@@ -360,6 +360,7 @@
     font-size: 0.875rem;
     font-weight: 600;
     color: #374151;
+    margin-bottom: 0.125rem;
   }
 
   .macos-input,
@@ -370,11 +371,21 @@
     border-radius: 8px;
     font-size: 0.9375rem;
     font-family: inherit;
+    background: white;
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: #9ca3af;
+    }
 
     &:focus {
       outline: none;
       border-color: #3b82f6;
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    &::placeholder {
+      color: #9ca3af;
     }
   }
 
@@ -392,11 +403,11 @@
 .type-selector {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  gap: 0.625rem;
 
   .type-btn {
-    background: #f9fafb;
-    border: 2px solid #e5e7eb;
+    background: white;
+    border: 1.5px solid #e5e7eb;
     border-radius: 8px;
     padding: 0.75rem 1rem;
     font-size: 0.9375rem;
@@ -410,14 +421,15 @@
     transition: all 0.2s ease;
 
     &:hover {
-      background: #f3f4f6;
       border-color: #d1d5db;
+      background: #f9fafb;
     }
 
     &.active {
       background: #eff6ff;
       border-color: #3b82f6;
       color: #3b82f6;
+      font-weight: 600;
     }
   }
 }
@@ -450,35 +462,56 @@
   border-radius: 8px;
   font-weight: 500;
   transition: all 0.2s ease;
+  border: none;
 }
 
 .btn-primary {
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  border: none;
   color: white;
-  padding: 0.625rem 1.125rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.9375rem;
 
   &:hover:not(:disabled) {
     background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 }
 
 .btn-secondary {
   background: white;
-  border: 1px solid #d1d5db;
+  border: 1.5px solid #d1d5db !important;
   color: #374151;
-  padding: 0.625rem 1.125rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.9375rem;
 
   &:hover:not(:disabled) {
     background: #f9fafb;
-    border-color: #9ca3af;
+    border-color: #9ca3af !important;
+  }
+
+  &:active:not(:disabled) {
+    background: #f3f4f6;
   }
 }
 
 .btn-icon {
   color: #6b7280;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   &:hover {
     background: #f3f4f6;
@@ -498,17 +531,22 @@
 // Responsive
 @media (max-width: 768px) {
   .page-container {
-    padding: 1.5rem 1rem;
+    padding: 1rem;
   }
 
   .page-header {
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
+    margin-bottom: 1.5rem;
 
     .header-actions {
       flex-wrap: wrap;
     }
+  }
+
+  .page-title {
+    font-size: 1.75rem;
   }
 
   .stats-grid {
@@ -536,16 +574,29 @@
   .form-row {
     grid-template-columns: 1fr;
   }
+
+  ::ng-deep .macos-dialog {
+    .p-dialog {
+      width: 95% !important;
+      margin: 0.5rem;
+    }
+  }
 }
 
 // PrimeNG Overrides
 ::ng-deep {
   .macos-dialog {
+    .p-dialog {
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 1px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
     .p-dialog-header {
-      background: white;
+      background: #f9fafb;
       border-bottom: 1px solid #e5e7eb;
       padding: 1.25rem 1.5rem;
-      border-radius: 12px 12px 0 0;
 
       h3 {
         font-size: 1.125rem;
@@ -558,9 +609,10 @@
         width: 2rem;
         height: 2rem;
         color: #6b7280;
+        border-radius: 6px;
 
         &:hover {
-          background: #f3f4f6;
+          background: #e5e7eb;
           color: #1f2937;
         }
       }
@@ -572,18 +624,17 @@
     }
 
     .p-dialog-footer {
-      background: white;
+      background: #f9fafb;
       border-top: 1px solid #e5e7eb;
       padding: 1rem 1.5rem;
-      border-radius: 0 0 12px 12px;
       display: flex;
       gap: 0.75rem;
       justify-content: flex-end;
     }
 
     .p-dialog-mask {
-      backdrop-filter: blur(4px);
-      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      background: rgba(0, 0, 0, 0.5);
     }
   }
 
