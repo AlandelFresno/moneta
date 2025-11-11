@@ -8,7 +8,7 @@ export class CsvService {
 
   // Export transactions to CSV
   exportTransactionsToCsv(transactions: Transaction[], accounts: Account[], categories: Category[]): void {
-    const headers = ['Date', 'Type', 'Account', 'Category', 'Amount', 'Description'];
+    const headers = ['Date', 'Type', 'Account', 'Category', 'Amount', 'Currency', 'Description'];
 
     const rows = transactions.map(txn => {
       const account = accounts.find(acc => acc.id === txn.accountId);
@@ -20,6 +20,7 @@ export class CsvService {
         account?.name || 'Unknown',
         category?.name || 'Unknown',
         txn.amount.toString(),
+        txn.currency,
         `"${txn.description.replace(/"/g, '""')}"`
       ];
     });
@@ -115,6 +116,7 @@ export class CsvService {
         categoryId: category.id,
         type: type as 'income' | 'expense',
         amount: parseFloat(amountStr),
+        currency: account.currency,
         description: description.replace(/^"|"$/g, '').replace(/""/g, '"'),
         date: new Date(dateStr)
       });

@@ -103,7 +103,7 @@
           </div>
           <div class="transaction-amount">
             <span class="amount" [class.income]="txn.type === 'income'" [class.expense]="txn.type === 'expense'">
-              {{ txn.type === 'income' ? '+' : '-' }}{{ formatCurrency(txn.amount) }}
+              {{ txn.type === 'income' ? '+' : '-' }}{{ formatCurrency(txn.amount, txn.currency) }}
             </span>
             <div class="transaction-actions">
               <button pButton icon="pi pi-pencil" [text]="true" [rounded]="true" class="btn-icon" (click)="openEditDialog(txn)"></button>
@@ -122,7 +122,7 @@
   </div>
 </div>
 
-<!-- Create/Edit Dialog -->
+<!-- Create/Edit Transaction Dialog -->
 <p-dialog [(visible)]="showDialog" [modal]="true" [closable]="true" [draggable]="false" [resizable]="false" styleClass="macos-dialog" [style]="{ width: '550px' }" (onHide)="closeDialog()">
   <ng-template pTemplate="header">
     <h3>{{ editingTransaction ? 'Edit Transaction' : 'New Transaction' }}</h3>
@@ -144,17 +144,23 @@
     <div class="form-row">
       <div class="form-group">
         <label>Account</label>
-        <select [(ngModel)]="formData.accountId" class="macos-select">
-          <option value="">Select account</option>
-          <option *ngFor="let account of accounts" [value]="account.id">{{ account.name }}</option>
-        </select>
+        <div class="input-with-button">
+          <select [(ngModel)]="formData.accountId" (ngModelChange)="onAccountChange()" class="macos-select">
+            <option value="">Select account</option>
+            <option *ngFor="let account of accounts" [value]="account.id">{{ account.name }}</option>
+          </select>
+          <button pButton icon="pi pi-plus" [text]="true" [rounded]="true" class="btn-icon-inline" (click)="openQuickCreateAccount()" pTooltip="Create new account"></button>
+        </div>
       </div>
       <div class="form-group">
         <label>Category</label>
-        <select [(ngModel)]="formData.categoryId" class="macos-select">
-          <option value="">Select category</option>
-          <option *ngFor="let category of getAvailableCategories()" [value]="category.id">{{ category.name }}</option>
-        </select>
+        <div class="input-with-button">
+          <select [(ngModel)]="formData.categoryId" class="macos-select">
+            <option value="">Select category</option>
+            <option *ngFor="let category of getAvailableCategories()" [value]="category.id">{{ category.name }}</option>
+          </select>
+          <button pButton icon="pi pi-plus" [text]="true" [rounded]="true" class="btn-icon-inline" (click)="openQuickCreateCategory()" pTooltip="Create new category"></button>
+        </div>
       </div>
     </div>
 
@@ -164,9 +170,16 @@
         <input type="number" [(ngModel)]="formData.amount" placeholder="0.00" step="0.01" min="0" class="macos-input" />
       </div>
       <div class="form-group">
-        <label>Date</label>
-        <input type="date" [(ngModel)]="formData.date" class="macos-input" />
+        <label>Currency</label>
+        <select [(ngModel)]="formData.currency" class="macos-select">
+          <option *ngFor="let curr of currencies" [value]="curr.code">{{ curr.code }} - {{ curr.name }}</option>
+        </select>
       </div>
+    </div>
+
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" [(ngModel)]="formData.date" class="macos-input" />
     </div>
 
     <div class="form-group">
@@ -178,6 +191,128 @@
   <ng-template pTemplate="footer">
     <button pButton label="Cancel" class="btn-secondary" (click)="closeDialog()"></button>
     <button pButton [label]="editingTransaction ? 'Save Changes' : 'Create Transaction'" class="btn-primary" (click)="saveTransaction()" [disabled]="!formData.accountId || !formData.categoryId || formData.amount <= 0"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Quick Create Category Dialog -->
+<p-dialog [(visible)]="showCategoryDialog" [modal]="true" [closable]="true" [draggable]="false" [resizable]="false" styleClass="macos-dialog" [style]="{ width: '450px' }" (onHide)="closeCategoryDialog()">
+  <ng-template pTemplate="header">
+    <h3>Create New Category</h3>
+  </ng-template>
+
+  <div class="dialog-content">
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" [(ngModel)]="categoryFormData.name" placeholder="Category name" class="macos-input" />
+    </div>
+
+    <div class="form-group">
+      <label>Type</label>
+      <div class="type-selector">
+        <button type="button" class="type-btn" [class.active]="categoryFormData.type === 'income'" (click)="categoryFormData.type = 'income'">
+          <i class="pi pi-arrow-down"></i> Income
+        </button>
+        <button type="button" class="type-btn" [class.active]="categoryFormData.type === 'expense'" (click)="categoryFormData.type = 'expense'">
+          <i class="pi pi-arrow-up"></i> Expense
+        </button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Color</label>
+      <div class="color-picker">
+        <div
+          *ngFor="let color of availableColors"
+          class="color-option"
+          [style.background]="color"
+          [class.selected]="categoryFormData.color === color"
+          (click)="categoryFormData.color = color">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Icon</label>
+      <div class="icon-picker">
+        <div
+          *ngFor="let icon of availableIcons"
+          class="icon-option"
+          [class.selected]="categoryFormData.icon === icon"
+          (click)="categoryFormData.icon = icon">
+          <i [class]="'pi pi-' + icon"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button pButton label="Cancel" class="btn-secondary" (click)="closeCategoryDialog()"></button>
+    <button pButton label="Create Category" class="btn-primary" (click)="saveQuickCategory()" [disabled]="!categoryFormData.name"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Quick Create Account Dialog -->
+<p-dialog [(visible)]="showAccountDialog" [modal]="true" [closable]="true" [draggable]="false" [resizable]="false" styleClass="macos-dialog" [style]="{ width: '450px' }" (onHide)="closeAccountDialog()">
+  <ng-template pTemplate="header">
+    <h3>Create New Account</h3>
+  </ng-template>
+
+  <div class="dialog-content">
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" [(ngModel)]="accountFormData.name" placeholder="Account name" class="macos-input" />
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Type</label>
+        <select [(ngModel)]="accountFormData.type" class="macos-select">
+          <option *ngFor="let type of accountTypes" [value]="type.value">{{ type.label }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Currency</label>
+        <select [(ngModel)]="accountFormData.currency" class="macos-select">
+          <option *ngFor="let curr of currencies" [value]="curr.code">{{ curr.code }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Initial Balance</label>
+      <input type="number" [(ngModel)]="accountFormData.balance" placeholder="0.00" step="0.01" class="macos-input" />
+    </div>
+
+    <div class="form-group">
+      <label>Color</label>
+      <div class="color-picker">
+        <div
+          *ngFor="let color of availableColors"
+          class="color-option"
+          [style.background]="color"
+          [class.selected]="accountFormData.color === color"
+          (click)="accountFormData.color = color">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Icon</label>
+      <div class="icon-picker">
+        <div
+          *ngFor="let icon of availableIcons"
+          class="icon-option"
+          [class.selected]="accountFormData.icon === icon"
+          (click)="accountFormData.icon = icon">
+          <i [class]="'pi pi-' + icon"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button pButton label="Cancel" class="btn-secondary" (click)="closeAccountDialog()"></button>
+    <button pButton label="Create Account" class="btn-primary" (click)="saveQuickAccount()" [disabled]="!accountFormData.name"></button>
   </ng-template>
 </p-dialog>
 

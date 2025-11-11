@@ -673,3 +673,125 @@
     }
   }
 }
+
+// Input with inline button
+.input-with-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  select {
+    flex: 1;
+  }
+
+  .btn-icon-inline {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #f3f4f6;
+      color: #3b82f6;
+    }
+  }
+}
+
+// Color Picker
+.color-picker {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 0.625rem;
+
+  .color-option {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+
+    &:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    &.selected {
+      border-color: #1f2937;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+  }
+}
+
+// Icon Picker
+.icon-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(3rem, 1fr));
+  gap: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafafa;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f3f4f6;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+
+    &:hover {
+      background: #9ca3af;
+    }
+  }
+
+  .icon-option {
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    background: white;
+    border: 1.5px solid #e5e7eb;
+    transition: all 0.2s ease;
+
+    i {
+      font-size: 1.125rem;
+      color: #6b7280;
+    }
+
+    &:hover {
+      border-color: #3b82f6;
+      background: #eff6ff;
+
+      i {
+        color: #3b82f6;
+      }
+    }
+
+    &.selected {
+      border-color: #3b82f6;
+      background: #eff6ff;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+
+      i {
+        color: #3b82f6;
+      }
+    }
+  }
+}

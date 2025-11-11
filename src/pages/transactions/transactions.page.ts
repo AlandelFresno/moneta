@@ -29,15 +29,45 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   showDialog = false;
   showImportDialog = false;
+  showCategoryDialog = false;
+  showAccountDialog = false;
   editingTransaction: Transaction | null = null;
+
+  currencies = [
+    { code: 'USD', symbol: '$', name: 'US Dollar' },
+    { code: 'EUR', symbol: '€', name: 'Euro' },
+    { code: 'GBP', symbol: '£', name: 'British Pound' },
+    { code: 'ARS', symbol: '$', name: 'Argentine Peso' },
+    { code: 'BRL', symbol: 'R$', name: 'Brazilian Real' },
+    { code: 'MXN', symbol: '$', name: 'Mexican Peso' },
+    { code: 'COP', symbol: '$', name: 'Colombian Peso' },
+    { code: 'CLP', symbol: '$', name: 'Chilean Peso' }
+  ];
 
   formData = {
     accountId: '',
     categoryId: '',
     type: 'expense' as 'income' | 'expense',
     amount: 0,
+    currency: 'USD',
     description: '',
     date: ''
+  };
+
+  categoryFormData = {
+    name: '',
+    type: 'expense' as 'income' | 'expense',
+    color: '#3b82f6',
+    icon: 'tag'
+  };
+
+  accountFormData = {
+    name: '',
+    type: 'bank' as 'bank' | 'cash' | 'credit' | 'savings' | 'investment',
+    balance: 0,
+    currency: 'USD',
+    color: '#3b82f6',
+    icon: 'wallet'
   };
 
   filters = {
@@ -57,6 +87,26 @@ export class TransactionsPage implements OnInit, OnDestroy {
   };
 
   selectedFile: File | null = null;
+
+  availableColors = [
+    '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+    '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#6366f1'
+  ];
+
+  availableIcons = [
+    'wallet', 'shopping-cart', 'home', 'car', 'heart', 'gift',
+    'coffee', 'book', 'briefcase', 'chart-line', 'credit-card',
+    'dollar', 'users', 'plane', 'building', 'star', 'tag',
+    'bolt', 'ticket', 'medical', 'gamepad', 'music'
+  ];
+
+  accountTypes: Array<{ value: string; label: string }> = [
+    { value: 'bank', label: 'Bank' },
+    { value: 'cash', label: 'Cash' },
+    { value: 'credit', label: 'Credit Card' },
+    { value: 'savings', label: 'Savings' },
+    { value: 'investment', label: 'Investment' }
+  ];
 
   constructor(
     private transactionService: TransactionService,
@@ -160,6 +210,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       categoryId: this.categories.filter(c => c.type === 'expense')[0]?.id || '',
       type: 'expense',
       amount: 0,
+      currency: this.accounts[0]?.currency || 'USD',
       description: '',
       date: today
     };
@@ -173,6 +224,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       categoryId: transaction.categoryId,
       type: transaction.type,
       amount: transaction.amount,
+      currency: transaction.currency,
       description: transaction.description,
       date: new Date(transaction.date).toISOString().split('T')[0]
     };
@@ -217,8 +269,65 @@ export class TransactionsPage implements OnInit, OnDestroy {
     }
   }
 
+  onAccountChange(): void {
+    // Update currency based on selected account
+    const account = this.accounts.find(a => a.id === this.formData.accountId);
+    if (account) {
+      this.formData.currency = account.currency;
+    }
+  }
+
   getAvailableCategories(): Category[] {
     return this.categories.filter(c => c.type === this.formData.type);
+  }
+
+  // Quick create category
+  openQuickCreateCategory(): void {
+    this.categoryFormData = {
+      name: '',
+      type: this.formData.type,
+      color: '#3b82f6',
+      icon: 'tag'
+    };
+    this.showCategoryDialog = true;
+  }
+
+  closeCategoryDialog(): void {
+    this.showCategoryDialog = false;
+  }
+
+  saveQuickCategory(): void {
+    if (!this.categoryFormData.name) return;
+
+    const newCategory = this.categoryService.createCategory(this.categoryFormData);
+    this.formData.categoryId = newCategory.id;
+    this.closeCategoryDialog();
+  }
+
+  // Quick create account
+  openQuickCreateAccount(): void {
+    this.accountFormData = {
+      name: '',
+      type: 'bank',
+      balance: 0,
+      currency: this.formData.currency,
+      color: '#3b82f6',
+      icon: 'wallet'
+    };
+    this.showAccountDialog = true;
+  }
+
+  closeAccountDialog(): void {
+    this.showAccountDialog = false;
+  }
+
+  saveQuickAccount(): void {
+    if (!this.accountFormData.name) return;
+
+    const newAccount = this.accountService.createAccount(this.accountFormData);
+    this.formData.accountId = newAccount.id;
+    this.formData.currency = newAccount.currency;
+    this.closeAccountDialog();
   }
 
   clearFilters(): void {
@@ -271,10 +380,11 @@ export class TransactionsPage implements OnInit, OnDestroy {
     }
   }
 
-  formatCurrency(amount: number): string {
+  formatCurrency(amount: number, currency: string = 'USD'): string {
+    const currencyData = this.currencies.find(c => c.code === currency);
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: currency
     }).format(amount);
   }
 

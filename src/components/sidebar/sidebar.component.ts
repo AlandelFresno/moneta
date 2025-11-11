@@ -26,8 +26,7 @@ export class SidebarComponent {
     {
       label: 'Transactions',
       icon: 'list',
-      route: '/transactions',
-      badge: '5'
+      route: '/transactions'
     },
     {
       label: 'Budgets',
