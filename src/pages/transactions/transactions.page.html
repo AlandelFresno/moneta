@@ -98,13 +98,13 @@
     <div class="transactions-list" *ngIf="filteredTransactions.length > 0">
       <div *ngFor="let txn of filteredTransactions" class="transaction-item">
         <div class="transaction-icon" [style.background-color]="txn.categoryColor">
-          <i [class]="'pi pi-' + txn.categoryIcon"></i>
+          <i [class]="'pi ' + txn.categoryIcon"></i>
         </div>
         <div class="transaction-main">
           <div class="transaction-info">
             <h3>{{ txn.description || 'No description' }}</h3>
             <div class="transaction-meta">
-              <span class="category"><i [class]="'pi pi-' + txn.categoryIcon"></i> {{ txn.categoryName }}</span>
+              <span class="category"><i [class]="'pi ' + txn.categoryIcon"></i> {{ txn.categoryName }}</span>
               <span class="account"><i class="pi pi-building"></i> {{ txn.accountName }}</span>
               <span class="date"><i class="pi pi-calendar"></i> {{ formatDate(txn.date) }}</span>
             </div>
