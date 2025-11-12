@@ -16,14 +16,9 @@ export class SettingsPage implements OnInit {
   updateError: string | null = null;
 
   currencies = [
-    { code: 'USD', symbol: '$', name: 'US Dollar' },
-    { code: 'EUR', symbol: '€', name: 'Euro' },
-    { code: 'GBP', symbol: '£', name: 'British Pound' },
     { code: 'ARS', symbol: '$', name: 'Argentine Peso' },
-    { code: 'BRL', symbol: 'R$', name: 'Brazilian Real' },
-    { code: 'MXN', symbol: '$', name: 'Mexican Peso' },
-    { code: 'COP', symbol: '$', name: 'Colombian Peso' },
-    { code: 'CLP', symbol: '$', name: 'Chilean Peso' }
+    { code: 'USD', symbol: '$', name: 'US Dollar' },
+    { code: 'EUR', symbol: '€', name: 'Euro' }
   ];
 
   constructor(

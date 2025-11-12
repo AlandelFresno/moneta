@@ -37,14 +37,9 @@ export class TransactionsPage implements OnInit, OnDestroy {
   editingTransaction: Transaction | null = null;
 
   currencies = [
-    { code: 'USD', symbol: '$', name: 'US Dollar' },
-    { code: 'EUR', symbol: '€', name: 'Euro' },
-    { code: 'GBP', symbol: '£', name: 'British Pound' },
     { code: 'ARS', symbol: '$', name: 'Argentine Peso' },
-    { code: 'BRL', symbol: 'R$', name: 'Brazilian Real' },
-    { code: 'MXN', symbol: '$', name: 'Mexican Peso' },
-    { code: 'COP', symbol: '$', name: 'Colombian Peso' },
-    { code: 'CLP', symbol: '$', name: 'Chilean Peso' }
+    { code: 'USD', symbol: '$', name: 'US Dollar' },
+    { code: 'EUR', symbol: '€', name: 'Euro' }
   ];
 
   formData = {
@@ -52,7 +47,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     categoryId: '',
     type: 'expense' as 'income' | 'expense',
     amount: 0,
-    currency: 'USD',
+    currency: 'ARS',
     description: '',
     date: ''
   };
@@ -68,7 +63,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     name: '',
     type: 'bank' as 'bank' | 'cash' | 'credit' | 'savings' | 'investment',
     balance: 0,
-    currency: 'USD',
+    currency: 'ARS',
     color: '#3b82f6',
     icon: 'wallet'
   };
