@@ -5,7 +5,7 @@ import { Injectable } from '@angular/core';
 })
 export class DataMigrationService {
   private readonly MIGRATION_VERSION_KEY = 'budget_migration_version';
-  private readonly CURRENT_VERSION = 1;
+  private readonly CURRENT_VERSION = 2;
 
   constructor() {}
 
@@ -21,6 +21,12 @@ export class DataMigrationService {
       console.log('Ejecutando migración v1: Agregar campo currency');
       await this.migrationV1AddCurrencyField();
       this.setMigrationVersion(1);
+    }
+
+    if (currentVersion < 2) {
+      console.log('Ejecutando migración v2: Agregar prefijo pi- a iconos de categorías');
+      await this.migrationV2FixCategoryIcons();
+      this.setMigrationVersion(2);
     }
 
     console.log('Todas las migraciones completadas');
@@ -73,6 +79,38 @@ export class DataMigrationService {
       console.log('✓ Migración v1 completada exitosamente');
     } catch (error) {
       console.error('Error en migración v1:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Migración v2: Agregar prefijo pi- a iconos de categorías
+   */
+  private async migrationV2FixCategoryIcons(): Promise<void> {
+    try {
+      const categoriesData = localStorage.getItem('budget_categories');
+      if (categoriesData) {
+        const categories = JSON.parse(categoriesData);
+        let categoriesUpdated = false;
+
+        categories.forEach((category: any) => {
+          // Si el icono no tiene el prefijo 'pi-', agregarlo
+          if (category.icon && !category.icon.startsWith('pi-')) {
+            category.icon = 'pi-' + category.icon;
+            categoriesUpdated = true;
+            console.log(`✓ Categoría "${category.name}" icono actualizado a: ${category.icon}`);
+          }
+        });
+
+        if (categoriesUpdated) {
+          localStorage.setItem('budget_categories', JSON.stringify(categories));
+          console.log('✓ Categorías actualizadas con prefijo pi-');
+        }
+      }
+
+      console.log('✓ Migración v2 completada exitosamente');
+    } catch (error) {
+      console.error('Error en migración v2:', error);
       throw error;
     }
   }

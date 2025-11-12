@@ -36,20 +36,20 @@ export class CategoryService {
   private initializeDefaultCategories(): void {
     const defaultCategories: Category[] = [
       // Income categories
-      { id: this.generateId(), name: 'Salary', type: 'income', color: '#10b981', icon: 'briefcase', createdAt: new Date(), updatedAt: new Date() },
-      { id: this.generateId(), name: 'Freelance', type: 'income', color: '#3b82f6', icon: 'desktop', createdAt: new Date(), updatedAt: new Date() },
-      { id: this.generateId(), name: 'Investment', type: 'income', color: '#8b5cf6', icon: 'chart-line', createdAt: new Date(), updatedAt: new Date() },
-      { id: this.generateId(), name: 'Gift', type: 'income', color: '#ec4899', icon: 'gift', createdAt: new Date(), updatedAt: new Date() },
+      { id: this.generateId(), name: 'Salary', type: 'income', color: '#10b981', icon: 'pi-briefcase', createdAt: new Date(), updatedAt: new Date() },
+      { id: this.generateId(), name: 'Freelance', type: 'income', color: '#3b82f6', icon: 'pi-desktop', createdAt: new Date(), updatedAt: new Date() },
+      { id: this.generateId(), name: 'Investment', type: 'income', color: '#8b5cf6', icon: 'pi-chart-line', createdAt: new Date(), updatedAt: new Date() },
+      { id: this.generateId(), name: 'Gift', type: 'income', color: '#ec4899', icon: 'pi-gift', createdAt: new Date(), updatedAt: new Date() },
 
       // Expense categories
-      { id: this.generateId(), name: 'Food & Dining', type: 'expense', color: '#f59e0b', icon: 'shopping-cart', createdAt: new Date(), updatedAt: new Date() },
-      { id: this.generateId(), name: 'Transportation', type: 'expense', color: '#6366f1', icon: 'car', createdAt: new Date(), updatedAt: new Date() },
-      { id: this.generateId(), name: 'Shopping', type: 'expense', color: '#ec4899', icon: 'shopping-bag', createdAt: new Date(), updatedAt: new Date() },
-      { id: this.generateId(), name: 'Entertainment', type: 'expense', color: '#8b5cf6', icon: 'video', createdAt: new Date(), updatedAt: new Date() },
-      { id: this.generateId(), name: 'Bills & Utilities', type: 'expense', color: '#ef4444', icon: 'file-invoice', createdAt: new Date(), updatedAt: new Date() },
-      { id: this.generateId(), name: 'Health', type: 'expense', color: '#14b8a6', icon: 'medkit', createdAt: new Date(), updatedAt: new Date() },
-      { id: this.generateId(), name: 'Education', type: 'expense', color: '#06b6d4', icon: 'book', createdAt: new Date(), updatedAt: new Date() },
-      { id: this.generateId(), name: 'Other', type: 'expense', color: '#64748b', icon: 'ellipsis-h', createdAt: new Date(), updatedAt: new Date() }
+      { id: this.generateId(), name: 'Food & Dining', type: 'expense', color: '#f59e0b', icon: 'pi-shopping-cart', createdAt: new Date(), updatedAt: new Date() },
+      { id: this.generateId(), name: 'Transportation', type: 'expense', color: '#6366f1', icon: 'pi-car', createdAt: new Date(), updatedAt: new Date() },
+      { id: this.generateId(), name: 'Shopping', type: 'expense', color: '#ec4899', icon: 'pi-shopping-bag', createdAt: new Date(), updatedAt: new Date() },
+      { id: this.generateId(), name: 'Entertainment', type: 'expense', color: '#8b5cf6', icon: 'pi-video', createdAt: new Date(), updatedAt: new Date() },
+      { id: this.generateId(), name: 'Bills & Utilities', type: 'expense', color: '#ef4444', icon: 'pi-file', createdAt: new Date(), updatedAt: new Date() },
+      { id: this.generateId(), name: 'Health', type: 'expense', color: '#14b8a6', icon: 'pi-heart', createdAt: new Date(), updatedAt: new Date() },
+      { id: this.generateId(), name: 'Education', type: 'expense', color: '#06b6d4', icon: 'pi-book', createdAt: new Date(), updatedAt: new Date() },
+      { id: this.generateId(), name: 'Other', type: 'expense', color: '#64748b', icon: 'pi-list', createdAt: new Date(), updatedAt: new Date() }
     ];
     this.saveCategories(defaultCategories);
   }

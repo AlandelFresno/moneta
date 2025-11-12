@@ -65,7 +65,7 @@ export class CategoriesPage implements OnInit, OnDestroy {
       name: '',
       type: 'expense',
       color: '#3b82f6',
-      icon: 'tag'
+      icon: 'pi-tag'
     };
     this.showDialog = true;
   }
