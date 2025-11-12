@@ -72,6 +72,7 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      background: #6b7280; // Fallback color
 
       i {
         font-size: 1.125rem;
@@ -104,20 +105,29 @@
     }
   }
 
-  &.income .stat-header .stat-icon {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  // Icon colors - using more specific selectors
+  &.income {
+    .stat-header .stat-icon {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
   }
 
-  &.expense .stat-header .stat-icon {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  &.expense {
+    .stat-header .stat-icon {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
   }
 
-  &.balance .stat-header .stat-icon {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  &.balance {
+    .stat-header .stat-icon {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
   }
 
-  &.count .stat-header .stat-icon {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  &.count {
+    .stat-header .stat-icon {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    }
   }
 
   &.positive .stat-value {
