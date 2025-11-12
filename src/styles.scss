@@ -10,18 +10,19 @@
 /* Currency Display Styles */
 .currency-display {
   display: inline-flex;
-  flex-wrap: wrap;
   align-items: baseline;
   gap: 0.375rem;
   max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
 
   .primary-amount {
     font-size: 1em;
     font-weight: 600;
     color: inherit;
-    word-break: break-word;
-    min-width: 0;
-    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .secondary-amount {

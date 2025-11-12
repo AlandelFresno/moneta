@@ -24,7 +24,7 @@ export class CategoriesPage implements OnInit, OnDestroy {
     name: '',
     type: 'expense' as 'income' | 'expense',
     color: '#3b82f6',
-    icon: 'tag'
+    icon: 'pi-tag'
   };
 
   availableColors = [
@@ -33,10 +33,10 @@ export class CategoriesPage implements OnInit, OnDestroy {
   ];
 
   availableIcons = [
-    'tag', 'tags', 'briefcase', 'desktop', 'chart-line', 'gift',
-    'shopping-cart', 'car', 'shopping-bag', 'video', 'file-invoice',
-    'medkit', 'book', 'home', 'plane', 'coffee', 'utensils', 'bus',
-    'credit-card', 'money-bill', 'piggy-bank', 'wallet'
+    'pi-tag', 'pi-tags', 'pi-briefcase', 'pi-desktop', 'pi-chart-line', 'pi-gift',
+    'pi-shopping-cart', 'pi-car', 'pi-shopping-bag', 'pi-video', 'pi-file',
+    'pi-heart', 'pi-book', 'pi-home', 'pi-send', 'pi-coffee', 'pi-list', 'pi-palette',
+    'pi-credit-card', 'pi-dollar', 'pi-shield', 'pi-wallet'
   ];
 
   constructor(

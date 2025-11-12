@@ -56,7 +56,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     name: '',
     type: 'expense' as 'income' | 'expense',
     color: '#3b82f6',
-    icon: 'tag'
+    icon: 'pi-tag'
   };
 
   accountFormData = {
@@ -65,7 +65,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     balance: 0,
     currency: 'ARS',
     color: '#3b82f6',
-    icon: 'wallet'
+    icon: 'pi-wallet'
   };
 
   filters = {
@@ -92,10 +92,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
   ];
 
   availableIcons = [
-    'wallet', 'shopping-cart', 'home', 'car', 'heart', 'gift',
-    'coffee', 'book', 'briefcase', 'chart-line', 'credit-card',
-    'dollar', 'users', 'plane', 'building', 'star', 'tag',
-    'bolt', 'ticket', 'medical', 'gamepad', 'music'
+    'pi-wallet', 'pi-shopping-cart', 'pi-home', 'pi-car', 'pi-heart', 'pi-gift',
+    'pi-coffee', 'pi-book', 'pi-briefcase', 'pi-chart-line', 'pi-credit-card',
+    'pi-dollar', 'pi-users', 'pi-send', 'pi-building', 'pi-star', 'pi-tag',
+    'pi-bolt', 'pi-ticket', 'pi-shield', 'pi-palette', 'pi-list'
   ];
 
   accountTypes: Array<{ value: string; label: string }> = [
