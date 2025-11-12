@@ -1,12 +1,295 @@
 <div class="page-container">
+  <!-- Page Header -->
   <div class="page-header">
-    <h1 class="page-title">Analytics</h1>
-    <p class="page-subtitle">Financial insights and trends</p>
+    <div class="header-left">
+      <h1 class="page-title">Análisis y Estadísticas</h1>
+      <p class="page-subtitle">Visualiza tus patrones financieros</p>
+    </div>
+    <div class="header-actions">
+      <div class="period-selector">
+        <button
+          pButton
+          class="p-button-sm"
+          [class.p-button-outlined]="selectedPeriod !== 'week'"
+          label="7 Días"
+          (click)="onPeriodChange('week')"
+        ></button>
+        <button
+          pButton
+          class="p-button-sm"
+          [class.p-button-outlined]="selectedPeriod !== 'month'"
+          label="30 Días"
+          (click)="onPeriodChange('month')"
+        ></button>
+        <button
+          pButton
+          class="p-button-sm"
+          [class.p-button-outlined]="selectedPeriod !== 'year'"
+          label="12 Meses"
+          (click)="onPeriodChange('year')"
+        ></button>
+        <button
+          pButton
+          class="p-button-sm"
+          [class.p-button-outlined]="selectedPeriod !== 'all'"
+          label="Todo"
+          (click)="onPeriodChange('all')"
+        ></button>
+      </div>
+    </div>
   </div>
 
-  <div class="coming-soon">
-    <i class="pi pi-chart-line" style="font-size: 4rem; color: #6b7280;"></i>
-    <h2>Coming Soon</h2>
-    <p>This feature is under development</p>
+  <!-- Period Label -->
+  <div class="period-label">
+    <h3>{{ getPeriodLabel() }}</h3>
+  </div>
+
+  <!-- Stats Summary Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon income-icon">
+          <i class="pi pi-arrow-down"></i>
+        </div>
+        <div class="stat-content">
+          <p class="stat-label">Ingresos</p>
+          <h2 class="stat-value">{{ formatCurrency(currentPeriodStats.totalIncome) }}</h2>
+          <div class="stat-change" *ngIf="previousPeriodStats.totalIncome > 0">
+            <span
+              [class.positive]="getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) > 0"
+              [class.negative]="getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) < 0"
+            >
+              <i
+                class="pi"
+                [class.pi-arrow-up]="getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) > 0"
+                [class.pi-arrow-down]="getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) < 0"
+              ></i>
+              {{ getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) | number:'1.1-1' }}%
+            </span>
+            <span class="vs-previous">vs período anterior</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon expense-icon">
+          <i class="pi pi-arrow-up"></i>
+        </div>
+        <div class="stat-content">
+          <p class="stat-label">Gastos</p>
+          <h2 class="stat-value">{{ formatCurrency(currentPeriodStats.totalExpense) }}</h2>
+          <div class="stat-change" *ngIf="previousPeriodStats.totalExpense > 0">
+            <span
+              [class.positive]="getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) < 0"
+              [class.negative]="getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) > 0"
+            >
+              <i
+                class="pi"
+                [class.pi-arrow-up]="getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) > 0"
+                [class.pi-arrow-down]="getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) < 0"
+              ></i>
+              {{ getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) | number:'1.1-1' }}%
+            </span>
+            <span class="vs-previous">vs período anterior</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon balance-icon">
+          <i class="pi pi-wallet"></i>
+        </div>
+        <div class="stat-content">
+          <p class="stat-label">Balance</p>
+          <h2
+            class="stat-value"
+            [class.positive]="currentPeriodStats.balance > 0"
+            [class.negative]="currentPeriodStats.balance < 0"
+          >
+            {{ formatCurrency(currentPeriodStats.balance) }}
+          </h2>
+          <div class="stat-change" *ngIf="previousPeriodStats.balance !== 0">
+            <span
+              [class.positive]="getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) > 0"
+              [class.negative]="getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) < 0"
+            >
+              <i
+                class="pi"
+                [class.pi-arrow-up]="getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) > 0"
+                [class.pi-arrow-down]="getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) < 0"
+              ></i>
+              {{ getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) | number:'1.1-1' }}%
+            </span>
+            <span class="vs-previous">vs período anterior</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-icon transactions-icon">
+          <i class="pi pi-list"></i>
+        </div>
+        <div class="stat-content">
+          <p class="stat-label">Transacciones</p>
+          <h2 class="stat-value">{{ currentPeriodStats.transactionCount }}</h2>
+          <div class="stat-meta">
+            <span>Promedio: {{ formatCurrency(currentPeriodStats.avgTransactionAmount) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Category -->
+  <div class="top-category-card" *ngIf="currentPeriodStats.topCategory">
+    <div class="top-category-header">
+      <i class="pi pi-star"></i>
+      <span>Categoría con más gastos</span>
+    </div>
+    <div class="top-category-content">
+      <h3>{{ currentPeriodStats.topCategory?.name }}</h3>
+      <p>{{ formatCurrency(currentPeriodStats.topCategory?.amount || 0) }}</p>
+    </div>
+  </div>
+
+  <!-- Charts Section -->
+  <div class="charts-section">
+    <!-- Pie Charts Row -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>Gastos por Categoría</h3>
+          <span class="chart-subtitle">Distribución del período seleccionado</span>
+        </div>
+        <div class="chart-body">
+          <div class="empty-chart" *ngIf="expensesByCategory.length === 0">
+            <i class="pi pi-chart-pie"></i>
+            <p>No hay gastos en este período</p>
+          </div>
+          <canvas
+            *ngIf="expensesByCategory.length > 0"
+            baseChart
+            [data]="expensePieChartData"
+            [type]="'pie'"
+            [options]="pieChartOptions"
+          ></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>Ingresos por Categoría</h3>
+          <span class="chart-subtitle">Distribución del período seleccionado</span>
+        </div>
+        <div class="chart-body">
+          <div class="empty-chart" *ngIf="incomesByCategory.length === 0">
+            <i class="pi pi-chart-pie"></i>
+            <p>No hay ingresos en este período</p>
+          </div>
+          <canvas
+            *ngIf="incomesByCategory.length > 0"
+            baseChart
+            [data]="incomePieChartData"
+            [type]="'pie'"
+            [options]="pieChartOptions"
+          ></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trend Chart -->
+    <div class="chart-card full-width">
+      <div class="chart-header">
+        <h3>Tendencia de Ingresos y Gastos</h3>
+        <span class="chart-subtitle">Últimos 6 meses</span>
+      </div>
+      <div class="chart-body trend-chart">
+        <canvas
+          baseChart
+          [data]="trendChartData"
+          [type]="'line'"
+          [options]="lineChartOptions"
+        ></canvas>
+      </div>
+    </div>
+
+    <!-- Monthly Comparison Chart -->
+    <div class="chart-card full-width">
+      <div class="chart-header">
+        <h3>Comparación Mensual</h3>
+        <span class="chart-subtitle">Año {{ getCurrentYear() }}</span>
+      </div>
+      <div class="chart-body comparison-chart">
+        <canvas
+          baseChart
+          [data]="monthlyComparisonData"
+          [type]="'bar'"
+          [options]="barChartOptions"
+        ></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Breakdown Tables -->
+  <div class="tables-section">
+    <!-- Expenses Breakdown -->
+    <div class="table-card">
+      <div class="table-header">
+        <h3>Detalle de Gastos por Categoría</h3>
+        <span class="count">{{ expensesByCategory.length }}</span>
+      </div>
+      <div class="table-body">
+        <div class="empty-state" *ngIf="expensesByCategory.length === 0">
+          <i class="pi pi-inbox"></i>
+          <p>No hay gastos registrados</p>
+        </div>
+        <div class="category-list" *ngIf="expensesByCategory.length > 0">
+          <div class="category-item" *ngFor="let cat of expensesByCategory">
+            <div class="category-color" [style.background]="cat.color"></div>
+            <div class="category-info">
+              <h4>{{ cat.name }}</h4>
+              <span class="category-count">{{ cat.count }} transacciones</span>
+            </div>
+            <div class="category-stats">
+              <span class="category-amount">{{ formatCurrency(cat.amount) }}</span>
+              <span class="category-percentage">{{ cat.percentage | number:'1.1-1' }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Incomes Breakdown -->
+    <div class="table-card">
+      <div class="table-header">
+        <h3>Detalle de Ingresos por Categoría</h3>
+        <span class="count">{{ incomesByCategory.length }}</span>
+      </div>
+      <div class="table-body">
+        <div class="empty-state" *ngIf="incomesByCategory.length === 0">
+          <i class="pi pi-inbox"></i>
+          <p>No hay ingresos registrados</p>
+        </div>
+        <div class="category-list" *ngIf="incomesByCategory.length > 0">
+          <div class="category-item" *ngFor="let cat of incomesByCategory">
+            <div class="category-color" [style.background]="cat.color"></div>
+            <div class="category-info">
+              <h4>{{ cat.name }}</h4>
+              <span class="category-count">{{ cat.count }} transacciones</span>
+            </div>
+            <div class="category-stats">
+              <span class="category-amount">{{ formatCurrency(cat.amount) }}</span>
+              <span class="category-percentage">{{ cat.percentage | number:'1.1-1' }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
