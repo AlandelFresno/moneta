@@ -15,30 +15,38 @@
   <!-- Stats Cards -->
   <div class="stats-grid">
     <div class="stat-card income">
-      <div class="stat-icon"><i class="pi pi-arrow-down"></i></div>
-      <div class="stat-info">
+      <div class="stat-header">
+        <div class="stat-icon"><i class="pi pi-arrow-down"></i></div>
         <p class="stat-label">Total Income</p>
+      </div>
+      <div class="stat-info">
         <p class="stat-value">{{ formatCurrency(stats.totalIncome) }}</p>
       </div>
     </div>
     <div class="stat-card expense">
-      <div class="stat-icon"><i class="pi pi-arrow-up"></i></div>
-      <div class="stat-info">
+      <div class="stat-header">
+        <div class="stat-icon"><i class="pi pi-arrow-up"></i></div>
         <p class="stat-label">Total Expense</p>
+      </div>
+      <div class="stat-info">
         <p class="stat-value">{{ formatCurrency(stats.totalExpense) }}</p>
       </div>
     </div>
     <div class="stat-card balance" [class.positive]="stats.balance >= 0" [class.negative]="stats.balance < 0">
-      <div class="stat-icon"><i class="pi pi-wallet"></i></div>
-      <div class="stat-info">
+      <div class="stat-header">
+        <div class="stat-icon"><i class="pi pi-wallet"></i></div>
         <p class="stat-label">Balance</p>
+      </div>
+      <div class="stat-info">
         <p class="stat-value">{{ formatCurrency(stats.balance) }}</p>
       </div>
     </div>
     <div class="stat-card count">
-      <div class="stat-icon"><i class="pi pi-list"></i></div>
-      <div class="stat-info">
+      <div class="stat-header">
+        <div class="stat-icon"><i class="pi pi-list"></i></div>
         <p class="stat-label">Transactions</p>
+      </div>
+      <div class="stat-info">
         <p class="stat-value">{{ stats.count }}</p>
       </div>
     </div>

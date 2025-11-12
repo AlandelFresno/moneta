@@ -19,11 +19,13 @@
   <!-- Stats Cards -->
   <div class="stats-grid">
     <div class="stat-card balance">
-      <div class="stat-icon">
-        <i class="pi pi-wallet"></i>
+      <div class="stat-header">
+        <div class="stat-icon">
+          <i class="pi pi-wallet"></i>
+        </div>
+        <p class="stat-label">Balance Total</p>
       </div>
       <div class="stat-info">
-        <p class="stat-label">Balance Total</p>
         <h2 class="stat-value" [class.positive]="totalBalance > 0" [class.negative]="totalBalance < 0">
           {{ formatCurrency(totalBalance) }}
         </h2>
@@ -31,31 +33,37 @@
     </div>
 
     <div class="stat-card income">
-      <div class="stat-icon">
-        <i class="pi pi-arrow-down"></i>
+      <div class="stat-header">
+        <div class="stat-icon">
+          <i class="pi pi-arrow-down"></i>
+        </div>
+        <p class="stat-label">Ingresos del Mes</p>
       </div>
       <div class="stat-info">
-        <p class="stat-label">Ingresos del Mes</p>
         <h2 class="stat-value">{{ formatCurrency(monthIncome) }}</h2>
       </div>
     </div>
 
     <div class="stat-card expense">
-      <div class="stat-icon">
-        <i class="pi pi-arrow-up"></i>
+      <div class="stat-header">
+        <div class="stat-icon">
+          <i class="pi pi-arrow-up"></i>
+        </div>
+        <p class="stat-label">Gastos del Mes</p>
       </div>
       <div class="stat-info">
-        <p class="stat-label">Gastos del Mes</p>
         <h2 class="stat-value">{{ formatCurrency(monthExpense) }}</h2>
       </div>
     </div>
 
     <div class="stat-card accounts">
-      <div class="stat-icon">
-        <i class="pi pi-credit-card"></i>
+      <div class="stat-header">
+        <div class="stat-icon">
+          <i class="pi pi-credit-card"></i>
+        </div>
+        <p class="stat-label">Cuentas Totales</p>
       </div>
       <div class="stat-info">
-        <p class="stat-label">Cuentas Totales</p>
         <h2 class="stat-value">{{ totalAccounts }}</h2>
       </div>
     </div>
