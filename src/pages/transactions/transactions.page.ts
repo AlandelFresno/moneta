@@ -49,7 +49,12 @@ export class TransactionsPage implements OnInit, OnDestroy {
     amount: 0,
     currency: 'ARS',
     description: '',
-    date: ''
+    date: '',
+    // Conversion fields
+    convertedAmount: 0,
+    conversionRate: 0,
+    conversionSource: '' as 'api' | 'cache' | 'manual' | '',
+    useManualConversion: false
   };
 
   categoryFormData = {
@@ -223,15 +228,21 @@ export class TransactionsPage implements OnInit, OnDestroy {
   openCreateDialog(): void {
     this.editingTransaction = null;
     const today = new Date().toISOString().split('T')[0];
+    const defaultCurrency = this.accounts[0]?.currency || 'ARS';
     this.formData = {
       accountId: this.accounts[0]?.id || '',
       categoryId: this.categories.filter(c => c.type === 'expense')[0]?.id || '',
       type: 'expense',
       amount: 0,
-      currency: this.accounts[0]?.currency || 'USD',
+      currency: defaultCurrency,
       description: '',
-      date: today
+      date: today,
+      convertedAmount: 0,
+      conversionRate: 0,
+      conversionSource: '',
+      useManualConversion: false
     };
+    this.calculateConversion();
     this.showDialog = true;
   }
 
@@ -244,8 +255,15 @@ export class TransactionsPage implements OnInit, OnDestroy {
       amount: transaction.amount,
       currency: transaction.currency,
       description: transaction.description,
-      date: new Date(transaction.date).toISOString().split('T')[0]
+      date: new Date(transaction.date).toISOString().split('T')[0],
+      convertedAmount: transaction.convertedAmount || 0,
+      conversionRate: transaction.conversionRate || 0,
+      conversionSource: transaction.conversionSource || '',
+      useManualConversion: transaction.manualConversion || false
     };
+    if (!this.formData.useManualConversion) {
+      this.calculateConversion();
+    }
     this.showDialog = true;
   }
 
@@ -254,14 +272,100 @@ export class TransactionsPage implements OnInit, OnDestroy {
     this.editingTransaction = null;
   }
 
+  calculateConversion(): void {
+    if (!this.formData.amount || !this.formData.currency) {
+      this.formData.convertedAmount = 0;
+      this.formData.conversionRate = 0;
+      this.formData.conversionSource = '';
+      return;
+    }
+
+    const preferredCurrency = this.preferencesService.getPreferredCurrency();
+
+    // If same currency, no conversion needed
+    if (this.formData.currency === preferredCurrency) {
+      this.formData.convertedAmount = this.formData.amount;
+      this.formData.conversionRate = 1;
+      this.formData.conversionSource = '';
+      return;
+    }
+
+    // Get conversion info
+    const ratesInfo = this.exchangeRateService.getRatesInfo();
+    this.formData.convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
+      this.formData.amount,
+      this.formData.currency,
+      preferredCurrency
+    );
+
+    // Calculate rate
+    if (this.formData.amount > 0) {
+      this.formData.conversionRate = this.formData.convertedAmount / this.formData.amount;
+    }
+
+    // Determine source
+    if (ratesInfo) {
+      const today = new Date().toISOString().split('T')[0];
+      const rateDate = new Date(ratesInfo.date).toISOString().split('T')[0];
+
+      if (rateDate === today) {
+        this.formData.conversionSource = 'api';
+      } else {
+        this.formData.conversionSource = 'cache';
+      }
+    } else {
+      this.formData.conversionSource = 'api';
+    }
+  }
+
+  onAmountOrCurrencyChange(): void {
+    if (!this.formData.useManualConversion) {
+      this.calculateConversion();
+    }
+  }
+
+  onManualConversionToggle(): void {
+    if (!this.formData.useManualConversion) {
+      // Switched to auto, recalculate
+      this.calculateConversion();
+    } else {
+      // Switched to manual, set source
+      this.formData.conversionSource = 'manual';
+    }
+  }
+
+  getConversionSourceLabel(): string {
+    switch (this.formData.conversionSource) {
+      case 'api':
+        return 'API (Today)';
+      case 'cache':
+        return 'Cache (Yesterday)';
+      case 'manual':
+        return 'Manual';
+      default:
+        return 'N/A';
+    }
+  }
+
   saveTransaction(): void {
     if (!this.formData.accountId || !this.formData.categoryId || this.formData.amount <= 0) {
       return;
     }
 
     const txnData = {
-      ...this.formData,
-      date: new Date(this.formData.date)
+      accountId: this.formData.accountId,
+      categoryId: this.formData.categoryId,
+      type: this.formData.type,
+      amount: this.formData.amount,
+      currency: this.formData.currency,
+      description: this.formData.description,
+      date: new Date(this.formData.date),
+      // Add conversion data
+      convertedAmount: this.formData.convertedAmount || undefined,
+      conversionRate: this.formData.conversionRate || undefined,
+      conversionSource: this.formData.conversionSource || undefined,
+      conversionDate: new Date(),
+      manualConversion: this.formData.useManualConversion
     };
 
     if (this.editingTransaction) {

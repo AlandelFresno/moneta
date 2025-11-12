@@ -247,6 +247,13 @@ export class ExchangeRateService {
   }
 
   /**
+   * Obtiene la información actual de las tasas de cambio
+   */
+  getRatesInfo(): ExchangeRates | null {
+    return this.ratesSubject.value;
+  }
+
+  /**
    * Obtiene la tasa de cambio entre dos monedas
    */
   getExchangeRate(fromCurrency: string, toCurrency: string): number {
