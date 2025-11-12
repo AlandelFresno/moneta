@@ -184,6 +184,18 @@ export class ExchangeRateService {
    * usando las tasas en caché
    */
   convertToPreferredCurrency(amount: number, fromCurrency: string, preferredCurrency: string = 'ARS'): number {
+    // Validar que amount sea un número válido
+    if (!amount || isNaN(amount)) {
+      return 0;
+    }
+
+    // Validar que fromCurrency exista y no sea undefined/null
+    if (!fromCurrency || fromCurrency === 'undefined' || fromCurrency === 'null') {
+      console.warn('Currency no válida, usando ARS por defecto');
+      fromCurrency = 'ARS';
+    }
+
+    // Si las monedas son iguales, retornar el monto original
     if (fromCurrency === preferredCurrency) {
       return amount;
     }
@@ -194,15 +206,38 @@ export class ExchangeRateService {
     }
 
     try {
+      // Verificar que las monedas existan en las tasas
+      if (fromCurrency !== rates.base && !rates.rates[fromCurrency]) {
+        console.warn(`Moneda ${fromCurrency} no encontrada en tasas, usando monto original`);
+        return amount;
+      }
+
+      if (preferredCurrency !== rates.base && !rates.rates[preferredCurrency]) {
+        console.warn(`Moneda preferida ${preferredCurrency} no encontrada en tasas`);
+        return amount;
+      }
+
       // Convertir a la moneda base de las tasas
       const amountInBase = fromCurrency === rates.base
         ? amount
         : amount / rates.rates[fromCurrency];
 
+      // Validar que la conversión intermedia sea válida
+      if (isNaN(amountInBase)) {
+        console.error('Error en conversión intermedia');
+        return amount;
+      }
+
       // Convertir a la moneda preferida
       const convertedAmount = preferredCurrency === rates.base
         ? amountInBase
         : amountInBase * rates.rates[preferredCurrency];
+
+      // Validar el resultado final
+      if (isNaN(convertedAmount)) {
+        console.error('Error en conversión final');
+        return amount;
+      }
 
       return convertedAmount;
     } catch (error) {

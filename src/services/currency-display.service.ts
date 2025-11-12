@@ -69,6 +69,17 @@ export class CurrencyDisplayService {
     originalCurrency: string,
     options: CurrencyDisplayOptions = {}
   ): FormattedCurrency {
+    // Validar amount
+    if (!amount || isNaN(amount)) {
+      amount = 0;
+    }
+
+    // Validar originalCurrency
+    if (!originalCurrency || originalCurrency === 'undefined' || originalCurrency === 'null') {
+      console.warn('Currency no válida en formatWithPreferredCurrency, usando ARS');
+      originalCurrency = 'ARS';
+    }
+
     const preferredCurrency = this.preferencesService.getPreferredCurrency();
     const showOriginal = options.showOriginal !== false; // Por defecto true
 

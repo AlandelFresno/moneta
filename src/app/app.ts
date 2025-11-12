@@ -1,6 +1,7 @@
 import { Component, signal, OnInit } from '@angular/core';
 import { ExchangeRateService } from '../services/exchange-rate.service';
 import { PreferencesService } from '../services/preferences.service';
+import { DataMigrationService } from '../services/data-migration.service';
 
 @Component({
   selector: 'app-root',
@@ -13,12 +14,29 @@ export class App implements OnInit {
 
   constructor(
     private exchangeRateService: ExchangeRateService,
-    private preferencesService: PreferencesService
+    private preferencesService: PreferencesService,
+    private dataMigrationService: DataMigrationService
   ) {}
 
   ngOnInit(): void {
-    // Inicializar tasas de cambio al iniciar la aplicación
-    this.initializeExchangeRates();
+    // Ejecutar migraciones primero, luego inicializar tasas
+    this.initializeApp();
+  }
+
+  private async initializeApp(): Promise<void> {
+    try {
+      // 1. Ejecutar migraciones de datos
+      console.log('=== Iniciando migraciones de datos ===');
+      await this.dataMigrationService.runMigrations();
+
+      // 2. Inicializar tasas de cambio
+      console.log('=== Inicializando tasas de cambio ===');
+      await this.initializeExchangeRates();
+
+      console.log('=== Aplicación inicializada correctamente ===');
+    } catch (error) {
+      console.error('Error inicializando la aplicación:', error);
+    }
   }
 
   private async initializeExchangeRates(): Promise<void> {
