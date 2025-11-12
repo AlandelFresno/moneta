@@ -132,7 +132,7 @@
         <div class="transactions-list" *ngIf="recentTransactions.length > 0">
           <div class="transaction-item" *ngFor="let tx of recentTransactions">
             <div class="transaction-icon" [style.background]="tx.categoryColor">
-              <i [class]="'pi ' + tx.categoryIcon"></i>
+              <i [class]="tx.categoryIcon"></i>
             </div>
             <div class="transaction-info">
               <h3>{{ tx.description }}</h3>
