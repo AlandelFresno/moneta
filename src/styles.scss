@@ -6,3 +6,51 @@
 
 /* PrimeIcons */
 @import "primeicons/primeicons.css";
+
+/* Currency Display Styles */
+.currency-display {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+
+  .primary-amount {
+    font-size: 1em;
+    font-weight: 600;
+    color: inherit;
+  }
+
+  .secondary-amount {
+    font-size: 0.75em;
+    font-weight: 400;
+    color: #6b7280;
+    opacity: 0.8;
+  }
+}
+
+/* Rate update indicator */
+.rate-update-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+
+  &.expired {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+  }
+
+  &.yesterday {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+  }
+
+  &.today {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+  }
+}

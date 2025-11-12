@@ -1,12 +1,154 @@
 <div class="page-container">
   <div class="page-header">
-    <h1 class="page-title">Settings</h1>
-    <p class="page-subtitle">Configure your preferences</p>
+    <h1 class="page-title">Configuración</h1>
+    <p class="page-subtitle">Configura tus preferencias</p>
   </div>
 
-  <div class="coming-soon">
-    <i class="pi pi-cog" style="font-size: 4rem; color: #6b7280;"></i>
-    <h2>Coming Soon</h2>
-    <p>This feature is under development</p>
+  <div class="settings-content">
+    <!-- Currency Settings Card -->
+    <div class="settings-card">
+      <div class="card-header">
+        <div class="header-icon">
+          <i class="pi pi-money-bill"></i>
+        </div>
+        <div>
+          <h2>Moneda Preferida</h2>
+          <p class="subtitle">Selecciona tu moneda principal para visualizar los montos</p>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="form-group">
+          <label for="currency">Moneda</label>
+          <select
+            id="currency"
+            [(ngModel)]="preferredCurrency"
+            (ngModelChange)="onPreferredCurrencyChange()"
+            class="macos-select"
+          >
+            <option *ngFor="let currency of currencies" [value]="currency.code">
+              {{ currency.symbol }} {{ currency.name }} ({{ currency.code }})
+            </option>
+          </select>
+          <small class="help-text">
+            Los montos se mostrarán en {{ preferredCurrency }} con el valor original en texto pequeño
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exchange Rates Card -->
+    <div class="settings-card">
+      <div class="card-header">
+        <div class="header-icon">
+          <i class="pi pi-refresh"></i>
+        </div>
+        <div>
+          <h2>Tasas de Cambio</h2>
+          <p class="subtitle">Gestiona las tasas de cambio para conversiones de divisas</p>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <!-- Cache Status -->
+        <div class="rate-status-section">
+          <div class="status-header">
+            <h3>Estado del Caché</h3>
+          </div>
+
+          <div class="rate-update-indicator" [ngClass]="getCacheStatusClass()">
+            <i [class]="'pi ' + getCacheStatusIcon()"></i>
+            <div class="status-info">
+              <span class="status-text">{{ getCacheStatusText() }}</span>
+              <small class="last-update">Última actualización: {{ formatLastUpdateDate() }}</small>
+            </div>
+          </div>
+
+          <div class="info-box" *ngIf="cacheInfo?.needsUpdate">
+            <i class="pi pi-info-circle"></i>
+            <div>
+              <strong>Actualización Requerida</strong>
+              <p>Las tasas de cambio tienen más de 1 día. Por favor, actualízalas para obtener valores precisos.</p>
+            </div>
+          </div>
+
+          <div class="info-box info" *ngIf="cacheInfo && !cacheInfo.needsUpdate">
+            <i class="pi pi-check-circle"></i>
+            <div>
+              <strong>Tasas Válidas</strong>
+              <p>Las tasas de cambio están actualizadas (máximo 1 día de antigüedad).</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Update Button -->
+        <div class="action-section">
+          <button
+            pButton
+            label="Actualizar Tasas Manualmente"
+            icon="pi pi-refresh"
+            class="btn-primary"
+            [loading]="isUpdatingRates"
+            (click)="updateExchangeRates()"
+            [disabled]="isUpdatingRates"
+          ></button>
+          <small class="help-text">
+            Puedes actualizar las tasas cuando quieras, pero es obligatorio si tienen más de 1 día
+          </small>
+        </div>
+
+        <!-- Success Message -->
+        <div class="message success" *ngIf="updateSuccess">
+          <i class="pi pi-check-circle"></i>
+          <span>Tasas de cambio actualizadas exitosamente</span>
+        </div>
+
+        <!-- Error Message -->
+        <div class="message error" *ngIf="updateError">
+          <i class="pi pi-exclamation-triangle"></i>
+          <span>{{ updateError }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Information Card -->
+    <div class="settings-card info-card">
+      <div class="card-header">
+        <div class="header-icon">
+          <i class="pi pi-info-circle"></i>
+        </div>
+        <div>
+          <h2>Información</h2>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="info-list">
+          <div class="info-item">
+            <i class="pi pi-calendar"></i>
+            <div>
+              <strong>Caché de Tasas</strong>
+              <p>Las tasas se almacenan localmente por un máximo de 1 día (día actual o anterior)</p>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <i class="pi pi-eye"></i>
+            <div>
+              <strong>Display de Moneda</strong>
+              <p>Los montos se muestran en tu moneda preferida ({{ preferredCurrency }}), con el valor original en texto pequeño si la moneda es diferente</p>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <i class="pi pi-sync"></i>
+            <div>
+              <strong>Actualización Manual</strong>
+              <p>Puedes actualizar las tasas cuando quieras, pero es requerido si el caché tiene más de 1 día</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>

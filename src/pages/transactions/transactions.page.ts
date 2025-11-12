@@ -5,6 +5,9 @@ import { TransactionService } from '../../services/transaction.service';
 import { AccountService } from '../../services/account.service';
 import { CategoryService } from '../../services/category.service';
 import { CsvService } from '../../services/csv.service';
+import { ExchangeRateService } from '../../services/exchange-rate.service';
+import { CurrencyDisplayService, FormattedCurrency } from '../../services/currency-display.service';
+import { PreferencesService } from '../../services/preferences.service';
 
 interface TransactionWithDetails extends Transaction {
   accountName: string;
@@ -112,7 +115,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
     private transactionService: TransactionService,
     private accountService: AccountService,
     private categoryService: CategoryService,
-    private csvService: CsvService
+    private csvService: CsvService,
+    private exchangeRateService: ExchangeRateService,
+    private currencyDisplayService: CurrencyDisplayService,
+    private preferencesService: PreferencesService
   ) {}
 
   ngOnInit(): void {
@@ -190,13 +196,30 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   calculateStats(): void {
+    const preferredCurrency = this.preferencesService.getPreferredCurrency();
+
+    // Convertir todas las transacciones a la moneda preferida antes de sumar
     this.stats.totalIncome = this.filteredTransactions
       .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => {
+        const convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
+          t.amount,
+          t.currency,
+          preferredCurrency
+        );
+        return sum + convertedAmount;
+      }, 0);
 
     this.stats.totalExpense = this.filteredTransactions
       .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => {
+        const convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
+          t.amount,
+          t.currency,
+          preferredCurrency
+        );
+        return sum + convertedAmount;
+      }, 0);
 
     this.stats.balance = this.stats.totalIncome - this.stats.totalExpense;
     this.stats.count = this.filteredTransactions.length;
@@ -380,12 +403,13 @@ export class TransactionsPage implements OnInit, OnDestroy {
     }
   }
 
-  formatCurrency(amount: number, currency: string = 'USD'): string {
-    const currencyData = this.currencies.find(c => c.code === currency);
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency
-    }).format(amount);
+  formatCurrency(amount: number, currency?: string): string {
+    const preferredCurrency = this.preferencesService.getPreferredCurrency();
+    return this.currencyDisplayService.formatAmount(amount, currency || preferredCurrency);
+  }
+
+  formatCurrencyWithOriginal(amount: number, originalCurrency: string): FormattedCurrency {
+    return this.currencyDisplayService.formatWithPreferredCurrency(amount, originalCurrency);
   }
 
   formatDate(date: Date): string {

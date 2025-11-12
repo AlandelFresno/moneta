@@ -103,7 +103,13 @@
           </div>
           <div class="transaction-amount">
             <span class="amount" [class.income]="txn.type === 'income'" [class.expense]="txn.type === 'expense'">
-              {{ txn.type === 'income' ? '+' : '-' }}{{ formatCurrency(txn.amount, txn.currency) }}
+              <ng-container *ngIf="formatCurrencyWithOriginal(txn.amount, txn.currency) as formatted">
+                <span>{{ txn.type === 'income' ? '+' : '-' }}</span>
+                <span class="currency-display">
+                  <span class="primary-amount">{{ formatted.primary }}</span>
+                  <span class="secondary-amount" *ngIf="formatted.secondary">({{ formatted.secondary }})</span>
+                </span>
+              </ng-container>
             </span>
             <div class="transaction-actions">
               <button pButton icon="pi pi-pencil" [text]="true" [rounded]="true" class="btn-icon" (click)="openEditDialog(txn)"></button>

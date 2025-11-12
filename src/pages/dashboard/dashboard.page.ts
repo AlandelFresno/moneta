@@ -7,6 +7,9 @@ import { Transaction } from '../../models/transaction.model';
 import { AccountService } from '../../services/account.service';
 import { CategoryService } from '../../services/category.service';
 import { TransactionService } from '../../services/transaction.service';
+import { ExchangeRateService } from '../../services/exchange-rate.service';
+import { CurrencyDisplayService, FormattedCurrency } from '../../services/currency-display.service';
+import { PreferencesService } from '../../services/preferences.service';
 
 interface ExtendedTransaction extends Transaction {
   accountName: string;
@@ -38,6 +41,9 @@ export class DashboardPage implements OnInit, OnDestroy {
     private accountService: AccountService,
     private categoryService: CategoryService,
     private transactionService: TransactionService,
+    private exchangeRateService: ExchangeRateService,
+    private currencyDisplayService: CurrencyDisplayService,
+    private preferencesService: PreferencesService,
     private router: Router
   ) {}
 
@@ -61,11 +67,20 @@ export class DashboardPage implements OnInit, OnDestroy {
   }
 
   calculateStats(accounts: Account[], transactions: Transaction[]): void {
-    // Total balance
-    this.totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
+    const preferredCurrency = this.preferencesService.getPreferredCurrency();
+
+    // Total balance - convertir todas las cuentas a la moneda preferida
+    this.totalBalance = accounts.reduce((sum, acc) => {
+      const convertedBalance = this.exchangeRateService.convertToPreferredCurrency(
+        acc.balance,
+        acc.currency,
+        preferredCurrency
+      );
+      return sum + convertedBalance;
+    }, 0);
     this.totalAccounts = accounts.length;
 
-    // Current month income/expense
+    // Current month income/expense - convertir todas las transacciones a la moneda preferida
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -75,14 +90,28 @@ export class DashboardPage implements OnInit, OnDestroy {
         const txDate = new Date(t.date);
         return t.type === 'income' && txDate >= startOfMonth && txDate <= endOfMonth;
       })
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => {
+        const convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
+          t.amount,
+          t.currency,
+          preferredCurrency
+        );
+        return sum + convertedAmount;
+      }, 0);
 
     this.monthExpense = transactions
       .filter(t => {
         const txDate = new Date(t.date);
         return t.type === 'expense' && txDate >= startOfMonth && txDate <= endOfMonth;
       })
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => {
+        const convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
+          t.amount,
+          t.currency,
+          preferredCurrency
+        );
+        return sum + convertedAmount;
+      }, 0);
   }
 
   loadRecentTransactions(
@@ -109,11 +138,13 @@ export class DashboardPage implements OnInit, OnDestroy {
     });
   }
 
-  formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS'
-    }).format(amount);
+  formatCurrency(amount: number, currency?: string): string {
+    const preferredCurrency = this.preferencesService.getPreferredCurrency();
+    return this.currencyDisplayService.formatAmount(amount, currency || preferredCurrency);
+  }
+
+  formatCurrencyWithOriginal(amount: number, originalCurrency: string): FormattedCurrency {
+    return this.currencyDisplayService.formatWithPreferredCurrency(amount, originalCurrency);
   }
 
   formatDate(date: Date): string {

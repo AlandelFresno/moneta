@@ -90,7 +90,12 @@
                 [class.positive]="account.balance > 0"
                 [class.negative]="account.balance < 0"
               >
-                {{ formatCurrency(account.balance) }}
+                <ng-container *ngIf="formatCurrencyWithOriginal(account.balance, account.currency) as formatted">
+                  <span class="currency-display">
+                    <span class="primary-amount">{{ formatted.primary }}</span>
+                    <span class="secondary-amount" *ngIf="formatted.secondary">({{ formatted.secondary }})</span>
+                  </span>
+                </ng-container>
               </span>
             </div>
           </div>
@@ -144,7 +149,13 @@
                 [class.income]="tx.type === 'income'"
                 [class.expense]="tx.type === 'expense'"
               >
-                {{ tx.type === 'income' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
+                <ng-container *ngIf="formatCurrencyWithOriginal(tx.amount, tx.currency) as formatted">
+                  <span>{{ tx.type === 'income' ? '+' : '-' }}</span>
+                  <span class="currency-display">
+                    <span class="primary-amount">{{ formatted.primary }}</span>
+                    <span class="secondary-amount" *ngIf="formatted.secondary">({{ formatted.secondary }})</span>
+                  </span>
+                </ng-container>
               </span>
             </div>
           </div>
