@@ -64,6 +64,21 @@
     align-items: center;
     gap: 0.75rem;
 
+    .stat-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      i {
+        font-size: 1.125rem;
+        color: white;
+      }
+    }
+
     .stat-label {
       font-size: 0.6875rem;
       color: #6b7280;
@@ -72,21 +87,6 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
       flex: 1;
-    }
-  }
-
-  .stat-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-
-    i {
-      font-size: 1.125rem;
-      color: white;
     }
   }
 
