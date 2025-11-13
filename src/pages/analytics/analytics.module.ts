@@ -5,7 +5,6 @@ import { RouterModule, Routes } from '@angular/router';
 
 // PrimeNG Modules
 import { ButtonModule } from 'primeng/button';
-import { CalendarModule } from 'primeng/calendar';
 
 // Chart Modules
 import { BaseChartDirective } from 'ng2-charts';
@@ -32,7 +31,6 @@ const routes: Routes = [
     FormsModule,
     RouterModule.forChild(routes),
     ButtonModule,
-    CalendarModule,
     BaseChartDirective,
     SharedModule
   ]

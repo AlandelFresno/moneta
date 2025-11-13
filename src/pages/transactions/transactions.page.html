@@ -110,18 +110,18 @@
             </div>
           </div>
           <div class="transaction-amount">
-            <span class="amount" [class.income]="txn.type === 'income'" [class.expense]="txn.type === 'expense'">
-              <ng-container *ngIf="formatCurrencyWithOriginal(txn.amount, txn.currency) as formatted">
+            <ng-container *ngIf="formatCurrencyWithOriginal(txn.amount, txn.currency) as formatted">
+              <span class="amount" [class.income]="txn.type === 'income'" [class.expense]="txn.type === 'expense'">
                 <span>{{ txn.type === 'income' ? '+' : '-' }}</span>
                 <span class="currency-display">
                   <span class="primary-amount">{{ formatted.primary }}</span>
                   <span class="secondary-amount" *ngIf="formatted.secondary">({{ formatted.secondary }})</span>
                 </span>
-              </ng-container>
-            </span>
+              </span>
+            </ng-container>
             <div class="transaction-actions">
-              <button pButton icon="pi pi-pencil" class="p-button-text p-button-rounded" class="btn-icon" (click)="openEditDialog(txn)"></button>
-              <button pButton icon="pi pi-trash" class="p-button-text p-button-rounded" class="btn-icon btn-danger" (click)="deleteTransaction(txn)"></button>
+              <button pButton icon="pi pi-pencil" class="btn-icon" (click)="openEditDialog(txn)"></button>
+              <button pButton icon="pi pi-trash" class="btn-icon btn-danger" (click)="deleteTransaction(txn)"></button>
             </div>
           </div>
         </div>
@@ -159,11 +159,11 @@
       <div class="form-group">
         <label>Account</label>
         <div class="input-with-button">
-          <select [(ngModel)]="formData.accountId" (ngModelChange)="onAccountChange()" class="macos-select">
+          <select [(ngModel)]="formData.accountId" (change)="onAccountChange()" class="macos-select">
             <option value="">Select account</option>
             <option *ngFor="let account of accounts" [value]="account.id">{{ account.name }}</option>
           </select>
-          <button pButton icon="pi pi-plus" class="p-button-text p-button-rounded" class="btn-icon-inline" (click)="openQuickCreateAccount()" pTooltip="Create new account"></button>
+          <button pButton icon="pi pi-plus" class="btn-icon-inline" (click)="openQuickCreateAccount()" pTooltip="Create new account"></button>
         </div>
       </div>
       <div class="form-group">
@@ -173,7 +173,7 @@
             <option value="">Select category</option>
             <option *ngFor="let category of getAvailableCategories()" [value]="category.id">{{ category.name }}</option>
           </select>
-          <button pButton icon="pi pi-plus" class="p-button-text p-button-rounded" class="btn-icon-inline" (click)="openQuickCreateCategory()" pTooltip="Create new category"></button>
+          <button pButton icon="pi pi-plus" class="btn-icon-inline" (click)="openQuickCreateCategory()" pTooltip="Create new category"></button>
         </div>
       </div>
     </div>
@@ -192,7 +192,7 @@
     </div>
 
     <!-- Conversion Info -->
-    <div class="conversion-section" *ngIf="formData.currency && formData.amount > 0">
+    <div class="conversion-section" *ngIf="formData.currency && formData.currency !== 'ARS' && formData.amount > 0">
       <div class="conversion-header">
         <label>Conversion to Preferred Currency (ARS)</label>
         <div class="conversion-toggle">

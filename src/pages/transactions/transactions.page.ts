@@ -409,7 +409,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       name: '',
       type: this.formData.type,
       color: '#3b82f6',
-      icon: 'tag'
+      icon: 'pi-tag'
     };
     this.showCategoryDialog = true;
   }
@@ -434,7 +434,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       balance: 0,
       currency: this.formData.currency,
       color: '#3b82f6',
-      icon: 'wallet'
+      icon: 'pi-wallet'
     };
     this.showAccountDialog = true;
   }

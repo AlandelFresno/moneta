@@ -93,6 +93,49 @@
     color: #1f2937;
   }
 
+  .date-range-inputs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+
+    .date-input-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+      }
+
+      .macos-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 0.9375rem;
+        font-family: inherit;
+        background: white;
+        color: #111827;
+        transition: all 0.2s ease;
+
+        &:hover {
+          border-color: #d1d5db;
+          background: #f9fafb;
+        }
+
+        &:focus {
+          outline: none;
+          border-color: #3b82f6;
+          background: white;
+          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+        }
+      }
+    }
+  }
+
   .custom-date-actions {
     display: flex;
     gap: 0.75rem;
