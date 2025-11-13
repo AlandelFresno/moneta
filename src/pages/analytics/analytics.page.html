@@ -35,6 +35,32 @@
           label="Todo"
           (click)="onPeriodChange('all')"
         ></button>
+        <button
+          pButton
+          class="p-button-sm"
+          [class.p-button-outlined]="selectedPeriod !== 'custom'"
+          label="Personalizado"
+          icon="pi pi-calendar"
+          (click)="onPeriodChange('custom')"
+        ></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Date Picker Dialog -->
+  <div class="custom-date-overlay" *ngIf="showCustomDatePicker" (click)="onCancelCustomDate()">
+    <div class="custom-date-picker" (click)="$event.stopPropagation()">
+      <h3>Seleccionar Período</h3>
+      <p-calendar
+        [(ngModel)]="customDateRange"
+        selectionMode="range"
+        [inline]="true"
+        dateFormat="dd/mm/yy"
+        [maxDate]="getMaxDate()"
+      ></p-calendar>
+      <div class="custom-date-actions">
+        <button pButton label="Cancelar" class="p-button-outlined p-button-sm" (click)="onCancelCustomDate()"></button>
+        <button pButton label="Aplicar" class="p-button-sm" (click)="onCustomDateChange()" [disabled]="!customDateRange || customDateRange.length !== 2"></button>
       </div>
     </div>
   </div>

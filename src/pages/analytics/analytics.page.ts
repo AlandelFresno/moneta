@@ -81,7 +81,9 @@ export class AnalyticsPage implements OnInit, OnDestroy {
   categories: Category[] = [];
   accounts: Account[] = [];
 
-  selectedPeriod: 'week' | 'month' | 'year' | 'all' = 'month';
+  selectedPeriod: 'week' | 'month' | 'year' | 'all' | 'custom' = 'month';
+  customDateRange: Date[] = [];
+  showCustomDatePicker = false;
 
   // Statistics
   currentPeriodStats: PeriodStats = this.getEmptyStats();
@@ -201,9 +203,32 @@ export class AnalyticsPage implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  onPeriodChange(period: 'week' | 'month' | 'year' | 'all'): void {
+  onPeriodChange(period: 'week' | 'month' | 'year' | 'all' | 'custom'): void {
+    if (period === 'custom') {
+      this.showCustomDatePicker = true;
+      this.selectedPeriod = period;
+      // No calculamos hasta que seleccione las fechas
+      return;
+    }
+    this.showCustomDatePicker = false;
     this.selectedPeriod = period;
     this.calculateAnalytics();
+  }
+
+  onCustomDateChange(): void {
+    if (this.customDateRange && this.customDateRange.length === 2 && this.customDateRange[0] && this.customDateRange[1]) {
+      this.showCustomDatePicker = false;
+      this.calculateAnalytics();
+    }
+  }
+
+  onCancelCustomDate(): void {
+    this.showCustomDatePicker = false;
+    if (this.selectedPeriod === 'custom' && (!this.customDateRange || this.customDateRange.length !== 2)) {
+      // Si estaba en custom pero no seleccionó fechas, volver a month
+      this.selectedPeriod = 'month';
+      this.calculateAnalytics();
+    }
   }
 
   private getEmptyStats(): PeriodStats {
@@ -233,6 +258,15 @@ export class AnalyticsPage implements OnInit, OnDestroy {
   }
 
   private getPeriodDates(date: Date, period: string): { start: Date; end: Date } {
+    // Si es período personalizado, usar las fechas del rango
+    if (period === 'custom' && this.customDateRange && this.customDateRange.length === 2) {
+      const start = new Date(this.customDateRange[0]);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(this.customDateRange[1]);
+      end.setHours(23, 59, 59, 999);
+      return { start, end };
+    }
+
     const end = new Date(date);
     end.setHours(23, 59, 59, 999);
 
@@ -505,10 +539,17 @@ export class AnalyticsPage implements OnInit, OnDestroy {
 
   getPeriodLabel(): string {
     switch (this.selectedPeriod) {
-      case 'week': return 'Last 7 Days';
-      case 'month': return 'Last 30 Days';
-      case 'year': return 'Last 12 Months';
-      case 'all': return 'All Time';
+      case 'week': return 'Últimos 7 Días';
+      case 'month': return 'Últimos 30 Días';
+      case 'year': return 'Últimos 12 Meses';
+      case 'all': return 'Todo el Tiempo';
+      case 'custom':
+        if (this.customDateRange && this.customDateRange.length === 2) {
+          const start = new Date(this.customDateRange[0]);
+          const end = new Date(this.customDateRange[1]);
+          return `${start.toLocaleDateString('es-AR')} - ${end.toLocaleDateString('es-AR')}`;
+        }
+        return 'Período Personalizado';
       default: return '';
     }
   }
@@ -529,5 +570,9 @@ export class AnalyticsPage implements OnInit, OnDestroy {
 
   getCurrentYear(): number {
     return new Date().getFullYear();
+  }
+
+  getMaxDate(): Date {
+    return new Date();
   }
 }

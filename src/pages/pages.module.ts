@@ -8,6 +8,7 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { TooltipModule } from 'primeng/tooltip';
+import { CalendarModule } from 'primeng/calendar';
 
 // Chart Modules
 import { BaseChartDirective } from 'ng2-charts';
@@ -67,6 +68,7 @@ const routes: Routes = [
     DialogModule,
     InputTextModule,
     TooltipModule,
+    CalendarModule,
     BaseChartDirective,
     SharedModule
   ]
