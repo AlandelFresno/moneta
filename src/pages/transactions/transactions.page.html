@@ -120,8 +120,8 @@
               </ng-container>
             </span>
             <div class="transaction-actions">
-              <button pButton icon="pi pi-pencil" [text]="true" [rounded]="true" class="btn-icon" (click)="openEditDialog(txn)"></button>
-              <button pButton icon="pi pi-trash" [text]="true" [rounded]="true" class="btn-icon btn-danger" (click)="deleteTransaction(txn)"></button>
+              <button pButton icon="pi pi-pencil" class="p-button-text p-button-rounded" class="btn-icon" (click)="openEditDialog(txn)"></button>
+              <button pButton icon="pi pi-trash" class="p-button-text p-button-rounded" class="btn-icon btn-danger" (click)="deleteTransaction(txn)"></button>
             </div>
           </div>
         </div>
@@ -137,7 +137,7 @@
 </div>
 
 <!-- Create/Edit Transaction Dialog -->
-<p-dialog [(visible)]="showDialog" [modal]="true" [closable]="true" [draggable]="false" [resizable]="false" styleClass="macos-dialog" [style]="{ width: '550px' }" (onHide)="closeDialog()">
+<p-dialog [(visible)]="showDialog" [modal]="true" [closable]="true" styleClass="macos-dialog" [style]="{ width: '550px' }" (onHide)="closeDialog()">
   <ng-template pTemplate="header">
     <h3>{{ editingTransaction ? 'Edit Transaction' : 'New Transaction' }}</h3>
   </ng-template>
@@ -163,7 +163,7 @@
             <option value="">Select account</option>
             <option *ngFor="let account of accounts" [value]="account.id">{{ account.name }}</option>
           </select>
-          <button pButton icon="pi pi-plus" [text]="true" [rounded]="true" class="btn-icon-inline" (click)="openQuickCreateAccount()" pTooltip="Create new account"></button>
+          <button pButton icon="pi pi-plus" class="p-button-text p-button-rounded" class="btn-icon-inline" (click)="openQuickCreateAccount()" pTooltip="Create new account"></button>
         </div>
       </div>
       <div class="form-group">
@@ -173,7 +173,7 @@
             <option value="">Select category</option>
             <option *ngFor="let category of getAvailableCategories()" [value]="category.id">{{ category.name }}</option>
           </select>
-          <button pButton icon="pi pi-plus" [text]="true" [rounded]="true" class="btn-icon-inline" (click)="openQuickCreateCategory()" pTooltip="Create new category"></button>
+          <button pButton icon="pi pi-plus" class="p-button-text p-button-rounded" class="btn-icon-inline" (click)="openQuickCreateCategory()" pTooltip="Create new category"></button>
         </div>
       </div>
     </div>
@@ -245,7 +245,7 @@
 </p-dialog>
 
 <!-- Quick Create Category Dialog -->
-<p-dialog [(visible)]="showCategoryDialog" [modal]="true" [closable]="true" [draggable]="false" [resizable]="false" styleClass="macos-dialog" [style]="{ width: '450px' }" (onHide)="closeCategoryDialog()">
+<p-dialog [(visible)]="showCategoryDialog" [modal]="true" [closable]="true" styleClass="macos-dialog" [style]="{ width: '450px' }" (onHide)="closeCategoryDialog()">
   <ng-template pTemplate="header">
     <h3>Create New Category</h3>
   </ng-template>
@@ -302,7 +302,7 @@
 </p-dialog>
 
 <!-- Quick Create Account Dialog -->
-<p-dialog [(visible)]="showAccountDialog" [modal]="true" [closable]="true" [draggable]="false" [resizable]="false" styleClass="macos-dialog" [style]="{ width: '450px' }" (onHide)="closeAccountDialog()">
+<p-dialog [(visible)]="showAccountDialog" [modal]="true" [closable]="true" styleClass="macos-dialog" [style]="{ width: '450px' }" (onHide)="closeAccountDialog()">
   <ng-template pTemplate="header">
     <h3>Create New Account</h3>
   </ng-template>
@@ -367,7 +367,7 @@
 </p-dialog>
 
 <!-- Import CSV Dialog -->
-<p-dialog [(visible)]="showImportDialog" [modal]="true" header="Import Transactions from CSV" [closable]="true" [draggable]="false" [resizable]="false" styleClass="macos-dialog" [style]="{ width: '500px' }">
+<p-dialog [(visible)]="showImportDialog" [modal]="true" header="Import Transactions from CSV" [closable]="true" styleClass="macos-dialog" [style]="{ width: '500px' }">
   <div class="dialog-content">
     <p class="import-info">Upload a CSV file with the following format:</p>
     <code class="csv-format">Date,Type,Account,Category,Amount,Description</code>
