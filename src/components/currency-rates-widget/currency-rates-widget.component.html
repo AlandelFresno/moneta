@@ -36,20 +36,67 @@
   <div class="widget-body">
     <div class="rates-list">
       <div class="rate-item" *ngFor="let rate of topRates">
-        <div class="rate-header">
-          <span class="currency-code">{{ rate.symbol }} {{ rate.code }}</span>
-          <span class="currency-name">{{ rate.name }}</span>
+        <div class="rate-content">
+          <div class="rate-header">
+            <span class="currency-code">{{ rate.symbol }} {{ rate.code }}</span>
+            <span class="currency-name">{{ rate.name }}</span>
+          </div>
+          <div class="rate-value">
+            <span class="conversion-formula" *ngIf="!rate.isEditing">
+              1 {{ rate.code }} = {{ formatRate(rate.rate) }} {{ preferredCurrency }}
+            </span>
+            <div class="rate-edit-group" *ngIf="rate.isEditing">
+              <span class="edit-label">1 {{ rate.code }} =</span>
+              <input
+                type="number"
+                [(ngModel)]="rate.editValue"
+                class="rate-input"
+                step="0.0001"
+                (keyup.enter)="saveEditRate(rate)"
+                (keyup.escape)="cancelEditRate(rate)"
+              />
+              <span class="edit-label">{{ preferredCurrency }}</span>
+            </div>
+          </div>
         </div>
-        <div class="rate-value">
-          <span class="conversion-formula">
-            1 {{ rate.code }} = {{ formatRate(rate.rate) }} {{ preferredCurrency }}
-          </span>
+        <div class="rate-actions">
+          <button
+            *ngIf="!rate.isEditing"
+            pButton
+            icon="pi pi-pencil"
+            class="p-button-text p-button-rounded p-button-sm edit-btn"
+            (click)="startEditRate(rate)"
+            pTooltip="Editar tasa"
+            tooltipPosition="left"
+          ></button>
+          <button
+            *ngIf="rate.isEditing"
+            pButton
+            icon="pi pi-check"
+            class="p-button-text p-button-rounded p-button-sm p-button-success"
+            (click)="saveEditRate(rate)"
+            pTooltip="Guardar"
+            tooltipPosition="left"
+          ></button>
+          <button
+            *ngIf="rate.isEditing"
+            pButton
+            icon="pi pi-times"
+            class="p-button-text p-button-rounded p-button-sm p-button-danger"
+            (click)="cancelEditRate(rate)"
+            pTooltip="Cancelar"
+            tooltipPosition="left"
+          ></button>
         </div>
       </div>
     </div>
 
-    <div class="widget-footer" *ngIf="cacheInfo?.needsUpdate">
-      <div class="warning-banner">
+    <div class="widget-footer">
+      <div class="info-banner" *ngIf="!cacheInfo?.needsUpdate">
+        <i class="pi pi-info-circle"></i>
+        <span>Las tasas se guardan con cada transacción</span>
+      </div>
+      <div class="warning-banner" *ngIf="cacheInfo?.needsUpdate">
         <i class="pi pi-exclamation-triangle"></i>
         <span>Las tasas requieren actualización</span>
       </div>

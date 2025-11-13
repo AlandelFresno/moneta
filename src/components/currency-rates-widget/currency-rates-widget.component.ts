@@ -9,6 +9,8 @@ interface CurrencyRate {
   symbol: string;
   rate: number;
   rateToPreferred: number;
+  isEditing: boolean;
+  editValue: number;
 }
 
 @Component({
@@ -75,7 +77,9 @@ export class CurrencyRatesWidgetComponent implements OnInit {
           name: currency.name,
           symbol: currency.symbol,
           rate: rate,
-          rateToPreferred: rate
+          rateToPreferred: rate,
+          isEditing: false,
+          editValue: rate
         };
       })
       .filter(r => r !== null) as CurrencyRate[];
@@ -127,6 +131,52 @@ export class CurrencyRatesWidgetComponent implements OnInit {
       console.error('Error refreshing rates:', error);
     } finally {
       this.isLoading = false;
+    }
+  }
+
+  startEditRate(rate: CurrencyRate): void {
+    rate.isEditing = true;
+    rate.editValue = rate.rate;
+  }
+
+  cancelEditRate(rate: CurrencyRate): void {
+    rate.isEditing = false;
+  }
+
+  saveEditRate(rate: CurrencyRate): void {
+    if (rate.editValue <= 0 || isNaN(rate.editValue)) {
+      alert('Por favor ingrese un valor válido mayor a 0');
+      return;
+    }
+
+    // Actualizar la tasa en el servicio
+    const exchangeRates = this.exchangeRateService.getRatesInfo();
+    if (exchangeRates) {
+      // Si estamos editando una tasa "from USD", actualizar directamente
+      if (this.preferredCurrency === 'USD') {
+        exchangeRates.rates[rate.code] = rate.editValue;
+      } else {
+        // Si estamos editando una tasa hacia otra moneda, calcular la equivalencia en USD
+        // Por ejemplo: si editamos 1 USD = 850 ARS, guardamos ARS: 850
+        if (rate.code === 'USD') {
+          // Estamos editando cuánto vale 1 USD en la moneda preferida
+          // Necesitamos actualizar la tasa de la moneda preferida en relación a USD
+          const rateFromUsd = rate.editValue;
+          exchangeRates.rates[this.preferredCurrency] = rateFromUsd;
+        } else {
+          // Para otras monedas, calcular la conversión vía USD
+          const usdToPreferred = exchangeRates.rates[this.preferredCurrency] || 1;
+          const currencyToUsd = rate.editValue / usdToPreferred;
+          exchangeRates.rates[rate.code] = 1 / currencyToUsd;
+        }
+      }
+
+      localStorage.setItem('budget_exchange_rates', JSON.stringify(exchangeRates));
+
+      // Recargar datos
+      rate.rate = rate.editValue;
+      rate.isEditing = false;
+      this.loadData();
     }
   }
 }
