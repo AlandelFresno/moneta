@@ -1,0 +1,58 @@
+<div class="currency-rates-widget">
+  <div class="widget-header">
+    <div class="header-left">
+      <div class="header-icon">
+        <i class="pi pi-dollar"></i>
+      </div>
+      <div>
+        <h3>Tasas de Cambio</h3>
+        <span class="cache-status" [ngClass]="getCacheStatusClass()">
+          <i class="pi pi-circle-fill"></i>
+          {{ getCacheStatusText() }}
+        </span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button
+        pButton
+        icon="pi pi-refresh"
+        class="p-button-text p-button-rounded p-button-sm"
+        [loading]="isLoading"
+        (click)="refreshRates()"
+        pTooltip="Actualizar tasas"
+        tooltipPosition="left"
+      ></button>
+      <button
+        pButton
+        icon="pi pi-cog"
+        class="p-button-text p-button-rounded p-button-sm"
+        (click)="navigateToSettings()"
+        pTooltip="Ver todas las tasas"
+        tooltipPosition="left"
+      ></button>
+    </div>
+  </div>
+
+  <div class="widget-body">
+    <div class="rates-list">
+      <div class="rate-item" *ngFor="let rate of topRates">
+        <div class="rate-header">
+          <span class="currency-code">{{ rate.symbol }} {{ rate.code }}</span>
+          <span class="currency-name">{{ rate.name }}</span>
+        </div>
+        <div class="rate-value">
+          <span class="conversion-formula">
+            1 {{ rate.code }} = {{ formatRate(rate.rate) }} {{ preferredCurrency }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="widget-footer" *ngIf="cacheInfo?.needsUpdate">
+      <div class="warning-banner">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>Las tasas requieren actualización</span>
+      </div>
+    </div>
+  </div>
+</div>
