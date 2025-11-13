@@ -45,12 +45,18 @@ export class CurrencyRatesWidgetComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    console.log('🔄 [CurrencyRatesWidget] Inicializando widget...');
     this.loadData();
   }
 
   loadData(): void {
     this.preferredCurrency = this.preferencesService.getPreferredCurrency();
     this.cacheInfo = this.exchangeRateService.getCacheInfo();
+    console.log('📊 [CurrencyRatesWidget] Datos cargados:', {
+      preferredCurrency: this.preferredCurrency,
+      cacheAge: this.cacheInfo?.age,
+      needsUpdate: this.cacheInfo?.needsUpdate
+    });
     this.buildTopRates();
   }
 
@@ -123,12 +129,14 @@ export class CurrencyRatesWidgetComponent implements OnInit {
   async refreshRates(): Promise<void> {
     if (this.isLoading) return;
 
+    console.log('🔄 [CurrencyRatesWidget] Actualizando tasas manualmente...');
     this.isLoading = true;
     try {
       await this.exchangeRateService.updateRatesManually('USD');
+      console.log('✅ [CurrencyRatesWidget] Tasas actualizadas exitosamente');
       this.loadData();
     } catch (error) {
-      console.error('Error refreshing rates:', error);
+      console.error('❌ [CurrencyRatesWidget] Error refreshing rates:', error);
     } finally {
       this.isLoading = false;
     }
@@ -144,7 +152,10 @@ export class CurrencyRatesWidgetComponent implements OnInit {
   }
 
   saveEditRate(rate: CurrencyRate): void {
+    console.log(`✏️ [CurrencyRatesWidget] Guardando tasa editada: ${rate.code} = ${rate.editValue}`);
+
     if (rate.editValue <= 0 || isNaN(rate.editValue)) {
+      console.warn('⚠️ [CurrencyRatesWidget] Valor inválido');
       alert('Por favor ingrese un valor válido mayor a 0');
       return;
     }
@@ -152,6 +163,8 @@ export class CurrencyRatesWidgetComponent implements OnInit {
     // Actualizar la tasa en el servicio
     const exchangeRates = this.exchangeRateService.getRatesInfo();
     if (exchangeRates) {
+      const originalRate = exchangeRates.rates[rate.code];
+
       // Si estamos editando una tasa "from USD", actualizar directamente
       if (this.preferredCurrency === 'USD') {
         exchangeRates.rates[rate.code] = rate.editValue;
@@ -170,6 +183,14 @@ export class CurrencyRatesWidgetComponent implements OnInit {
           exchangeRates.rates[rate.code] = 1 / currencyToUsd;
         }
       }
+
+      console.log(`💾 [CurrencyRatesWidget] Tasa actualizada:`, {
+        currency: rate.code,
+        oldRate: originalRate,
+        newRate: rate.editValue,
+        preferredCurrency: this.preferredCurrency,
+        base: exchangeRates.base
+      });
 
       localStorage.setItem('budget_exchange_rates', JSON.stringify(exchangeRates));
 

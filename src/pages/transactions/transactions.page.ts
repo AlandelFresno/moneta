@@ -273,6 +273,11 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   calculateConversion(): void {
+    console.log('🔄 [Transactions] Calculando conversión...', {
+      amount: this.formData.amount,
+      currency: this.formData.currency
+    });
+
     if (!this.formData.amount || !this.formData.currency) {
       this.formData.convertedAmount = 0;
       this.formData.conversionRate = 0;
@@ -284,6 +289,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
     // If same currency, no conversion needed
     if (this.formData.currency === preferredCurrency) {
+      console.log('✅ [Transactions] Misma moneda, sin conversión necesaria');
       this.formData.convertedAmount = this.formData.amount;
       this.formData.conversionRate = 1;
       this.formData.conversionSource = '';
@@ -316,6 +322,13 @@ export class TransactionsPage implements OnInit, OnDestroy {
     } else {
       this.formData.conversionSource = 'api';
     }
+
+    console.log('✅ [Transactions] Conversión calculada:', {
+      from: `${this.formData.amount} ${this.formData.currency}`,
+      to: `${this.formData.convertedAmount.toFixed(2)} ${preferredCurrency}`,
+      rate: `1 ${this.formData.currency} = ${this.formData.conversionRate.toFixed(4)} ${preferredCurrency}`,
+      source: this.formData.conversionSource
+    });
   }
 
   onAmountOrCurrencyChange(): void {
@@ -368,10 +381,22 @@ export class TransactionsPage implements OnInit, OnDestroy {
       manualConversion: this.formData.useManualConversion
     };
 
+    console.log(`💾 [Transactions] ${this.editingTransaction ? 'Actualizando' : 'Creando'} transacción:`, {
+      amount: `${txnData.amount} ${txnData.currency}`,
+      convertedAmount: txnData.convertedAmount ? `${txnData.convertedAmount.toFixed(2)} ${this.preferencesService.getPreferredCurrency()}` : 'N/A',
+      conversionRate: txnData.conversionRate,
+      conversionSource: txnData.conversionSource,
+      manualConversion: txnData.manualConversion,
+      type: txnData.type,
+      date: txnData.date
+    });
+
     if (this.editingTransaction) {
       this.transactionService.updateTransaction(this.editingTransaction.id, txnData);
+      console.log('✅ [Transactions] Transacción actualizada exitosamente');
     } else {
       this.transactionService.createTransaction(txnData);
+      console.log('✅ [Transactions] Transacción creada exitosamente');
     }
 
     this.closeDialog();

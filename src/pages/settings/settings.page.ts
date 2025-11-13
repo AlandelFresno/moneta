@@ -134,17 +134,28 @@ export class SettingsPage implements OnInit {
   }
 
   saveEditRate(currency: CurrencyDisplay): void {
+    console.log(`✏️ [Settings] Guardando tasa editada: ${currency.code} = ${currency.editValue}`);
+
     const newRate = parseFloat(currency.editValue);
 
     if (isNaN(newRate) || newRate <= 0) {
+      console.warn('⚠️ [Settings] Valor inválido');
       alert('Por favor ingrese un número válido mayor a 0');
       return;
     }
 
     // Actualizar la tasa manualmente en el servicio
     if (this.exchangeRates) {
+      const oldRate = this.exchangeRates.rates[currency.code];
       this.exchangeRates.rates[currency.code] = newRate;
       localStorage.setItem('budget_exchange_rates', JSON.stringify(this.exchangeRates));
+
+      console.log(`💾 [Settings] Tasa actualizada:`, {
+        currency: currency.code,
+        oldRate: oldRate,
+        newRate: newRate,
+        base: this.exchangeRates.base
+      });
     }
 
     currency.rate = newRate;
@@ -203,6 +214,7 @@ export class SettingsPage implements OnInit {
   }
 
   async updateExchangeRates(): Promise<void> {
+    console.log('🔄 [Settings] Actualizando tasas de cambio desde API...');
     this.isUpdatingRates = true;
     this.updateSuccess = false;
     this.updateError = null;
@@ -214,13 +226,15 @@ export class SettingsPage implements OnInit {
       this.calculateExampleConversion();
       this.updateSuccess = true;
 
+      console.log('✅ [Settings] Tasas actualizadas exitosamente');
+
       // Ocultar mensaje de éxito después de 3 segundos
       setTimeout(() => {
         this.updateSuccess = false;
       }, 3000);
     } catch (error) {
       this.updateError = 'Error al actualizar las tasas de cambio. Por favor, intenta de nuevo.';
-      console.error('Error updating exchange rates:', error);
+      console.error('❌ [Settings] Error updating exchange rates:', error);
 
       // Ocultar mensaje de error después de 5 segundos
       setTimeout(() => {
