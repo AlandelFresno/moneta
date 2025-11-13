@@ -77,24 +77,22 @@
         <div class="stat-icon income-icon">
           <i class="pi pi-arrow-down"></i>
         </div>
-        <div class="stat-content">
-          <p class="stat-label">Ingresos</p>
-          <h2 class="stat-value">{{ formatCurrency(currentPeriodStats.totalIncome) }}</h2>
-          <div class="stat-change" *ngIf="previousPeriodStats.totalIncome > 0">
-            <span
-              [class.positive]="getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) > 0"
-              [class.negative]="getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) < 0"
-            >
-              <i
-                class="pi"
-                [class.pi-arrow-up]="getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) > 0"
-                [class.pi-arrow-down]="getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) < 0"
-              ></i>
-              {{ getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) | number:'1.1-1' }}%
-            </span>
-            <span class="vs-previous">vs período anterior</span>
-          </div>
-        </div>
+        <p class="stat-label">Ingresos</p>
+      </div>
+      <h2 class="stat-value">{{ formatCurrency(currentPeriodStats.totalIncome) }}</h2>
+      <div class="stat-change" *ngIf="previousPeriodStats.totalIncome > 0">
+        <span
+          [class.positive]="getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) > 0"
+          [class.negative]="getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) < 0"
+        >
+          <i
+            class="pi"
+            [class.pi-arrow-up]="getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) > 0"
+            [class.pi-arrow-down]="getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) < 0"
+          ></i>
+          {{ getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) | number:'1.1-1' }}%
+        </span>
+        <span class="vs-previous">vs período anterior</span>
       </div>
     </div>
 
@@ -103,24 +101,22 @@
         <div class="stat-icon expense-icon">
           <i class="pi pi-arrow-up"></i>
         </div>
-        <div class="stat-content">
-          <p class="stat-label">Gastos</p>
-          <h2 class="stat-value">{{ formatCurrency(currentPeriodStats.totalExpense) }}</h2>
-          <div class="stat-change" *ngIf="previousPeriodStats.totalExpense > 0">
-            <span
-              [class.positive]="getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) < 0"
-              [class.negative]="getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) > 0"
-            >
-              <i
-                class="pi"
-                [class.pi-arrow-up]="getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) > 0"
-                [class.pi-arrow-down]="getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) < 0"
-              ></i>
-              {{ getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) | number:'1.1-1' }}%
-            </span>
-            <span class="vs-previous">vs período anterior</span>
-          </div>
-        </div>
+        <p class="stat-label">Gastos</p>
+      </div>
+      <h2 class="stat-value">{{ formatCurrency(currentPeriodStats.totalExpense) }}</h2>
+      <div class="stat-change" *ngIf="previousPeriodStats.totalExpense > 0">
+        <span
+          [class.positive]="getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) < 0"
+          [class.negative]="getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) > 0"
+        >
+          <i
+            class="pi"
+            [class.pi-arrow-up]="getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) > 0"
+            [class.pi-arrow-down]="getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) < 0"
+          ></i>
+          {{ getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) | number:'1.1-1' }}%
+        </span>
+        <span class="vs-previous">vs período anterior</span>
       </div>
     </div>
 
@@ -129,30 +125,28 @@
         <div class="stat-icon balance-icon">
           <i class="pi pi-wallet"></i>
         </div>
-        <div class="stat-content">
-          <p class="stat-label">Balance</p>
-          <h2
-            class="stat-value"
-            [class.positive]="currentPeriodStats.balance > 0"
-            [class.negative]="currentPeriodStats.balance < 0"
-          >
-            {{ formatCurrency(currentPeriodStats.balance) }}
-          </h2>
-          <div class="stat-change" *ngIf="previousPeriodStats.balance !== 0">
-            <span
-              [class.positive]="getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) > 0"
-              [class.negative]="getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) < 0"
-            >
-              <i
-                class="pi"
-                [class.pi-arrow-up]="getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) > 0"
-                [class.pi-arrow-down]="getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) < 0"
-              ></i>
-              {{ getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) | number:'1.1-1' }}%
-            </span>
-            <span class="vs-previous">vs período anterior</span>
-          </div>
-        </div>
+        <p class="stat-label">Balance</p>
+      </div>
+      <h2
+        class="stat-value"
+        [class.positive]="currentPeriodStats.balance > 0"
+        [class.negative]="currentPeriodStats.balance < 0"
+      >
+        {{ formatCurrency(currentPeriodStats.balance) }}
+      </h2>
+      <div class="stat-change" *ngIf="previousPeriodStats.balance !== 0">
+        <span
+          [class.positive]="getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) > 0"
+          [class.negative]="getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) < 0"
+        >
+          <i
+            class="pi"
+            [class.pi-arrow-up]="getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) > 0"
+            [class.pi-arrow-down]="getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) < 0"
+          ></i>
+          {{ getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) | number:'1.1-1' }}%
+        </span>
+        <span class="vs-previous">vs período anterior</span>
       </div>
     </div>
 
@@ -161,13 +155,11 @@
         <div class="stat-icon transactions-icon">
           <i class="pi pi-list"></i>
         </div>
-        <div class="stat-content">
-          <p class="stat-label">Transacciones</p>
-          <h2 class="stat-value">{{ currentPeriodStats.transactionCount }}</h2>
-          <div class="stat-meta">
-            <span>Promedio: {{ formatCurrency(currentPeriodStats.avgTransactionAmount) }}</span>
-          </div>
-        </div>
+        <p class="stat-label">Transacciones</p>
+      </div>
+      <h2 class="stat-value">{{ currentPeriodStats.transactionCount }}</h2>
+      <div class="stat-meta">
+        <span>Promedio: {{ formatCurrency(currentPeriodStats.avgTransactionAmount) }}</span>
       </div>
     </div>
   </div>

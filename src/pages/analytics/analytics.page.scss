@@ -135,6 +135,9 @@
   border: 1px solid #e5e7eb;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 
   &:hover {
     transform: translateY(-2px);
@@ -143,20 +146,20 @@
 
   .stat-header {
     display: flex;
-    align-items: flex-start;
-    gap: 1rem;
+    align-items: center;
+    gap: 0.75rem;
 
     .stat-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
 
       i {
-        font-size: 1.25rem;
+        font-size: 1.125rem;
         color: white;
       }
 
@@ -177,74 +180,70 @@
       }
     }
 
-    .stat-content {
+    .stat-label {
+      font-size: 0.6875rem;
+      color: #6b7280;
+      margin: 0;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
       flex: 1;
-      min-width: 0;
+    }
+  }
 
-      .stat-label {
+  .stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    white-space: nowrap;
+
+    &.positive {
+      color: #10b981;
+    }
+
+    &.negative {
+      color: #ef4444;
+    }
+  }
+
+  .stat-change {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.8125rem;
+
+    span:first-child {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-weight: 600;
+
+      &.positive {
+        color: #10b981;
+      }
+
+      &.negative {
+        color: #ef4444;
+      }
+
+      i {
         font-size: 0.75rem;
-        color: #6b7280;
-        margin: 0 0 0.5rem 0;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-      }
-
-      .stat-value {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #1f2937;
-        margin: 0 0 0.5rem 0;
-        letter-spacing: -0.02em;
-        line-height: 1.2;
-        white-space: nowrap;
-
-        &.positive {
-          color: #10b981;
-        }
-
-        &.negative {
-          color: #ef4444;
-        }
-      }
-
-      .stat-change {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        font-size: 0.8125rem;
-
-        span:first-child {
-          display: flex;
-          align-items: center;
-          gap: 0.25rem;
-          font-weight: 600;
-
-          &.positive {
-            color: #10b981;
-          }
-
-          &.negative {
-            color: #ef4444;
-          }
-
-          i {
-            font-size: 0.75rem;
-          }
-        }
-
-        .vs-previous {
-          color: #9ca3af;
-          font-size: 0.75rem;
-        }
-      }
-
-      .stat-meta {
-        font-size: 0.8125rem;
-        color: #6b7280;
-        margin-top: 0.25rem;
       }
     }
+
+    .vs-previous {
+      color: #9ca3af;
+      font-size: 0.75rem;
+    }
+  }
+
+  .stat-meta {
+    font-size: 0.8125rem;
+    color: #6b7280;
+    margin-top: 0;
   }
 }
 
