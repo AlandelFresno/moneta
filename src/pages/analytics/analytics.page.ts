@@ -1,6 +1,21 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subject, combineLatest, takeUntil } from 'rxjs';
-import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
+import {
+  Chart,
+  ChartConfiguration,
+  ChartData,
+  ChartType,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
 
 import { Transaction } from '../../models/transaction.model';
 import { Category } from '../../models/category.model';
@@ -10,6 +25,20 @@ import { CategoryService } from '../../services/category.service';
 import { AccountService } from '../../services/account.service';
 import { ExchangeRateService } from '../../services/exchange-rate.service';
 import { PreferencesService } from '../../services/preferences.service';
+
+// Register Chart.js components
+Chart.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 interface PeriodStats {
   totalIncome: number;
