@@ -287,3 +287,274 @@
     }
   }
 }
+
+// Conversion Calculator
+.conversion-calculator {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.conversion-inputs {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  gap: 1rem;
+  align-items: end;
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #374151;
+    }
+  }
+
+  .conversion-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 0.5rem;
+
+    i {
+      font-size: 1.25rem;
+      color: #3b82f6;
+    }
+  }
+}
+
+.macos-input {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  color: #1f2937;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  outline: none;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #9ca3af;
+  }
+
+  &:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+}
+
+.conversion-result {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  border: 1px solid #93c5fd;
+
+  .result-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+  }
+
+  .result-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e40af;
+    margin-bottom: 1rem;
+  }
+
+  .result-details {
+    padding-top: 1rem;
+    border-top: 1px solid #93c5fd;
+
+    p {
+      font-size: 0.875rem;
+      color: #374151;
+      margin: 0.5rem 0;
+      line-height: 1.6;
+
+      &:first-child {
+        margin-top: 0;
+      }
+
+      strong {
+        color: #1f2937;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+// Exchange Rates Table
+.rates-table {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  overflow: hidden;
+
+  .rate-row {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1fr;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    transition: background-color 0.2s;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &.header-row {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #1f2937;
+      font-size: 0.875rem;
+    }
+
+    &:not(.header-row):hover {
+      background-color: #f9fafb;
+    }
+  }
+
+  .rate-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    &.currency-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      .currency-symbol {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.5rem;
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.125rem;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+
+      div {
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+
+        strong {
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #1f2937;
+        }
+
+        small {
+          font-size: 0.75rem;
+          color: #6b7280;
+        }
+      }
+    }
+
+    &.rate-value {
+      font-size: 0.875rem;
+      color: #1f2937;
+      font-weight: 500;
+    }
+
+    &.rate-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
+  }
+
+  .rate-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: #1f2937;
+    background: white;
+    border: 2px solid #3b82f6;
+    border-radius: 0.375rem;
+    outline: none;
+    font-weight: 500;
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+  }
+}
+
+.info-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  margin-top: 1rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+
+  i {
+    font-size: 1.125rem;
+    color: #3b82f6;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+
+  p {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0;
+    line-height: 1.6;
+
+    strong {
+      color: #1f2937;
+      font-weight: 600;
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .conversion-inputs {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+
+    .conversion-arrow {
+      display: none;
+    }
+  }
+
+  .rates-table {
+    .rate-row {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+
+      &.header-row {
+        display: none;
+      }
+
+      .rate-cell {
+        &.currency-info,
+        &.rate-value,
+        &.rate-actions {
+          justify-content: space-between;
+
+          &::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: #6b7280;
+            font-size: 0.75rem;
+          }
+        }
+      }
+    }
+  }
+}

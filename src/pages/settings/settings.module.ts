@@ -5,6 +5,7 @@ import { RouterModule, Routes } from '@angular/router';
 
 // PrimeNG
 import { ButtonModule } from 'primeng/button';
+import { TooltipModule } from 'primeng/tooltip';
 
 import { SettingsPage } from './settings.page';
 
@@ -23,7 +24,8 @@ const routes: Routes = [
     CommonModule,
     FormsModule,
     RouterModule.forChild(routes),
-    ButtonModule
+    ButtonModule,
+    TooltipModule
   ]
 })
 export class SettingsModule { }

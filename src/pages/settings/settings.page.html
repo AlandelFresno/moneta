@@ -111,6 +111,158 @@
       </div>
     </div>
 
+    <!-- Conversion Example Card -->
+    <div class="settings-card">
+      <div class="card-header">
+        <div class="header-icon">
+          <i class="pi pi-calculator"></i>
+        </div>
+        <div>
+          <h2>Calculadora de Conversión</h2>
+          <p class="subtitle">Prueba cómo se convierten las divisas</p>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="conversion-calculator">
+          <div class="conversion-inputs">
+            <div class="input-group">
+              <label>Cantidad</label>
+              <input
+                type="number"
+                [(ngModel)]="exampleAmount"
+                (ngModelChange)="onExampleAmountChange()"
+                class="macos-input"
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            <div class="input-group">
+              <label>De</label>
+              <select
+                [(ngModel)]="exampleFromCurrency"
+                (ngModelChange)="onExampleFromCurrencyChange()"
+                class="macos-select"
+              >
+                <option *ngFor="let currency of currencies" [value]="currency.code">
+                  {{ currency.code }} - {{ currency.name }}
+                </option>
+              </select>
+            </div>
+
+            <div class="conversion-arrow">
+              <i class="pi pi-arrow-right"></i>
+            </div>
+
+            <div class="input-group">
+              <label>A</label>
+              <select
+                [(ngModel)]="exampleToCurrency"
+                (ngModelChange)="onExampleToCurrencyChange()"
+                class="macos-select"
+              >
+                <option *ngFor="let currency of currencies" [value]="currency.code">
+                  {{ currency.code }} - {{ currency.name }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="conversion-result">
+            <div class="result-label">Resultado</div>
+            <div class="result-value">
+              {{ formatCurrency(exampleResult, exampleToCurrency) }} {{ exampleToCurrency }}
+            </div>
+            <div class="result-details">
+              <p><strong>Cálculo detallado:</strong></p>
+              <p>1. Monto original: {{ formatCurrency(exampleAmount, exampleFromCurrency) }} {{ exampleFromCurrency }}</p>
+              <p>2. Tasa de cambio: 1 {{ exampleFromCurrency }} = {{ exchangeRateService.getExchangeRate(exampleFromCurrency, exampleToCurrency) | number:'1.2-6' }} {{ exampleToCurrency }}</p>
+              <p>3. Resultado: {{ exampleAmount }} × {{ exchangeRateService.getExchangeRate(exampleFromCurrency, exampleToCurrency) | number:'1.2-6' }} = {{ formatCurrency(exampleResult, exampleToCurrency) }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exchange Rates Table Card -->
+    <div class="settings-card">
+      <div class="card-header">
+        <div class="header-icon">
+          <i class="pi pi-list"></i>
+        </div>
+        <div>
+          <h2>Tasas de Cambio Actuales</h2>
+          <p class="subtitle">Base: USD - Click en el ícono de lápiz para editar manualmente</p>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="rates-table">
+          <div class="rate-row header-row">
+            <div class="rate-cell">Moneda</div>
+            <div class="rate-cell">Tasa (1 USD =)</div>
+            <div class="rate-cell">Acciones</div>
+          </div>
+
+          <div class="rate-row" *ngFor="let currency of currencyRates">
+            <div class="rate-cell currency-info">
+              <span class="currency-symbol">{{ currency.symbol }}</span>
+              <div>
+                <strong>{{ currency.code }}</strong>
+                <small>{{ currency.name }}</small>
+              </div>
+            </div>
+
+            <div class="rate-cell rate-value">
+              <span *ngIf="!currency.isEditing">{{ currency.rate | number:'1.2-6' }}</span>
+              <input
+                *ngIf="currency.isEditing"
+                type="number"
+                [(ngModel)]="currency.editValue"
+                class="rate-input"
+                step="0.000001"
+                (keyup.enter)="saveEditRate(currency)"
+                (keyup.escape)="cancelEditRate(currency)"
+              />
+            </div>
+
+            <div class="rate-cell rate-actions">
+              <button
+                *ngIf="!currency.isEditing"
+                pButton
+                icon="pi pi-pencil"
+                class="p-button-text p-button-rounded p-button-sm"
+                (click)="startEditRate(currency)"
+                pTooltip="Editar tasa manualmente"
+              ></button>
+              <button
+                *ngIf="currency.isEditing"
+                pButton
+                icon="pi pi-check"
+                class="p-button-text p-button-rounded p-button-sm p-button-success"
+                (click)="saveEditRate(currency)"
+                pTooltip="Guardar"
+              ></button>
+              <button
+                *ngIf="currency.isEditing"
+                pButton
+                icon="pi pi-times"
+                class="p-button-text p-button-rounded p-button-sm p-button-danger"
+                (click)="cancelEditRate(currency)"
+                pTooltip="Cancelar"
+              ></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-note">
+          <i class="pi pi-info-circle"></i>
+          <p><strong>Nota:</strong> Puedes editar las tasas manualmente si necesitas valores personalizados. Los cambios se guardarán localmente y se sobrescribirán la próxima vez que actualices las tasas desde la API.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Information Card -->
     <div class="settings-card info-card">
       <div class="card-header">
