@@ -1,0 +1,225 @@
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Categories</h1>
+      <p class="page-subtitle">Manage your income and expense categories</p>
+    </div>
+    <div class="header-actions">
+      <button
+        pButton
+        label="Export CSV"
+        icon="pi pi-download"
+        class="btn-secondary"
+        (click)="exportToCSV()">
+      </button>
+      <button
+        pButton
+        label="New Category"
+        icon="pi pi-plus"
+        class="btn-primary"
+        (click)="openCreateDialog()">
+      </button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="categories-content">
+    <!-- Income Categories -->
+    <div class="category-section">
+      <div class="section-header">
+        <div class="section-icon income">
+          <i class="pi pi-arrow-down"></i>
+        </div>
+        <h2>Income Categories</h2>
+        <span class="count">{{ incomeCategories.length }}</span>
+      </div>
+
+      <div class="categories-grid">
+        <div
+          *ngFor="let category of incomeCategories"
+          class="category-card"
+          [style.border-left-color]="category.color">
+          <div class="category-icon" [style.background-color]="category.color">
+            <i [class]="'pi pi-' + category.icon"></i>
+          </div>
+          <div class="category-info">
+            <h3>{{ category.name }}</h3>
+            <span class="category-type">Income</span>
+          </div>
+          <div class="category-actions">
+            <button
+              pButton
+              icon="pi pi-pencil"
+              [text]="true"
+              [rounded]="true"
+              class="btn-icon"
+              (click)="openEditDialog(category)">
+            </button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              [text]="true"
+              [rounded]="true"
+              class="btn-icon btn-danger"
+              (click)="deleteCategory(category)">
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="incomeCategories.length === 0" class="empty-state">
+          <i class="pi pi-inbox"></i>
+          <p>No income categories yet</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expense Categories -->
+    <div class="category-section">
+      <div class="section-header">
+        <div class="section-icon expense">
+          <i class="pi pi-arrow-up"></i>
+        </div>
+        <h2>Expense Categories</h2>
+        <span class="count">{{ expenseCategories.length }}</span>
+      </div>
+
+      <div class="categories-grid">
+        <div
+          *ngFor="let category of expenseCategories"
+          class="category-card"
+          [style.border-left-color]="category.color">
+          <div class="category-icon" [style.background-color]="category.color">
+            <i [class]="'pi pi-' + category.icon"></i>
+          </div>
+          <div class="category-info">
+            <h3>{{ category.name }}</h3>
+            <span class="category-type">Expense</span>
+          </div>
+          <div class="category-actions">
+            <button
+              pButton
+              icon="pi pi-pencil"
+              [text]="true"
+              [rounded]="true"
+              class="btn-icon"
+              (click)="openEditDialog(category)">
+            </button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              [text]="true"
+              [rounded]="true"
+              class="btn-icon btn-danger"
+              (click)="deleteCategory(category)">
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="expenseCategories.length === 0" class="empty-state">
+          <i class="pi pi-inbox"></i>
+          <p>No expense categories yet</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create/Edit Dialog -->
+<p-dialog
+  [(visible)]="showDialog"
+  [modal]="true"
+  [closable]="true"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="macos-dialog"
+  [style]="{ width: '500px' }"
+  (onHide)="closeDialog()">
+
+  <ng-template pTemplate="header">
+    <h3>{{ editingCategory ? 'Edit Category' : 'Create New Category' }}</h3>
+  </ng-template>
+
+  <div class="dialog-content">
+    <!-- Name -->
+    <div class="form-group">
+      <label>Category Name</label>
+      <input
+        type="text"
+        pInputText
+        [(ngModel)]="formData.name"
+        placeholder="Enter category name"
+        class="macos-input" />
+    </div>
+
+    <!-- Type -->
+    <div class="form-group">
+      <label>Type</label>
+      <div class="type-selector">
+        <button
+          type="button"
+          class="type-btn"
+          [class.active]="formData.type === 'income'"
+          (click)="formData.type = 'income'">
+          <i class="pi pi-arrow-down"></i>
+          Income
+        </button>
+        <button
+          type="button"
+          class="type-btn"
+          [class.active]="formData.type === 'expense'"
+          (click)="formData.type = 'expense'">
+          <i class="pi pi-arrow-up"></i>
+          Expense
+        </button>
+      </div>
+    </div>
+
+    <!-- Color -->
+    <div class="form-group">
+      <label>Color</label>
+      <div class="color-picker">
+        <button
+          *ngFor="let color of availableColors"
+          type="button"
+          class="color-option"
+          [class.selected]="formData.color === color"
+          [style.background-color]="color"
+          (click)="formData.color = color">
+          <i class="pi pi-check" *ngIf="formData.color === color"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Icon -->
+    <div class="form-group">
+      <label>Icon</label>
+      <div class="icon-picker">
+        <button
+          *ngFor="let icon of availableIcons"
+          type="button"
+          class="icon-option"
+          [class.selected]="formData.icon === icon"
+          (click)="formData.icon = icon">
+          <i [class]="'pi pi-' + icon"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      label="Cancel"
+      class="btn-secondary"
+      (click)="closeDialog()">
+    </button>
+    <button
+      pButton
+      [label]="editingCategory ? 'Save Changes' : 'Create Category'"
+      class="btn-primary"
+      (click)="saveCategory()"
+      [disabled]="!formData.name.trim()">
+    </button>
+  </ng-template>
+</p-dialog>
