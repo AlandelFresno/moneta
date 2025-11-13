@@ -14,7 +14,10 @@ import {
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
+  LineController,
+  BarController,
+  PieController
 } from 'chart.js';
 
 import { Transaction } from '../../models/transaction.model';
@@ -28,12 +31,19 @@ import { PreferencesService } from '../../services/preferences.service';
 
 // Register Chart.js components
 Chart.register(
+  // Scales
   CategoryScale,
   LinearScale,
+  // Elements
   PointElement,
   LineElement,
   BarElement,
   ArcElement,
+  // Controllers
+  LineController,
+  BarController,
+  PieController,
+  // Plugins
   Title,
   Tooltip,
   Legend,
