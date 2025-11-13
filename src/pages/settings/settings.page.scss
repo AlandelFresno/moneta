@@ -521,6 +521,52 @@
   }
 }
 
+// Estilos para el card consolidado de tasas
+.exchange-rates-card {
+  .card-body {
+    padding: 0;
+  }
+}
+
+.rates-management-section {
+  padding: 1.5rem;
+
+  &:not(:last-child) {
+    padding-bottom: 1.5rem;
+  }
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+
+  i {
+    font-size: 1.25rem;
+    color: #3b82f6;
+  }
+
+  h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+  }
+}
+
+.section-divider {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    #e5e7eb 20%,
+    #e5e7eb 80%,
+    transparent
+  );
+  margin: 0;
+}
+
 // Responsive Design
 @media (max-width: 768px) {
   .conversion-inputs {
