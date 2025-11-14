@@ -238,6 +238,29 @@
 
 }
 
+// Estilos específicos para diálogos de combustible
+.p-dialog {
+  background: #ffffff !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+
+  .p-dialog-header {
+    background: #ffffff !important;
+    color: #1f2937 !important;
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+
+  .p-dialog-content {
+    background: #ffffff !important;
+    color: #1f2937 !important;
+  }
+
+  .p-dialog-footer {
+    background: #ffffff !important;
+    border-top: 1px solid #e5e7eb !important;
+  }
+}
+
 // Forms (fuera de .fuel-page para que funcionen en diálogos)
 .vehicle-form,
 .fuel-log-form {

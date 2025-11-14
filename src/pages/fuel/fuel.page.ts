@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { Vehicle } from '../../models/vehicle.model';
 import { FuelLog } from '../../models/fuel-log.model';
 import { VehicleService } from '../../services/vehicle.service';
@@ -8,7 +8,8 @@ import { FuelLogService } from '../../services/fuel-log.service';
   selector: 'app-fuel',
   templateUrl: './fuel.page.html',
   styleUrls: ['./fuel.page.scss'],
-  standalone: false
+  standalone: false,
+  encapsulation: ViewEncapsulation.None
 })
 export class FuelPage implements OnInit {
   vehicles: Vehicle[] = [];
