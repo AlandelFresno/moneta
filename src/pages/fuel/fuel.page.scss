@@ -238,26 +238,6 @@
 
 }
 
-// Estilos para diálogos de PrimeNG
-::ng-deep {
-  .p-dialog {
-    .p-dialog-header {
-      background: var(--surface-card);
-      color: var(--text-color);
-    }
-
-    .p-dialog-content {
-      background: var(--surface-card);
-      color: var(--text-color);
-    }
-
-    .p-dialog-footer {
-      background: var(--surface-card);
-      border-top: 1px solid var(--surface-border);
-    }
-  }
-}
-
 // Forms (fuera de .fuel-page para que funcionen en diálogos)
 .vehicle-form,
 .fuel-log-form {
