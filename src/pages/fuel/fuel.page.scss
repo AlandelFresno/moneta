@@ -239,26 +239,34 @@
 }
 
 // Estilos específicos para diálogos de combustible
-.p-dialog {
+:host ::ng-deep .p-dialog {
   background: #ffffff !important;
   border-radius: 8px !important;
   overflow: hidden !important;
 
   .p-dialog-header {
-    background: #ffffff !important;
-    color: #1f2937 !important;
+    background: #f9fafb !important;
+    color: #111827 !important;
     border-bottom: 1px solid #e5e7eb !important;
+    padding: 1.25rem 1.5rem !important;
   }
 
   .p-dialog-content {
     background: #ffffff !important;
-    color: #1f2937 !important;
+    color: #111827 !important;
+    padding: 1.5rem !important;
   }
 
   .p-dialog-footer {
-    background: #ffffff !important;
+    background: #f9fafb !important;
+    color: #111827 !important;
     border-top: 1px solid #e5e7eb !important;
+    padding: 1rem 1.5rem !important;
   }
+}
+
+:host ::ng-deep .p-dialog-mask {
+  background-color: rgba(0, 0, 0, 0.4) !important;
 }
 
 // Forms (fuera de .fuel-page para que funcionen en diálogos)

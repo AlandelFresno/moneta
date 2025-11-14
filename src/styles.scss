@@ -61,50 +61,34 @@
 .p-dialog {
   background: #ffffff !important;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
+  border-radius: 8px !important;
 }
 
 .p-dialog-header {
-  background: #ffffff !important;
-  color: #1f2937 !important;
+  background: #f9fafb !important;
+  color: #111827 !important;
   border-bottom: 1px solid #e5e7eb !important;
   padding: 1.25rem 1.5rem !important;
+
+  .p-dialog-title {
+    color: #111827 !important;
+    font-weight: 600 !important;
+  }
 }
 
 .p-dialog-content {
   background: #ffffff !important;
-  color: #1f2937 !important;
+  color: #111827 !important;
   padding: 1.5rem !important;
 }
 
 .p-dialog-footer {
-  background: #ffffff !important;
+  background: #f9fafb !important;
+  color: #111827 !important;
   border-top: 1px solid #e5e7eb !important;
   padding: 1rem 1.5rem !important;
 }
 
 .p-dialog-mask {
   background-color: rgba(0, 0, 0, 0.4) !important;
-}
-
-/* Dark mode support for dialogs */
-@media (prefers-color-scheme: dark) {
-  .p-dialog {
-    background: #1f2937 !important;
-  }
-
-  .p-dialog-header {
-    background: #1f2937 !important;
-    color: #f9fafb !important;
-    border-bottom: 1px solid #374151 !important;
-  }
-
-  .p-dialog-content {
-    background: #1f2937 !important;
-    color: #f9fafb !important;
-  }
-
-  .p-dialog-footer {
-    background: #1f2937 !important;
-    border-top: 1px solid #374151 !important;
-  }
 }
