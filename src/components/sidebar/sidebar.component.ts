@@ -44,6 +44,11 @@ export class SidebarComponent {
       route: '/categories'
     },
     {
+      label: 'Combustible',
+      icon: 'car',
+      route: '/fuel'
+    },
+    {
       label: 'Settings',
       icon: 'cog',
       route: '/settings'

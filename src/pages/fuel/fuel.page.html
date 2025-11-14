@@ -1,0 +1,321 @@
+<div class="fuel-page">
+  <div class="page-header">
+    <h1>Consumo de Combustible</h1>
+    <p-button
+      label="Nuevo Vehículo"
+      icon="pi pi-plus"
+      (onClick)="openVehicleDialog()"
+      styleClass="p-button-primary">
+    </p-button>
+  </div>
+
+  <!-- Vehicle Selection -->
+  <div class="vehicle-section" *ngIf="vehicles.length > 0">
+    <h2>Mis Vehículos</h2>
+    <div class="vehicle-cards">
+      <div
+        *ngFor="let vehicle of vehicles"
+        class="vehicle-card"
+        [class.selected]="selectedVehicle?.id === vehicle.id"
+        (click)="selectVehicle(vehicle)">
+        <div class="vehicle-header" [style.background-color]="vehicle.color">
+          <h3>{{ vehicle.name }}</h3>
+          <span class="fuel-type-badge">{{ getFuelTypeLabel(vehicle.fuelType) }}</span>
+        </div>
+        <div class="vehicle-body">
+          <p><strong>{{ vehicle.brand }} {{ vehicle.model }}</strong> ({{ vehicle.year }})</p>
+          <p class="vehicle-km">{{ vehicle.currentKm }} km</p>
+          <div class="vehicle-actions">
+            <p-button
+              icon="pi pi-pencil"
+              (onClick)="editVehicle(vehicle); $event.stopPropagation()"
+              styleClass="p-button-text p-button-sm"
+              pTooltip="Editar">
+            </p-button>
+            <p-button
+              icon="pi pi-trash"
+              (onClick)="deleteVehicle(vehicle); $event.stopPropagation()"
+              styleClass="p-button-text p-button-danger p-button-sm"
+              pTooltip="Eliminar">
+            </p-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- No Vehicles Message -->
+  <div class="empty-state" *ngIf="vehicles.length === 0">
+    <i class="pi pi-car" style="font-size: 4rem; color: var(--surface-400);"></i>
+    <h2>No hay vehículos registrados</h2>
+    <p>Agrega tu primer vehículo para comenzar a registrar el consumo de combustible</p>
+  </div>
+
+  <!-- Fuel Logs Section -->
+  <div class="fuel-logs-section" *ngIf="selectedVehicle">
+    <div class="section-header">
+      <h2>Registros de {{ selectedVehicle.name }}</h2>
+      <p-button
+        label="Nueva Carga"
+        icon="pi pi-plus"
+        (onClick)="openFuelLogDialog()"
+        styleClass="p-button-success">
+      </p-button>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-cards">
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #22c55e;">
+          <i class="pi pi-chart-line"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Rendimiento Promedio</span>
+          <span class="stat-value">{{ getAverageEfficiency() }} km/L</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #3b82f6;">
+          <i class="pi pi-dollar"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Costo por km</span>
+          <span class="stat-value">${{ getAverageCostPerKm() }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #f59e0b;">
+          <i class="pi pi-wallet"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Total Gastado</span>
+          <span class="stat-value">${{ getTotalSpent() }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fuel Logs Table -->
+    <div class="fuel-logs-table" *ngIf="fuelLogs.length > 0">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Litros</th>
+            <th>$/Litro</th>
+            <th>Total</th>
+            <th>Km Actual</th>
+            <th>Km Recorridos</th>
+            <th>Rendimiento</th>
+            <th>Costo/km</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let log of fuelLogs">
+            <td>{{ formatDate(log.date) }}</td>
+            <td>{{ log.liters | number:'1.2-2' }} L</td>
+            <td>${{ log.pricePerLiter | number:'1.2-2' }}</td>
+            <td>${{ log.totalPrice | number:'1.2-2' }}</td>
+            <td>{{ log.currentKm | number:'1.0-0' }} km</td>
+            <td>{{ log.kmSinceLastFill | number:'1.0-0' }} km</td>
+            <td>{{ log.efficiency | number:'1.2-2' }} km/L</td>
+            <td>${{ log.costPerKm | number:'1.2-2' }}</td>
+            <td>
+              <p-button
+                icon="pi pi-trash"
+                (onClick)="deleteFuelLog(log)"
+                styleClass="p-button-text p-button-danger p-button-sm"
+                pTooltip="Eliminar">
+              </p-button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- No Logs Message -->
+    <div class="empty-state-small" *ngIf="fuelLogs.length === 0">
+      <p>No hay registros de combustible para este vehículo</p>
+    </div>
+  </div>
+
+  <!-- Vehicle Dialog -->
+  <p-dialog
+    [(visible)]="showVehicleDialog"
+    [header]="editingVehicle ? 'Editar Vehículo' : 'Nuevo Vehículo'"
+    [modal]="true"
+    [style]="{width: '500px'}"
+    [draggable]="false"
+    [resizable]="false">
+    <div class="vehicle-form">
+      <div class="form-group">
+        <label>Nombre *</label>
+        <input type="text" [(ngModel)]="vehicleForm.name" placeholder="Ej: Mi Auto" class="form-control">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Marca *</label>
+          <input type="text" [(ngModel)]="vehicleForm.brand" placeholder="Ej: Toyota" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Modelo *</label>
+          <input type="text" [(ngModel)]="vehicleForm.model" placeholder="Ej: Corolla" class="form-control">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Año</label>
+          <input type="number" [(ngModel)]="vehicleForm.year" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Patente</label>
+          <input type="text" [(ngModel)]="vehicleForm.plateNumber" placeholder="AB123CD" class="form-control">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Kilometraje Actual</label>
+          <input type="number" [(ngModel)]="vehicleForm.currentKm" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Capacidad Tanque (L)</label>
+          <input type="number" [(ngModel)]="vehicleForm.tankCapacity" class="form-control">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Tipo de Combustible</label>
+        <select [(ngModel)]="vehicleForm.fuelType" class="form-control">
+          <option *ngFor="let type of fuelTypes" [value]="type.value">{{ type.label }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Color</label>
+        <input type="color" [(ngModel)]="vehicleForm.color" class="form-control color-input">
+      </div>
+
+      <div class="form-group">
+        <label>Notas</label>
+        <textarea [(ngModel)]="vehicleForm.notes" rows="3" class="form-control"></textarea>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <p-button
+        label="Cancelar"
+        icon="pi pi-times"
+        (onClick)="showVehicleDialog = false"
+        styleClass="p-button-text">
+      </p-button>
+      <p-button
+        label="Guardar"
+        icon="pi pi-check"
+        (onClick)="saveVehicle()"
+        styleClass="p-button-primary">
+      </p-button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Fuel Log Dialog -->
+  <p-dialog
+    [(visible)]="showFuelLogDialog"
+    header="Nueva Carga de Combustible"
+    [modal]="true"
+    [style]="{width: '500px'}"
+    [draggable]="false"
+    [resizable]="false">
+    <div class="fuel-log-form">
+      <div class="form-group">
+        <label>Fecha</label>
+        <input type="date" [(ngModel)]="fuelLogForm.date" class="form-control">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Litros Cargados *</label>
+          <input
+            type="number"
+            [(ngModel)]="fuelLogForm.liters"
+            (ngModelChange)="onLitersOrPriceChange()"
+            step="0.01"
+            class="form-control">
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" [(ngModel)]="fuelLogForm.fullTank">
+            Tanque Lleno
+          </label>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Precio por Litro</label>
+          <input
+            type="number"
+            [(ngModel)]="fuelLogForm.pricePerLiter"
+            (ngModelChange)="onLitersOrPriceChange()"
+            step="0.01"
+            class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Precio Total</label>
+          <input
+            type="number"
+            [(ngModel)]="fuelLogForm.totalPrice"
+            (ngModelChange)="onTotalPriceChange()"
+            step="0.01"
+            class="form-control">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Kilometraje Actual *</label>
+          <input
+            type="number"
+            [(ngModel)]="fuelLogForm.currentKm"
+            (ngModelChange)="onCurrentKmChange()"
+            class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Km Recorridos</label>
+          <input
+            type="number"
+            [(ngModel)]="fuelLogForm.kmSinceLastFill"
+            class="form-control"
+            [disabled]="true">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Estación de Servicio</label>
+        <input type="text" [(ngModel)]="fuelLogForm.gasStation" placeholder="Ej: YPF, Shell" class="form-control">
+      </div>
+
+      <div class="form-group">
+        <label>Notas</label>
+        <textarea [(ngModel)]="fuelLogForm.notes" rows="3" class="form-control"></textarea>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <p-button
+        label="Cancelar"
+        icon="pi pi-times"
+        (onClick)="showFuelLogDialog = false"
+        styleClass="p-button-text">
+      </p-button>
+      <p-button
+        label="Guardar"
+        icon="pi pi-check"
+        (onClick)="saveFuelLog()"
+        styleClass="p-button-success">
+      </p-button>
+    </ng-template>
+  </p-dialog>
+</div>
