@@ -81,12 +81,29 @@ export class SidebarComponent {
   exportAllData() {
     console.log('📤 [Sidebar] Iniciando exportación de todos los datos...');
 
-    const transactions = this.transactionService.getTransactions();
-    const vehicles = this.vehicleService.getVehicles();
-    const fuelLogs = this.fuelLogService.getLogs();
+    try {
+      const transactions = this.transactionService.getTransactions();
+      const vehicles = this.vehicleService.getVehicles();
+      const fuelLogs = this.fuelLogService.getLogs();
 
-    this.exportService.exportAllData(transactions, vehicles, fuelLogs);
+      console.log('📊 [Sidebar] Datos obtenidos de los servicios:', {
+        transactions: transactions.length,
+        vehicles: vehicles.length,
+        fuelLogs: fuelLogs.length
+      });
 
-    console.log('✅ [Sidebar] Exportación completada');
+      const result = this.exportService.exportAllData(transactions, vehicles, fuelLogs);
+
+      if (result.success) {
+        console.log('✅ [Sidebar] Exportación completada exitosamente');
+        alert(result.message);
+      } else {
+        console.warn('⚠️ [Sidebar] No se pudo exportar:', result.message);
+        alert(result.message);
+      }
+    } catch (error) {
+      console.error('❌ [Sidebar] Error en exportación:', error);
+      alert('Error al exportar los datos. Por favor, revisa la consola para más detalles.');
+    }
   }
 }
