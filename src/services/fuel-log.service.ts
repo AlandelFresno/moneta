@@ -129,18 +129,22 @@ export class FuelLogService {
   // Cálculos y estadísticas
   calculateAverageEfficiency(vehicleId: string): number {
     const logs = this.getLogsByVehicle(vehicleId);
-    if (logs.length === 0) return 0;
+    // Filtrar solo logs con efficiency > 0 (que tienen km recorridos)
+    const validLogs = logs.filter(log => log.efficiency > 0);
+    if (validLogs.length === 0) return 0;
 
-    const totalEfficiency = logs.reduce((sum, log) => sum + log.efficiency, 0);
-    return totalEfficiency / logs.length;
+    const totalEfficiency = validLogs.reduce((sum, log) => sum + log.efficiency, 0);
+    return totalEfficiency / validLogs.length;
   }
 
   calculateAverageCostPerKm(vehicleId: string): number {
     const logs = this.getLogsByVehicle(vehicleId);
-    if (logs.length === 0) return 0;
+    // Filtrar solo logs con costPerKm > 0 y no infinito
+    const validLogs = logs.filter(log => log.costPerKm > 0 && isFinite(log.costPerKm));
+    if (validLogs.length === 0) return 0;
 
-    const totalCost = logs.reduce((sum, log) => sum + log.costPerKm, 0);
-    return totalCost / logs.length;
+    const totalCost = validLogs.reduce((sum, log) => sum + log.costPerKm, 0);
+    return totalCost / validLogs.length;
   }
 
   getTotalSpent(vehicleId: string): number {

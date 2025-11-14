@@ -188,11 +188,19 @@ export class FuelPage implements OnInit {
       this.fuelLogForm.pricePerLiter = this.fuelLogForm.totalPrice / this.fuelLogForm.liters;
     }
 
-    // Calcular eficiencia (km/litro)
-    const efficiency = this.fuelLogForm.kmSinceLastFill / this.fuelLogForm.liters;
+    // Calcular eficiencia y costo por km solo si hay km recorridos
+    let efficiency = 0;
+    let costPerKm = 0;
 
-    // Calcular costo por km
-    const costPerKm = this.fuelLogForm.totalPrice / this.fuelLogForm.kmSinceLastFill;
+    if (this.fuelLogForm.kmSinceLastFill > 0) {
+      // Calcular eficiencia (km/litro)
+      efficiency = this.fuelLogForm.kmSinceLastFill / this.fuelLogForm.liters;
+
+      // Calcular costo por km
+      if (this.fuelLogForm.totalPrice > 0) {
+        costPerKm = this.fuelLogForm.totalPrice / this.fuelLogForm.kmSinceLastFill;
+      }
+    }
 
     const logData = {
       vehicleId: this.selectedVehicle.id,
@@ -290,5 +298,9 @@ export class FuelPage implements OnInit {
   getFuelTypeLabel(type: string): string {
     const fuelType = this.fuelTypes.find(t => t.value === type);
     return fuelType ? fuelType.label : type;
+  }
+
+  isFinite(value: number): boolean {
+    return isFinite(value);
   }
 }

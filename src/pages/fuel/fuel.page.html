@@ -117,9 +117,18 @@
             <td>${{ log.pricePerLiter | number:'1.2-2' }}</td>
             <td>${{ log.totalPrice | number:'1.2-2' }}</td>
             <td>{{ log.currentKm | number:'1.0-0' }} km</td>
-            <td>{{ log.kmSinceLastFill | number:'1.0-0' }} km</td>
-            <td>{{ log.efficiency | number:'1.2-2' }} km/L</td>
-            <td>${{ log.costPerKm | number:'1.2-2' }}</td>
+            <td>
+              <span *ngIf="log.kmSinceLastFill > 0">{{ log.kmSinceLastFill | number:'1.0-0' }} km</span>
+              <span *ngIf="log.kmSinceLastFill === 0" style="color: #9ca3af;">-</span>
+            </td>
+            <td>
+              <span *ngIf="log.efficiency > 0">{{ log.efficiency | number:'1.2-2' }} km/L</span>
+              <span *ngIf="log.efficiency === 0" style="color: #9ca3af;">-</span>
+            </td>
+            <td>
+              <span *ngIf="log.costPerKm > 0 && isFinite(log.costPerKm)">${{ log.costPerKm | number:'1.2-2' }}</span>
+              <span *ngIf="log.costPerKm === 0 || !isFinite(log.costPerKm)" style="color: #9ca3af;">-</span>
+            </td>
             <td>
               <p-button
                 icon="pi pi-trash"
