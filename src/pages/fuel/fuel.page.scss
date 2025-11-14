@@ -236,70 +236,71 @@
     color: var(--text-color-secondary);
   }
 
-  // Forms
-  .vehicle-form,
-  .fuel-log-form {
-    .form-group {
-      margin-bottom: 1.25rem;
+}
 
-      label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
-        color: var(--text-color);
-        font-size: 0.9375rem;
+// Forms (fuera de .fuel-page para que funcionen en diálogos)
+.vehicle-form,
+.fuel-log-form {
+  .form-group {
+    margin-bottom: 1.25rem;
 
-        input[type="checkbox"] {
-          margin-right: 0.5rem;
-        }
-      }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--text-color);
+      font-size: 0.9375rem;
 
-      .form-control {
-        width: 100%;
-        padding: 0.75rem;
-        border: 1px solid var(--surface-border);
-        border-radius: 6px;
-        font-size: 1rem;
-        transition: border-color 0.2s;
-        background: var(--surface-ground);
-        color: var(--text-color);
-
-        &:focus {
-          outline: none;
-          border-color: var(--primary-color);
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        &:disabled {
-          background: var(--surface-100);
-          color: var(--text-color-secondary);
-          cursor: not-allowed;
-        }
-      }
-
-      textarea.form-control {
-        resize: vertical;
-        min-height: 80px;
-      }
-
-      .color-input {
-        height: 50px;
-        cursor: pointer;
-      }
-
-      select.form-control {
-        cursor: pointer;
+      input[type="checkbox"] {
+        margin-right: 0.5rem;
       }
     }
 
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
+    .form-control {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--surface-border);
+      border-radius: 6px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+      background: var(--surface-ground);
+      color: var(--text-color);
 
-      .form-group {
-        margin-bottom: 1.25rem;
+      &:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
       }
+
+      &:disabled {
+        background: var(--surface-100);
+        color: var(--text-color-secondary);
+        cursor: not-allowed;
+      }
+    }
+
+    textarea.form-control {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .color-input {
+      height: 50px;
+      cursor: pointer;
+    }
+
+    select.form-control {
+      cursor: pointer;
+    }
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+
+    .form-group {
+      margin-bottom: 1.25rem;
     }
   }
 }
@@ -330,7 +331,10 @@
         min-width: 800px;
       }
     }
+  }
 
+  .vehicle-form,
+  .fuel-log-form {
     .form-row {
       grid-template-columns: 1fr !important;
     }
