@@ -62,7 +62,7 @@ export class FuelLogService {
     console.log('➕ [FuelLogService] Creando registro de combustible:', {
       vehicleId: logData.vehicleId,
       liters: logData.liters,
-      currentKm: logData.currentKm
+      totalKm: logData.totalKm
     });
 
     const newLog: FuelLog = {
@@ -77,7 +77,7 @@ export class FuelLogService {
 
     // Actualizar el kilometraje del vehículo
     this.vehicleService.updateVehicle(logData.vehicleId, {
-      currentKm: logData.currentKm
+      currentKm: logData.totalKm
     });
 
     console.log('✅ [FuelLogService] Registro creado:', {
@@ -157,9 +157,9 @@ export class FuelLogService {
     return logs.reduce((sum, log) => sum + log.liters, 0);
   }
 
-  getTotalKm(vehicleId: string): number {
+  getTotalKmTraveled(vehicleId: string): number {
     const logs = this.getLogsByVehicle(vehicleId);
-    return logs.reduce((sum, log) => sum + log.kmSinceLastFill, 0);
+    return logs.reduce((sum, log) => sum + log.kmTraveled, 0);
   }
 
   private generateId(): string {

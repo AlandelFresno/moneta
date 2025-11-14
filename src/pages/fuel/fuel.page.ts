@@ -3,6 +3,7 @@ import { Vehicle } from '../../models/vehicle.model';
 import { FuelLog } from '../../models/fuel-log.model';
 import { VehicleService } from '../../services/vehicle.service';
 import { FuelLogService } from '../../services/fuel-log.service';
+import { ExportService } from '../../services/export.service';
 
 @Component({
   selector: 'app-fuel',
@@ -19,6 +20,7 @@ export class FuelPage implements OnInit {
   // Dialogs
   showVehicleDialog = false;
   showFuelLogDialog = false;
+  showImportDialog = false;
   editingVehicle: Vehicle | null = null;
   editingLog: FuelLog | null = null;
 
@@ -42,12 +44,21 @@ export class FuelPage implements OnInit {
     liters: 0,
     pricePerLiter: 0,
     totalPrice: 0,
-    currentKm: 0,
-    kmSinceLastFill: 0,
+    currency: 'USD',
+    totalKm: 0,
+    kmTraveled: 0,
     fullTank: true,
     gasStation: '',
     notes: ''
   };
+
+  currencies = [
+    { code: 'USD', name: 'Dólar estadounidense', symbol: '$' },
+    { code: 'ARS', name: 'Peso argentino', symbol: '$' },
+    { code: 'EUR', name: 'Euro', symbol: '€' },
+    { code: 'GBP', name: 'Libra esterlina', symbol: '£' },
+    { code: 'BRL', name: 'Real brasileño', symbol: 'R$' }
+  ];
 
   fuelTypes = [
     { label: 'Gasolina', value: 'gasoline' },
@@ -58,7 +69,8 @@ export class FuelPage implements OnInit {
 
   constructor(
     public vehicleService: VehicleService,
-    public fuelLogService: FuelLogService
+    public fuelLogService: FuelLogService,
+    private exportService: ExportService
   ) {}
 
   ngOnInit(): void {
@@ -159,12 +171,12 @@ export class FuelPage implements OnInit {
     this.resetFuelLogForm();
 
     // Pre-llenar con datos del vehículo
-    this.fuelLogForm.currentKm = this.selectedVehicle.currentKm;
+    this.fuelLogForm.totalKm = this.selectedVehicle.currentKm;
 
     // Calcular km desde la última carga
     const lastLog = this.fuelLogService.getLastLog(this.selectedVehicle.id);
     if (lastLog) {
-      this.fuelLogForm.kmSinceLastFill = this.fuelLogForm.currentKm - lastLog.currentKm;
+      this.fuelLogForm.kmTraveled = this.fuelLogForm.totalKm - lastLog.totalKm;
     }
 
     this.showFuelLogDialog = true;
@@ -173,7 +185,7 @@ export class FuelPage implements OnInit {
   saveFuelLog(): void {
     if (!this.selectedVehicle) return;
 
-    if (this.fuelLogForm.liters <= 0 || this.fuelLogForm.currentKm <= 0) {
+    if (this.fuelLogForm.liters <= 0 || this.fuelLogForm.totalKm <= 0) {
       alert('Por favor completa los campos obligatorios con valores válidos');
       return;
     }
@@ -192,13 +204,13 @@ export class FuelPage implements OnInit {
     let efficiency = 0;
     let costPerKm = 0;
 
-    if (this.fuelLogForm.kmSinceLastFill > 0) {
+    if (this.fuelLogForm.kmTraveled > 0) {
       // Calcular eficiencia (km/litro)
-      efficiency = this.fuelLogForm.kmSinceLastFill / this.fuelLogForm.liters;
+      efficiency = this.fuelLogForm.kmTraveled / this.fuelLogForm.liters;
 
       // Calcular costo por km
       if (this.fuelLogForm.totalPrice > 0) {
-        costPerKm = this.fuelLogForm.totalPrice / this.fuelLogForm.kmSinceLastFill;
+        costPerKm = this.fuelLogForm.totalPrice / this.fuelLogForm.kmTraveled;
       }
     }
 
@@ -208,8 +220,9 @@ export class FuelPage implements OnInit {
       liters: this.fuelLogForm.liters,
       pricePerLiter: this.fuelLogForm.pricePerLiter,
       totalPrice: this.fuelLogForm.totalPrice,
-      currentKm: this.fuelLogForm.currentKm,
-      kmSinceLastFill: this.fuelLogForm.kmSinceLastFill,
+      currency: this.fuelLogForm.currency,
+      totalKm: this.fuelLogForm.totalKm,
+      kmTraveled: this.fuelLogForm.kmTraveled,
       efficiency: efficiency,
       costPerKm: costPerKm,
       fullTank: this.fuelLogForm.fullTank,
@@ -238,8 +251,9 @@ export class FuelPage implements OnInit {
       liters: 0,
       pricePerLiter: 0,
       totalPrice: 0,
-      currentKm: 0,
-      kmSinceLastFill: 0,
+      currency: 'USD',
+      totalKm: 0,
+      kmTraveled: 0,
       fullTank: true,
       gasStation: '',
       notes: ''
@@ -247,12 +261,12 @@ export class FuelPage implements OnInit {
   }
 
   // Calculations
-  onCurrentKmChange(): void {
+  onTotalKmChange(): void {
     if (!this.selectedVehicle) return;
 
     const lastLog = this.fuelLogService.getLastLog(this.selectedVehicle.id);
-    if (lastLog && this.fuelLogForm.currentKm > lastLog.currentKm) {
-      this.fuelLogForm.kmSinceLastFill = this.fuelLogForm.currentKm - lastLog.currentKm;
+    if (lastLog && this.fuelLogForm.totalKm > lastLog.totalKm) {
+      this.fuelLogForm.kmTraveled = this.fuelLogForm.totalKm - lastLog.totalKm;
     }
   }
 
@@ -302,5 +316,87 @@ export class FuelPage implements OnInit {
 
   isFinite(value: number): boolean {
     return isFinite(value);
+  }
+
+  // Exportar/Importar
+  exportAllData(): void {
+    console.log('📤 [Fuel] Exportando todos los datos...');
+    const allLogs = this.fuelLogService.getLogs();
+    this.exportService.exportFuelLogsToExcel(allLogs, this.vehicles, 'combustible_completo');
+  }
+
+  exportVehicleData(): void {
+    if (!this.selectedVehicle) {
+      alert('Por favor selecciona un vehículo primero');
+      return;
+    }
+    console.log('📤 [Fuel] Exportando datos del vehículo:', this.selectedVehicle.name);
+    this.exportService.exportFuelLogsToExcel(
+      this.fuelLogs,
+      this.vehicles,
+      `combustible_${this.selectedVehicle.name.replace(/\s+/g, '_')}`
+    );
+  }
+
+  exportVehicles(): void {
+    console.log('📤 [Fuel] Exportando vehículos...');
+    this.exportService.exportVehiclesToExcel(this.vehicles);
+  }
+
+  onFileSelected(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      console.log('📥 [Fuel] Archivo seleccionado:', file.name);
+      this.importFromExcel(file);
+    }
+  }
+
+  async importFromExcel(file: File): Promise<void> {
+    try {
+      const importedLogs = await this.exportService.importFuelLogsFromExcel(file);
+
+      if (!this.selectedVehicle) {
+        alert('Por favor selecciona un vehículo primero para importar los registros');
+        return;
+      }
+
+      // Crear los registros importados para el vehículo seleccionado
+      let importedCount = 0;
+      for (const logData of importedLogs) {
+        const fullLogData = {
+          ...logData,
+          vehicleId: this.selectedVehicle.id,
+          date: logData.date || new Date(),
+          liters: logData.liters || 0,
+          pricePerLiter: logData.pricePerLiter || 0,
+          totalPrice: logData.totalPrice || 0,
+          currency: logData.currency || 'USD',
+          kmTraveled: logData.kmTraveled || 0,
+          totalKm: logData.totalKm || 0,
+          efficiency: logData.efficiency || 0,
+          costPerKm: logData.costPerKm || 0,
+          fullTank: logData.fullTank || false,
+          gasStation: logData.gasStation || '',
+          notes: logData.notes || ''
+        };
+
+        this.fuelLogService.createLog(fullLogData as Omit<FuelLog, 'id' | 'createdAt' | 'updatedAt'>);
+        importedCount++;
+      }
+
+      alert(`Se importaron ${importedCount} registros exitosamente`);
+      this.loadData();
+      this.selectVehicle(this.selectedVehicle);
+    } catch (error) {
+      console.error('❌ [Fuel] Error al importar:', error);
+      alert('Error al importar el archivo. Por favor verifica que el formato sea correcto.');
+    }
+  }
+
+  triggerFileInput(): void {
+    const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
+    }
   }
 }

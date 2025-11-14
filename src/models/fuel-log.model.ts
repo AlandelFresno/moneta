@@ -7,10 +7,11 @@ export interface FuelLog {
   liters: number;            // Cantidad de combustible cargado (litros)
   pricePerLiter: number;     // Precio por litro
   totalPrice: number;        // Precio total de la carga
+  currency: string;          // Moneda de la transacción (USD, ARS, EUR, etc.)
 
   // Datos de kilometraje
-  currentKm: number;         // Kilometraje actual al momento de cargar
-  kmSinceLastFill: number;   // Km realizados desde la última carga
+  kmTraveled: number;        // Km recorridos desde la última carga
+  totalKm: number;           // Kilometraje total del vehículo
 
   // Datos calculados
   efficiency: number;        // Rendimiento: km/litro

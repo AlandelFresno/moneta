@@ -1,12 +1,35 @@
 <div class="fuel-page">
+  <input type="file" id="fileInput" accept=".xlsx, .xls" (change)="onFileSelected($event)" style="display: none;">
+
   <div class="page-header">
     <h1>Consumo de Combustible</h1>
-    <p-button
-      label="Nuevo Vehículo"
-      icon="pi pi-plus"
-      (onClick)="openVehicleDialog()"
-      styleClass="p-button-primary">
-    </p-button>
+    <div class="header-actions">
+      <p-button
+        label="Importar Excel"
+        icon="pi pi-file-import"
+        (onClick)="triggerFileInput()"
+        styleClass="p-button-secondary">
+      </p-button>
+      <p-button
+        label="Exportar Vehículo"
+        icon="pi pi-file-export"
+        (onClick)="exportVehicleData()"
+        styleClass="p-button-info"
+        *ngIf="selectedVehicle">
+      </p-button>
+      <p-button
+        label="Exportar Todo"
+        icon="pi pi-download"
+        (onClick)="exportAllData()"
+        styleClass="p-button-warning">
+      </p-button>
+      <p-button
+        label="Nuevo Vehículo"
+        icon="pi pi-plus"
+        (onClick)="openVehicleDialog()"
+        styleClass="p-button-primary">
+      </p-button>
+    </div>
   </div>
 
   <!-- Vehicle Selection -->
@@ -103,8 +126,9 @@
             <th>Litros</th>
             <th>$/Litro</th>
             <th>Total</th>
-            <th>Km Actual</th>
+            <th>Moneda</th>
             <th>Km Recorridos</th>
+            <th>Km Total</th>
             <th>Rendimiento</th>
             <th>Costo/km</th>
             <th>Acciones</th>
@@ -116,11 +140,12 @@
             <td>{{ log.liters | number:'1.2-2' }} L</td>
             <td>${{ log.pricePerLiter | number:'1.2-2' }}</td>
             <td>${{ log.totalPrice | number:'1.2-2' }}</td>
-            <td>{{ log.currentKm | number:'1.0-0' }} km</td>
+            <td>{{ log.currency }}</td>
             <td>
-              <span *ngIf="log.kmSinceLastFill > 0">{{ log.kmSinceLastFill | number:'1.0-0' }} km</span>
-              <span *ngIf="log.kmSinceLastFill === 0" style="color: #9ca3af;">-</span>
+              <span *ngIf="log.kmTraveled > 0">{{ log.kmTraveled | number:'1.0-0' }} km</span>
+              <span *ngIf="log.kmTraveled === 0" style="color: #9ca3af;">-</span>
             </td>
+            <td>{{ log.totalKm | number:'1.0-0' }} km</td>
             <td>
               <span *ngIf="log.efficiency > 0">{{ log.efficiency | number:'1.2-2' }} km/L</span>
               <span *ngIf="log.efficiency === 0" style="color: #9ca3af;">-</span>
@@ -282,20 +307,27 @@
         </div>
       </div>
 
+      <div class="form-group">
+        <label>Moneda</label>
+        <select [(ngModel)]="fuelLogForm.currency" class="form-control">
+          <option *ngFor="let curr of currencies" [value]="curr.code">{{ curr.code }} - {{ curr.name }}</option>
+        </select>
+      </div>
+
       <div class="form-row">
         <div class="form-group">
-          <label>Kilometraje Actual *</label>
+          <label>Km Total *</label>
           <input
             type="number"
-            [(ngModel)]="fuelLogForm.currentKm"
-            (ngModelChange)="onCurrentKmChange()"
+            [(ngModel)]="fuelLogForm.totalKm"
+            (ngModelChange)="onTotalKmChange()"
             class="form-control">
         </div>
         <div class="form-group">
           <label>Km Recorridos</label>
           <input
             type="number"
-            [(ngModel)]="fuelLogForm.kmSinceLastFill"
+            [(ngModel)]="fuelLogForm.kmTraveled"
             class="form-control"
             [disabled]="true">
         </div>
