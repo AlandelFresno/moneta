@@ -1,35 +1,12 @@
 <div class="fuel-page">
-  <input type="file" id="fileInput" accept=".xlsx, .xls" (change)="onFileSelected($event)" style="display: none;">
-
   <div class="page-header">
     <h1>Consumo de Combustible</h1>
-    <div class="header-actions">
-      <p-button
-        label="Importar Excel"
-        icon="pi pi-file-import"
-        (onClick)="triggerFileInput()"
-        styleClass="p-button-secondary">
-      </p-button>
-      <p-button
-        label="Exportar Vehículo"
-        icon="pi pi-file-export"
-        (onClick)="exportVehicleData()"
-        styleClass="p-button-info"
-        *ngIf="selectedVehicle">
-      </p-button>
-      <p-button
-        label="Exportar Todo"
-        icon="pi pi-download"
-        (onClick)="exportAllData()"
-        styleClass="p-button-warning">
-      </p-button>
-      <p-button
-        label="Nuevo Vehículo"
-        icon="pi pi-plus"
-        (onClick)="openVehicleDialog()"
-        styleClass="p-button-primary">
-      </p-button>
-    </div>
+    <p-button
+      label="Nuevo Vehículo"
+      icon="pi pi-plus"
+      (onClick)="openVehicleDialog()"
+      styleClass="p-button-primary">
+    </p-button>
   </div>
 
   <!-- Vehicle Selection -->

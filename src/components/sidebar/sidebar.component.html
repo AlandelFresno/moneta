@@ -32,6 +32,17 @@
       <span class="nav-text" *ngIf="!isCollapsed() || isMobileMenuOpen()">{{ item.label }}</span>
       <span class="badge" *ngIf="item.badge && (!isCollapsed() || isMobileMenuOpen())">{{ item.badge }}</span>
     </a>
+
+    <!-- Export Button -->
+    <button
+      class="nav-item export-button"
+      [class.collapsed]="isCollapsed()"
+      (click)="exportAllData()"
+      pButton
+      [text]="true">
+      <i class="pi pi-download"></i>
+      <span class="nav-text" *ngIf="!isCollapsed() || isMobileMenuOpen()">Exportar Excel</span>
+    </button>
   </nav>
 </div>
 

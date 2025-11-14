@@ -1,4 +1,8 @@
 import { Component, signal } from '@angular/core';
+import { ExportService } from '../../services/export.service';
+import { VehicleService } from '../../services/vehicle.service';
+import { FuelLogService } from '../../services/fuel-log.service';
+import { TransactionService } from '../../services/transaction.service';
 
 export interface MenuItem {
   label: string;
@@ -16,6 +20,13 @@ export interface MenuItem {
 export class SidebarComponent {
   isCollapsed = signal(false);
   isMobileMenuOpen = signal(false);
+
+  constructor(
+    private exportService: ExportService,
+    private vehicleService: VehicleService,
+    private fuelLogService: FuelLogService,
+    private transactionService: TransactionService
+  ) {}
 
   menuItems: MenuItem[] = [
     {
@@ -65,5 +76,17 @@ export class SidebarComponent {
 
   closeMobileMenu() {
     this.isMobileMenuOpen.set(false);
+  }
+
+  exportAllData() {
+    console.log('📤 [Sidebar] Iniciando exportación de todos los datos...');
+
+    const transactions = this.transactionService.getTransactions();
+    const vehicles = this.vehicleService.getVehicles();
+    const fuelLogs = this.fuelLogService.getLogs();
+
+    this.exportService.exportAllData(transactions, vehicles, fuelLogs);
+
+    console.log('✅ [Sidebar] Exportación completada');
   }
 }

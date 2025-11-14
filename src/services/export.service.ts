@@ -171,6 +171,80 @@ export class ExportService {
     return isNaN(parsed) ? 0 : parsed;
   }
 
+  /**
+   * Exportar todos los datos de la aplicación a Excel
+   */
+  exportAllData(
+    transactions: Transaction[],
+    vehicles: Vehicle[],
+    fuelLogs: FuelLog[]
+  ): void {
+    console.log('📤 [ExportService] Exportando todos los datos de la aplicación...');
+
+    const workbook = XLSX.utils.book_new();
+
+    // Hoja 1: Transacciones
+    if (transactions.length > 0) {
+      const transactionsData = transactions.map(transaction => ({
+        'Fecha': this.formatDate(transaction.date),
+        'Descripción': transaction.description,
+        'Monto': transaction.amount,
+        'Moneda': transaction.currency,
+        'Tipo': transaction.type === 'income' ? 'Ingreso' : 'Gasto',
+        'Categoría ID': transaction.categoryId,
+        'Cuenta ID': transaction.accountId
+      }));
+      const transactionsSheet = XLSX.utils.json_to_sheet(transactionsData);
+      XLSX.utils.book_append_sheet(workbook, transactionsSheet, 'Transacciones');
+    }
+
+    // Hoja 2: Vehículos
+    if (vehicles.length > 0) {
+      const vehiclesData = vehicles.map(vehicle => ({
+        'Nombre': vehicle.name,
+        'Marca': vehicle.brand,
+        'Modelo': vehicle.model,
+        'Año': vehicle.year,
+        'Patente': vehicle.plateNumber || '',
+        'Km Actual': vehicle.currentKm,
+        'Capacidad Tanque (L)': vehicle.tankCapacity || '',
+        'Tipo Combustible': vehicle.fuelType,
+        'Color': vehicle.color || '',
+        'Notas': vehicle.notes || ''
+      }));
+      const vehiclesSheet = XLSX.utils.json_to_sheet(vehiclesData);
+      XLSX.utils.book_append_sheet(workbook, vehiclesSheet, 'Vehículos');
+    }
+
+    // Hoja 3: Registros de Combustible
+    if (fuelLogs.length > 0) {
+      const fuelLogsData = fuelLogs.map(log => {
+        const vehicle = vehicles.find(v => v.id === log.vehicleId);
+        return {
+          'Fecha': this.formatDate(log.date),
+          'Vehículo': vehicle ? `${vehicle.name} (${vehicle.brand} ${vehicle.model})` : 'N/A',
+          'Litros': log.liters,
+          'Precio por Litro': log.pricePerLiter,
+          'Precio Total': log.totalPrice,
+          'Moneda': log.currency,
+          'Km Recorridos': log.kmTraveled,
+          'Km Total': log.totalKm,
+          'Rendimiento (km/L)': log.efficiency.toFixed(2),
+          'Costo por km': log.costPerKm > 0 && isFinite(log.costPerKm) ? log.costPerKm.toFixed(2) : 'N/A',
+          'Tanque Lleno': log.fullTank ? 'Sí' : 'No',
+          'Estación': log.gasStation || '',
+          'Notas': log.notes || ''
+        };
+      });
+      const fuelLogsSheet = XLSX.utils.json_to_sheet(fuelLogsData);
+      XLSX.utils.book_append_sheet(workbook, fuelLogsSheet, 'Combustible');
+    }
+
+    // Guardar archivo
+    XLSX.writeFile(workbook, `budget_tracker_completo_${this.getTimestamp()}.xlsx`);
+    console.log('✅ [ExportService] Exportación completa exitosa');
+  }
+
   private getTimestamp(): string {
     const now = new Date();
     const year = now.getFullYear();
