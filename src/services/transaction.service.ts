@@ -71,9 +71,9 @@ export class TransactionService {
     const transactions = [...this.transactionsSubject.value, newTransaction];
     this.saveTransactions(transactions);
 
-    // Update account balance
+    // Update account balance with currency conversion
     const amount = transaction.type === 'income' ? transaction.amount : -transaction.amount;
-    this.accountService.updateBalance(transaction.accountId, amount);
+    this.accountService.updateBalance(transaction.accountId, amount, transaction.currency);
 
     return newTransaction;
   }
@@ -82,9 +82,9 @@ export class TransactionService {
     const oldTransaction = this.getTransactionById(id);
     if (!oldTransaction) return;
 
-    // Revert old balance change
+    // Revert old balance change with original currency
     const oldAmount = oldTransaction.type === 'income' ? -oldTransaction.amount : oldTransaction.amount;
-    this.accountService.updateBalance(oldTransaction.accountId, oldAmount);
+    this.accountService.updateBalance(oldTransaction.accountId, oldAmount, oldTransaction.currency);
 
     const transactions = this.transactionsSubject.value.map(txn =>
       txn.id === id
@@ -93,19 +93,19 @@ export class TransactionService {
     );
     this.saveTransactions(transactions);
 
-    // Apply new balance change
+    // Apply new balance change with updated currency
     const updatedTransaction = transactions.find(t => t.id === id)!;
     const newAmount = updatedTransaction.type === 'income' ? updatedTransaction.amount : -updatedTransaction.amount;
-    this.accountService.updateBalance(updatedTransaction.accountId, newAmount);
+    this.accountService.updateBalance(updatedTransaction.accountId, newAmount, updatedTransaction.currency);
   }
 
   deleteTransaction(id: string): void {
     const transaction = this.getTransactionById(id);
     if (!transaction) return;
 
-    // Revert balance change
+    // Revert balance change with transaction currency
     const amount = transaction.type === 'income' ? -transaction.amount : transaction.amount;
-    this.accountService.updateBalance(transaction.accountId, amount);
+    this.accountService.updateBalance(transaction.accountId, amount, transaction.currency);
 
     const transactions = this.transactionsSubject.value.filter(txn => txn.id !== id);
     this.saveTransactions(transactions);
