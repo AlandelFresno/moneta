@@ -7,13 +7,14 @@ import { Category } from '../models/category.model';
 import { Account } from '../models/account.model';
 import { MonthlyBilling } from '../models/billing.model';
 import { UserPreferences } from './preferences.service';
+import { GoogleDriveService } from './google-drive.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ExportService {
 
-  constructor() {}
+  constructor(private googleDriveService: GoogleDriveService) {}
 
   /**
    * Exportar registros de combustible a Excel
@@ -385,6 +386,191 @@ export class ExportService {
     const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
                     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     return months.indexOf(monthName) + 1;
+  }
+
+  /**
+   * Exportar todos los datos a Google Drive
+   */
+  async exportAllDataToGoogleDrive(
+    transactions: Transaction[],
+    vehicles: Vehicle[],
+    fuelLogs: FuelLog[],
+    categories: Category[],
+    accounts: Account[],
+    preferences: UserPreferences,
+    billings: MonthlyBilling[]
+  ): Promise<{ success: boolean; message: string; fileId?: string; webViewLink?: string }> {
+    console.log('📤 [ExportService] Exportando a Google Drive...');
+
+    try {
+      // Verificar autenticación
+      if (!this.googleDriveService.isSignedIn()) {
+        await this.googleDriveService.signIn();
+      }
+
+      // Generar workbook (igual que exportAllData pero sin guardar localmente)
+      const workbook = XLSX.utils.book_new();
+      let sheetsAdded = 0;
+
+      // Agregar todas las hojas (mismo código que exportAllData)
+      // Hoja 1: Transacciones
+      if (transactions.length > 0) {
+        const transactionsData = transactions.map(transaction => {
+          const category = categories.find(c => c.id === transaction.categoryId);
+          const account = accounts.find(a => a.id === transaction.accountId);
+          return {
+            'ID': transaction.id,
+            'Fecha': this.formatDate(transaction.date),
+            'Descripción': transaction.description,
+            'Monto': transaction.amount,
+            'Moneda': transaction.currency,
+            'Tipo': transaction.type === 'income' ? 'Ingreso' : 'Gasto',
+            'Categoría': category ? category.name : 'N/A',
+            'Categoría ID': transaction.categoryId,
+            'Cuenta': account ? account.name : 'N/A',
+            'Cuenta ID': transaction.accountId,
+            'Monto Convertido': transaction.convertedAmount || '',
+            'Tasa de Cambio': transaction.conversionRate || '',
+            'Fuente de Conversión': transaction.conversionSource || '',
+            'Fecha de Conversión': transaction.conversionDate ? this.formatDate(transaction.conversionDate) : '',
+            'Conversión Manual': transaction.manualConversion ? 'Sí' : 'No'
+          };
+        });
+        const transactionsSheet = XLSX.utils.json_to_sheet(transactionsData);
+        XLSX.utils.book_append_sheet(workbook, transactionsSheet, 'Transacciones');
+        sheetsAdded++;
+      }
+
+      // Hoja 2: Vehículos
+      if (vehicles.length > 0) {
+        const vehiclesData = vehicles.map(vehicle => ({
+          'ID': vehicle.id,
+          'Nombre': vehicle.name,
+          'Marca': vehicle.brand,
+          'Modelo': vehicle.model,
+          'Año': vehicle.year,
+          'Patente': vehicle.plateNumber || '',
+          'Km Actual': vehicle.currentKm,
+          'Capacidad Tanque (L)': vehicle.tankCapacity || '',
+          'Tipo Combustible': vehicle.fuelType,
+          'Color': vehicle.color || '',
+          'Notas': vehicle.notes || ''
+        }));
+        const vehiclesSheet = XLSX.utils.json_to_sheet(vehiclesData);
+        XLSX.utils.book_append_sheet(workbook, vehiclesSheet, 'Vehículos');
+        sheetsAdded++;
+      }
+
+      // Hoja 3: Combustible
+      if (fuelLogs.length > 0) {
+        const fuelLogsData = fuelLogs.map(log => {
+          const vehicle = vehicles.find(v => v.id === log.vehicleId);
+          return {
+            'ID': log.id,
+            'Fecha': this.formatDate(log.date),
+            'Vehículo': vehicle ? `${vehicle.name} (${vehicle.brand} ${vehicle.model})` : 'N/A',
+            'Vehículo ID': log.vehicleId,
+            'Litros': log.liters,
+            'Precio por Litro': log.pricePerLiter,
+            'Precio Total': log.totalPrice,
+            'Moneda': log.currency,
+            'Km Recorridos': log.kmTraveled,
+            'Km Total': log.totalKm,
+            'Rendimiento (km/L)': log.efficiency.toFixed(2),
+            'Costo por km': log.costPerKm > 0 && isFinite(log.costPerKm) ? log.costPerKm.toFixed(2) : 'N/A',
+            'Tanque Lleno': log.fullTank ? 'Sí' : 'No',
+            'Estación': log.gasStation || '',
+            'Notas': log.notes || ''
+          };
+        });
+        const fuelLogsSheet = XLSX.utils.json_to_sheet(fuelLogsData);
+        XLSX.utils.book_append_sheet(workbook, fuelLogsSheet, 'Combustible');
+        sheetsAdded++;
+      }
+
+      // Hoja 4: Categorías
+      if (categories.length > 0) {
+        const categoriesData = categories.map(category => ({
+          'ID': category.id,
+          'Nombre': category.name,
+          'Tipo': category.type === 'income' ? 'Ingreso' : 'Gasto',
+          'Color': category.color,
+          'Icono': category.icon
+        }));
+        const categoriesSheet = XLSX.utils.json_to_sheet(categoriesData);
+        XLSX.utils.book_append_sheet(workbook, categoriesSheet, 'Categorías');
+        sheetsAdded++;
+      }
+
+      // Hoja 5: Cuentas
+      if (accounts.length > 0) {
+        const accountsData = accounts.map(account => ({
+          'ID': account.id,
+          'Nombre': account.name,
+          'Tipo': account.type,
+          'Balance': account.balance,
+          'Moneda': account.currency,
+          'Color': account.color,
+          'Icono': account.icon
+        }));
+        const accountsSheet = XLSX.utils.json_to_sheet(accountsData);
+        XLSX.utils.book_append_sheet(workbook, accountsSheet, 'Cuentas');
+        sheetsAdded++;
+      }
+
+      // Hoja 6: Facturación
+      if (billings.length > 0) {
+        const billingsData = billings.map(billing => ({
+          'ID': billing.id,
+          'Mes': this.getMonthName(billing.month),
+          'Año': billing.year,
+          'Monto': billing.amount,
+          'Descripción': billing.description || ''
+        })).sort((a, b) => {
+          if (a['Año'] !== b['Año']) return b['Año'] - a['Año'];
+          return this.getMonthNumber(b['Mes']) - this.getMonthNumber(a['Mes']);
+        });
+        const billingsSheet = XLSX.utils.json_to_sheet(billingsData);
+        XLSX.utils.book_append_sheet(workbook, billingsSheet, 'Facturación');
+        sheetsAdded++;
+      }
+
+      // Hoja 7: Preferencias
+      const preferencesData = [{
+        'Moneda Preferida': preferences.preferredCurrency,
+        'Locale': preferences.locale,
+        'Tema': preferences.theme || 'light'
+      }];
+      const preferencesSheet = XLSX.utils.json_to_sheet(preferencesData);
+      XLSX.utils.book_append_sheet(workbook, preferencesSheet, 'Preferencias');
+      sheetsAdded++;
+
+      // Convertir workbook a blob
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([excelBuffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+
+      // Subir a Google Drive
+      const fileName = `budget_tracker_completo_${this.getTimestamp()}.xlsx`;
+      const folderId = await this.googleDriveService.getOrCreateBudgetFolder();
+      const result = await this.googleDriveService.uploadFile(fileName, blob, blob.type, folderId);
+
+      console.log(`✅ [ExportService] Archivo subido a Google Drive: ${result.id}`);
+
+      return {
+        success: true,
+        message: `Archivo guardado en Google Drive exitosamente. ${sheetsAdded} hoja(s) incluida(s).`,
+        fileId: result.id,
+        webViewLink: result.webViewLink
+      };
+    } catch (error: any) {
+      console.error('❌ [ExportService] Error al exportar a Google Drive:', error);
+      return {
+        success: false,
+        message: `Error al guardar en Google Drive: ${error.message || error}`
+      };
+    }
   }
 
   private getTimestamp(): string {
