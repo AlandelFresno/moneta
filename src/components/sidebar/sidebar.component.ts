@@ -5,6 +5,7 @@ import { FuelLogService } from '../../services/fuel-log.service';
 import { TransactionService } from '../../services/transaction.service';
 import { CategoryService } from '../../services/category.service';
 import { AccountService } from '../../services/account.service';
+import { PreferencesService } from '../../services/preferences.service';
 
 export interface MenuItem {
   label: string;
@@ -29,7 +30,8 @@ export class SidebarComponent {
     private fuelLogService: FuelLogService,
     private transactionService: TransactionService,
     private categoryService: CategoryService,
-    private accountService: AccountService
+    private accountService: AccountService,
+    private preferencesService: PreferencesService
   ) {}
 
   menuItems: MenuItem[] = [
@@ -91,13 +93,15 @@ export class SidebarComponent {
       const fuelLogs = this.fuelLogService.getLogs();
       const categories = this.categoryService.getCategories();
       const accounts = this.accountService.getAccounts();
+      const preferences = this.preferencesService.getPreferences();
 
       console.log('📊 [Sidebar] Datos obtenidos de los servicios:', {
         transactions: transactions.length,
         vehicles: vehicles.length,
         fuelLogs: fuelLogs.length,
         categories: categories.length,
-        accounts: accounts.length
+        accounts: accounts.length,
+        preferences: preferences
       });
 
       const result = this.exportService.exportAllData(
@@ -105,7 +109,8 @@ export class SidebarComponent {
         vehicles,
         fuelLogs,
         categories,
-        accounts
+        accounts,
+        preferences
       );
 
       if (result.success) {

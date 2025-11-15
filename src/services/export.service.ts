@@ -5,6 +5,7 @@ import { Vehicle } from '../models/vehicle.model';
 import { Transaction } from '../models/transaction.model';
 import { Category } from '../models/category.model';
 import { Account } from '../models/account.model';
+import { UserPreferences } from './preferences.service';
 
 @Injectable({
   providedIn: 'root'
@@ -181,7 +182,8 @@ export class ExportService {
     vehicles: Vehicle[],
     fuelLogs: FuelLog[],
     categories: Category[],
-    accounts: Account[]
+    accounts: Account[],
+    preferences: UserPreferences
   ): { success: boolean; message: string; hasData: boolean } {
     console.log('📤 [ExportService] Exportando todos los datos de la aplicación...');
     console.log('📊 [ExportService] Datos recibidos:', {
@@ -189,17 +191,19 @@ export class ExportService {
       vehicles: vehicles.length,
       fuelLogs: fuelLogs.length,
       categories: categories.length,
-      accounts: accounts.length
+      accounts: accounts.length,
+      preferences: preferences
     });
 
-    // Verificar si hay datos para exportar
-    const hasData = transactions.length > 0 || vehicles.length > 0 || fuelLogs.length > 0;
+    // Verificar si hay datos para exportar (siempre exportamos categorías, cuentas y preferencias)
+    const hasData = transactions.length > 0 || vehicles.length > 0 || fuelLogs.length > 0 ||
+                    categories.length > 0 || accounts.length > 0;
 
     if (!hasData) {
       console.warn('⚠️ [ExportService] No hay datos para exportar');
       return {
         success: false,
-        message: 'No hay datos para exportar. Agrega transacciones, vehículos o registros de combustible primero.',
+        message: 'No hay datos para exportar. Agrega transacciones, vehículos, categorías o cuentas primero.',
         hasData: false
       };
     }
@@ -215,13 +219,16 @@ export class ExportService {
           const account = accounts.find(a => a.id === transaction.accountId);
 
           return {
+            'ID': transaction.id,
             'Fecha': this.formatDate(transaction.date),
             'Descripción': transaction.description,
             'Monto': transaction.amount,
             'Moneda': transaction.currency,
             'Tipo': transaction.type === 'income' ? 'Ingreso' : 'Gasto',
             'Categoría': category ? category.name : 'N/A',
+            'Categoría ID': transaction.categoryId,
             'Cuenta': account ? account.name : 'N/A',
+            'Cuenta ID': transaction.accountId,
             'Monto Convertido': transaction.convertedAmount || '',
             'Tasa de Cambio': transaction.conversionRate || '',
             'Fuente de Conversión': transaction.conversionSource || '',
@@ -238,6 +245,7 @@ export class ExportService {
       // Hoja 2: Vehículos
       if (vehicles.length > 0) {
         const vehiclesData = vehicles.map(vehicle => ({
+          'ID': vehicle.id,
           'Nombre': vehicle.name,
           'Marca': vehicle.brand,
           'Modelo': vehicle.model,
@@ -260,8 +268,10 @@ export class ExportService {
         const fuelLogsData = fuelLogs.map(log => {
           const vehicle = vehicles.find(v => v.id === log.vehicleId);
           return {
+            'ID': log.id,
             'Fecha': this.formatDate(log.date),
             'Vehículo': vehicle ? `${vehicle.name} (${vehicle.brand} ${vehicle.model})` : 'N/A',
+            'Vehículo ID': log.vehicleId,
             'Litros': log.liters,
             'Precio por Litro': log.pricePerLiter,
             'Precio Total': log.totalPrice,
@@ -280,6 +290,49 @@ export class ExportService {
         sheetsAdded++;
         console.log('✅ [ExportService] Hoja de combustible agregada');
       }
+
+      // Hoja 4: Categorías
+      if (categories.length > 0) {
+        const categoriesData = categories.map(category => ({
+          'ID': category.id,
+          'Nombre': category.name,
+          'Tipo': category.type === 'income' ? 'Ingreso' : 'Gasto',
+          'Color': category.color,
+          'Icono': category.icon
+        }));
+        const categoriesSheet = XLSX.utils.json_to_sheet(categoriesData);
+        XLSX.utils.book_append_sheet(workbook, categoriesSheet, 'Categorías');
+        sheetsAdded++;
+        console.log('✅ [ExportService] Hoja de categorías agregada');
+      }
+
+      // Hoja 5: Cuentas
+      if (accounts.length > 0) {
+        const accountsData = accounts.map(account => ({
+          'ID': account.id,
+          'Nombre': account.name,
+          'Tipo': account.type,
+          'Balance': account.balance,
+          'Moneda': account.currency,
+          'Color': account.color,
+          'Icono': account.icon
+        }));
+        const accountsSheet = XLSX.utils.json_to_sheet(accountsData);
+        XLSX.utils.book_append_sheet(workbook, accountsSheet, 'Cuentas');
+        sheetsAdded++;
+        console.log('✅ [ExportService] Hoja de cuentas agregada');
+      }
+
+      // Hoja 6: Preferencias
+      const preferencesData = [{
+        'Moneda Preferida': preferences.preferredCurrency,
+        'Locale': preferences.locale,
+        'Tema': preferences.theme || 'light'
+      }];
+      const preferencesSheet = XLSX.utils.json_to_sheet(preferencesData);
+      XLSX.utils.book_append_sheet(workbook, preferencesSheet, 'Preferencias');
+      sheetsAdded++;
+      console.log('✅ [ExportService] Hoja de preferencias agregada');
 
       // Guardar archivo
       const fileName = `budget_tracker_completo_${this.getTimestamp()}.xlsx`;
