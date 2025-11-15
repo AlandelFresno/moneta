@@ -5,6 +5,7 @@ import { Vehicle } from '../models/vehicle.model';
 import { Transaction } from '../models/transaction.model';
 import { Category } from '../models/category.model';
 import { Account } from '../models/account.model';
+import { MonthlyBilling } from '../models/billing.model';
 import { UserPreferences } from './preferences.service';
 
 @Injectable({
@@ -183,7 +184,8 @@ export class ExportService {
     fuelLogs: FuelLog[],
     categories: Category[],
     accounts: Account[],
-    preferences: UserPreferences
+    preferences: UserPreferences,
+    billings: MonthlyBilling[]
   ): { success: boolean; message: string; hasData: boolean } {
     console.log('📤 [ExportService] Exportando todos los datos de la aplicación...');
     console.log('📊 [ExportService] Datos recibidos:', {
@@ -192,12 +194,13 @@ export class ExportService {
       fuelLogs: fuelLogs.length,
       categories: categories.length,
       accounts: accounts.length,
+      billings: billings.length,
       preferences: preferences
     });
 
     // Verificar si hay datos para exportar (siempre exportamos categorías, cuentas y preferencias)
     const hasData = transactions.length > 0 || vehicles.length > 0 || fuelLogs.length > 0 ||
-                    categories.length > 0 || accounts.length > 0;
+                    categories.length > 0 || accounts.length > 0 || billings.length > 0;
 
     if (!hasData) {
       console.warn('⚠️ [ExportService] No hay datos para exportar');
@@ -323,7 +326,25 @@ export class ExportService {
         console.log('✅ [ExportService] Hoja de cuentas agregada');
       }
 
-      // Hoja 6: Preferencias
+      // Hoja 6: Facturación Mensual
+      if (billings.length > 0) {
+        const billingsData = billings.map(billing => ({
+          'ID': billing.id,
+          'Mes': this.getMonthName(billing.month),
+          'Año': billing.year,
+          'Monto': billing.amount,
+          'Descripción': billing.description || ''
+        })).sort((a, b) => {
+          if (a['Año'] !== b['Año']) return b['Año'] - a['Año'];
+          return this.getMonthNumber(b['Mes']) - this.getMonthNumber(a['Mes']);
+        });
+        const billingsSheet = XLSX.utils.json_to_sheet(billingsData);
+        XLSX.utils.book_append_sheet(workbook, billingsSheet, 'Facturación');
+        sheetsAdded++;
+        console.log('✅ [ExportService] Hoja de facturación agregada');
+      }
+
+      // Hoja 7: Preferencias
       const preferencesData = [{
         'Moneda Preferida': preferences.preferredCurrency,
         'Locale': preferences.locale,
@@ -352,6 +373,18 @@ export class ExportService {
         hasData: true
       };
     }
+  }
+
+  private getMonthName(month: number): string {
+    const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    return months[month - 1] || '';
+  }
+
+  private getMonthNumber(monthName: string): number {
+    const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    return months.indexOf(monthName) + 1;
   }
 
   private getTimestamp(): string {
