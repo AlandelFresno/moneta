@@ -3,6 +3,8 @@ import { ExportService } from '../../services/export.service';
 import { VehicleService } from '../../services/vehicle.service';
 import { FuelLogService } from '../../services/fuel-log.service';
 import { TransactionService } from '../../services/transaction.service';
+import { CategoryService } from '../../services/category.service';
+import { AccountService } from '../../services/account.service';
 
 export interface MenuItem {
   label: string;
@@ -25,7 +27,9 @@ export class SidebarComponent {
     private exportService: ExportService,
     private vehicleService: VehicleService,
     private fuelLogService: FuelLogService,
-    private transactionService: TransactionService
+    private transactionService: TransactionService,
+    private categoryService: CategoryService,
+    private accountService: AccountService
   ) {}
 
   menuItems: MenuItem[] = [
@@ -85,14 +89,24 @@ export class SidebarComponent {
       const transactions = this.transactionService.getTransactions();
       const vehicles = this.vehicleService.getVehicles();
       const fuelLogs = this.fuelLogService.getLogs();
+      const categories = this.categoryService.getCategories();
+      const accounts = this.accountService.getAccounts();
 
       console.log('📊 [Sidebar] Datos obtenidos de los servicios:', {
         transactions: transactions.length,
         vehicles: vehicles.length,
-        fuelLogs: fuelLogs.length
+        fuelLogs: fuelLogs.length,
+        categories: categories.length,
+        accounts: accounts.length
       });
 
-      const result = this.exportService.exportAllData(transactions, vehicles, fuelLogs);
+      const result = this.exportService.exportAllData(
+        transactions,
+        vehicles,
+        fuelLogs,
+        categories,
+        accounts
+      );
 
       if (result.success) {
         console.log('✅ [Sidebar] Exportación completada exitosamente');

@@ -3,6 +3,8 @@ import * as XLSX from 'xlsx';
 import { FuelLog } from '../models/fuel-log.model';
 import { Vehicle } from '../models/vehicle.model';
 import { Transaction } from '../models/transaction.model';
+import { Category } from '../models/category.model';
+import { Account } from '../models/account.model';
 
 @Injectable({
   providedIn: 'root'
@@ -177,13 +179,17 @@ export class ExportService {
   exportAllData(
     transactions: Transaction[],
     vehicles: Vehicle[],
-    fuelLogs: FuelLog[]
+    fuelLogs: FuelLog[],
+    categories: Category[],
+    accounts: Account[]
   ): { success: boolean; message: string; hasData: boolean } {
     console.log('📤 [ExportService] Exportando todos los datos de la aplicación...');
     console.log('📊 [ExportService] Datos recibidos:', {
       transactions: transactions.length,
       vehicles: vehicles.length,
-      fuelLogs: fuelLogs.length
+      fuelLogs: fuelLogs.length,
+      categories: categories.length,
+      accounts: accounts.length
     });
 
     // Verificar si hay datos para exportar
@@ -204,15 +210,25 @@ export class ExportService {
 
       // Hoja 1: Transacciones
       if (transactions.length > 0) {
-        const transactionsData = transactions.map(transaction => ({
-          'Fecha': this.formatDate(transaction.date),
-          'Descripción': transaction.description,
-          'Monto': transaction.amount,
-          'Moneda': transaction.currency,
-          'Tipo': transaction.type === 'income' ? 'Ingreso' : 'Gasto',
-          'Categoría ID': transaction.categoryId,
-          'Cuenta ID': transaction.accountId
-        }));
+        const transactionsData = transactions.map(transaction => {
+          const category = categories.find(c => c.id === transaction.categoryId);
+          const account = accounts.find(a => a.id === transaction.accountId);
+
+          return {
+            'Fecha': this.formatDate(transaction.date),
+            'Descripción': transaction.description,
+            'Monto': transaction.amount,
+            'Moneda': transaction.currency,
+            'Tipo': transaction.type === 'income' ? 'Ingreso' : 'Gasto',
+            'Categoría': category ? category.name : 'N/A',
+            'Cuenta': account ? account.name : 'N/A',
+            'Monto Convertido': transaction.convertedAmount || '',
+            'Tasa de Cambio': transaction.conversionRate || '',
+            'Fuente de Conversión': transaction.conversionSource || '',
+            'Fecha de Conversión': transaction.conversionDate ? this.formatDate(transaction.conversionDate) : '',
+            'Conversión Manual': transaction.manualConversion ? 'Sí' : 'No'
+          };
+        });
         const transactionsSheet = XLSX.utils.json_to_sheet(transactionsData);
         XLSX.utils.book_append_sheet(workbook, transactionsSheet, 'Transacciones');
         sheetsAdded++;
