@@ -1,0 +1,233 @@
+<div class="billing-page">
+  <div class="page-header">
+    <h1>Facturación y Monotributo</h1>
+    <p-button
+      label="Nueva Facturación"
+      icon="pi pi-plus"
+      (onClick)="openBillingDialog()"
+      styleClass="p-button-primary">
+    </p-button>
+  </div>
+
+  <!-- Resumen de Categoría Actual -->
+  <div class="category-summary">
+    <div class="summary-card current-category">
+      <div class="card-header">
+        <i class="pi pi-user"></i>
+        <h3>Categoría Actual</h3>
+      </div>
+      <div class="category-badge" [style.background-color]="getCategoryColor(currentCategory)">
+        Categoría {{ currentCategory }}
+      </div>
+      <p class="category-limit">{{ getCategoryInfo(currentCategory)?.description }}</p>
+      <p class="category-fee">Cuota mensual: {{ formatCurrency(getCategoryInfo(currentCategory)?.monthlyFee || 0) }}</p>
+    </div>
+
+    <div class="summary-card total-billing">
+      <div class="card-header">
+        <i class="pi pi-calendar"></i>
+        <h3>Últimos 12 Meses</h3>
+      </div>
+      <div class="total-amount">{{ formatCurrency(last12MonthsTotal) }}</div>
+      <p class="percentage">
+        {{ ((last12MonthsTotal / (getCategoryInfo(currentCategory)?.maxAnnualBilling || 1)) * 100).toFixed(1) }}%
+        del límite de categoría {{ currentCategory }}
+      </p>
+    </div>
+
+    <div class="summary-card suggested-category" [class.needs-change]="needsRecategorization()">
+      <div class="card-header">
+        <i class="pi pi-lightbulb"></i>
+        <h3>Categoría Sugerida</h3>
+      </div>
+      <div class="category-badge"
+           [style.background-color]="suggestedCategory === 'EXCEDE' ? '#dc2626' : getCategoryColor(suggestedCategory)">
+        {{ suggestedCategory === 'EXCEDE' ? 'Excede Monotributo' : 'Categoría ' + suggestedCategory }}
+      </div>
+      <p class="suggestion-message" [class.warning]="needsRecategorization()">
+        {{ getRecategorizationMessage() }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Períodos de Recategorización -->
+  <div class="recategorization-info">
+    <div class="info-card" [class.active]="canRecategorize">
+      <i class="pi" [ngClass]="canRecategorize ? 'pi-check-circle' : 'pi-info-circle'"></i>
+      <div>
+        <h4>Período de Recategorización</h4>
+        <p>{{ nextRecategorizationPeriod }}</p>
+        <p class="small">Solo podés cambiar de categoría en enero (anual) y julio (semestral)</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Categorías de Monotributo -->
+  <div class="categories-table-section">
+    <h2>Categorías de Monotributo AFIP 2025</h2>
+    <div class="table-container">
+      <table class="categories-table">
+        <thead>
+          <tr>
+            <th>Categoría</th>
+            <th>Límite Anual</th>
+            <th>Cuota Mensual</th>
+            <th>Tu Facturación</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let cat of monotributoCategories"
+              [class.current]="cat.category === currentCategory"
+              [class.suggested]="cat.category === suggestedCategory && suggestedCategory !== currentCategory">
+            <td>
+              <div class="category-cell">
+                <span class="category-badge-small" [style.background-color]="getCategoryColor(cat.category)">
+                  {{ cat.category }}
+                </span>
+                <i class="pi pi-star-fill" *ngIf="cat.category === currentCategory" style="color: #f59e0b; margin-left: 8px;"></i>
+              </div>
+            </td>
+            <td>{{ formatCurrency(cat.maxAnnualBilling) }}</td>
+            <td>{{ formatCurrency(cat.monthlyFee) }}</td>
+            <td>
+              <div class="progress-bar">
+                <div class="progress-fill"
+                     [style.width.%]="(last12MonthsTotal / cat.maxAnnualBilling) * 100"
+                     [style.background-color]="getCategoryColor(cat.category)">
+                </div>
+              </div>
+              <span class="progress-text">
+                {{ ((last12MonthsTotal / cat.maxAnnualBilling) * 100).toFixed(1) }}%
+              </span>
+            </td>
+            <td>
+              <span class="status-badge" *ngIf="cat.category === currentCategory">Actual</span>
+              <span class="status-badge suggested" *ngIf="cat.category === suggestedCategory && suggestedCategory !== currentCategory">Sugerida</span>
+              <span class="status-badge available" *ngIf="last12MonthsTotal <= cat.maxAnnualBilling && cat.category !== currentCategory && cat.category !== suggestedCategory">Disponible</span>
+              <span class="status-badge exceeded" *ngIf="last12MonthsTotal > cat.maxAnnualBilling">Excedida</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Lista de Facturaciones -->
+  <div class="billings-section">
+    <h2>Historial de Facturación</h2>
+    <div class="table-container">
+      <table class="billings-table">
+        <thead>
+          <tr>
+            <th>Período</th>
+            <th>Monto</th>
+            <th>Descripción</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let billing of billings">
+            <td>{{ getMonthName(billing.month) }} {{ billing.year }}</td>
+            <td class="amount">{{ formatCurrency(billing.amount) }}</td>
+            <td>{{ billing.description || '-' }}</td>
+            <td class="actions">
+              <p-button
+                icon="pi pi-pencil"
+                (onClick)="openEditDialog(billing)"
+                [text]="true"
+                [rounded]="true"
+                severity="info"
+                size="small">
+              </p-button>
+              <p-button
+                icon="pi pi-trash"
+                (onClick)="deleteBilling(billing.id)"
+                [text]="true"
+                [rounded]="true"
+                severity="danger"
+                size="small">
+              </p-button>
+            </td>
+          </tr>
+          <tr *ngIf="billings.length === 0">
+            <td colspan="4" class="empty-state">
+              <i class="pi pi-inbox"></i>
+              <p>No hay facturaciones registradas</p>
+              <p class="small">Agregá tus facturaciones mensuales para calcular tu categoría de Monotributo</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Dialog para Agregar/Editar Facturación -->
+<p-dialog
+  [(visible)]="showBillingDialog"
+  [header]="isEditing ? 'Editar Facturación' : 'Nueva Facturación'"
+  [modal]="true"
+  [style]="{width: '500px'}"
+  [draggable]="false"
+  [resizable]="false">
+
+  <div class="dialog-content">
+    <div class="form-row">
+      <div class="form-field">
+        <label for="month">Mes *</label>
+        <select id="month" [(ngModel)]="billingForm.month" class="form-control">
+          <option *ngFor="let month of months" [value]="month.value">
+            {{ month.label }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="year">Año *</label>
+        <select id="year" [(ngModel)]="billingForm.year" class="form-control">
+          <option *ngFor="let year of years" [value]="year">
+            {{ year }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label for="amount">Monto Facturado *</label>
+      <input
+        type="number"
+        id="amount"
+        [(ngModel)]="billingForm.amount"
+        class="form-control"
+        placeholder="0"
+        min="0"
+        step="1000">
+    </div>
+
+    <div class="form-field">
+      <label for="description">Descripción (opcional)</label>
+      <textarea
+        id="description"
+        [(ngModel)]="billingForm.description"
+        class="form-control"
+        rows="3"
+        placeholder="Ej: Facturación servicios profesionales">
+      </textarea>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cancelar"
+      (onClick)="showBillingDialog = false"
+      [text]="true"
+      severity="secondary">
+    </p-button>
+    <p-button
+      [label]="isEditing ? 'Actualizar' : 'Guardar'"
+      (onClick)="saveBilling()"
+      icon="pi pi-check">
+    </p-button>
+  </ng-template>
+</p-dialog>

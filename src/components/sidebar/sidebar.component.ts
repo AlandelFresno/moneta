@@ -66,6 +66,11 @@ export class SidebarComponent {
       route: '/fuel'
     },
     {
+      label: 'Facturación',
+      icon: 'file-invoice',
+      route: '/billing'
+    },
+    {
       label: 'Settings',
       icon: 'cog',
       route: '/settings'

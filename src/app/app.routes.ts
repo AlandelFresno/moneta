@@ -38,6 +38,10 @@ export const routes: Routes = [
       {
         path: 'fuel',
         loadChildren: () => import('../pages/fuel/fuel.module').then(m => m.FuelModule)
+      },
+      {
+        path: 'billing',
+        loadChildren: () => import('../pages/billing/billing.module').then(m => m.BillingModule)
       }
     ]
   }
