@@ -205,16 +205,16 @@ export class ExchangeRateService {
       return amount;
     }
 
-    const rates = await this.getRates('USD'); // Usar USD como base común
+    const rates = await this.getRates('ARS'); // Usar ARS como base común
 
-    // Convertir a USD primero, luego a la moneda destino
-    const amountInUSD = fromCurrency === 'USD'
+    // Convertir a ARS primero, luego a la moneda destino
+    const amountInARS = fromCurrency === 'ARS'
       ? amount
       : amount / rates.rates[fromCurrency];
 
-    const convertedAmount = toCurrency === 'USD'
-      ? amountInUSD
-      : amountInUSD * rates.rates[toCurrency];
+    const convertedAmount = toCurrency === 'ARS'
+      ? amountInARS
+      : amountInARS * rates.rates[toCurrency];
 
     return convertedAmount;
   }

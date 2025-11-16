@@ -36,6 +36,7 @@ export class DashboardPage implements OnInit, OnDestroy {
   // Data
   accounts: Account[] = [];
   recentTransactions: ExtendedTransaction[] = [];
+  selectedCurrency = 'ARS';
 
   // Account dialog
   showAccountDialog = false;
@@ -44,7 +45,7 @@ export class DashboardPage implements OnInit, OnDestroy {
     name: '',
     type: 'bank',
     balance: 0,
-    currency: 'USD',
+    currency: 'ARS',
     color: '#3b82f6',
     icon: 'wallet'
   };
@@ -106,6 +107,9 @@ export class DashboardPage implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // Cargar la moneda preferida
+    this.selectedCurrency = this.preferencesService.getPreferredCurrency();
+
     combineLatest([
       this.accountService.accounts$,
       this.categoryService.categories$,
@@ -230,6 +234,12 @@ export class DashboardPage implements OnInit, OnDestroy {
 
   navigateToCategories(): void {
     this.router.navigate(['/categories']);
+  }
+
+  onCurrencyChange(): void {
+    this.preferencesService.setPreferredCurrency(this.selectedCurrency);
+    // Recalcular estadísticas con la nueva moneda
+    this.calculateStats(this.accounts, this.transactionService.getTransactions());
   }
 
   openCreateAccountDialog(): void {

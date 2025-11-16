@@ -76,8 +76,8 @@ export class CurrencyDisplayService {
 
     // Validar originalCurrency
     if (!originalCurrency || originalCurrency === 'undefined' || originalCurrency === 'null') {
-      console.warn('Currency no válida en formatWithPreferredCurrency, usando USD');
-      originalCurrency = 'USD';
+      console.warn('Currency no válida en formatWithPreferredCurrency, usando ARS');
+      originalCurrency = 'ARS';
     }
 
     const preferredCurrency = this.preferencesService.getPreferredCurrency();

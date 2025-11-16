@@ -6,6 +6,23 @@
       <p class="page-subtitle">Tu resumen financiero</p>
     </div>
     <div class="header-actions">
+      <div class="currency-selector">
+        <label for="preferred-currency">Moneda:</label>
+        <select
+          id="preferred-currency"
+          [(ngModel)]="selectedCurrency"
+          (change)="onCurrencyChange()"
+          class="currency-select">
+          <option value="ARS">ARS (Peso Argentino)</option>
+          <option value="USD">USD (Dólar)</option>
+          <option value="EUR">EUR (Euro)</option>
+          <option value="BRL">BRL (Real)</option>
+          <option value="GBP">GBP (Libra)</option>
+          <option value="JPY">JPY (Yen)</option>
+          <option value="CAD">CAD (Dólar Canadiense)</option>
+          <option value="AUD">AUD (Dólar Australiano)</option>
+        </select>
+      </div>
       <button
         pButton
         class="btn-primary"
