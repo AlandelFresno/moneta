@@ -34,6 +34,14 @@ export const routes: Routes = [
       {
         path: 'settings',
         loadChildren: () => import('../pages/settings/settings.module').then(m => m.SettingsModule)
+      },
+      {
+        path: 'fuel',
+        loadChildren: () => import('../pages/fuel/fuel.module').then(m => m.FuelModule)
+      },
+      {
+        path: 'billing',
+        loadChildren: () => import('../pages/billing/billing.module').then(m => m.BillingModule)
       }
     ]
   }

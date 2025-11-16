@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Account } from '../models';
+import { ExchangeRateService } from './exchange-rate.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +11,7 @@ export class AccountService {
   private accountsSubject = new BehaviorSubject<Account[]>([]);
   public accounts$ = this.accountsSubject.asObservable();
 
-  constructor() {
+  constructor(private exchangeRateService: ExchangeRateService) {
     this.loadAccounts();
   }
 
@@ -97,10 +98,27 @@ export class AccountService {
     this.saveAccounts(accounts);
   }
 
-  updateBalance(accountId: string, amount: number): void {
+  updateBalance(accountId: string, amount: number, transactionCurrency?: string): void {
+    const account = this.getAccountById(accountId);
+    if (!account) {
+      console.warn(`⚠️ [AccountService] Account not found: ${accountId}`);
+      return;
+    }
+
+    // Convertir el monto a la moneda de la cuenta si es diferente
+    let amountInAccountCurrency = amount;
+    if (transactionCurrency && transactionCurrency !== account.currency) {
+      amountInAccountCurrency = this.exchangeRateService.convertToPreferredCurrency(
+        amount,
+        transactionCurrency,
+        account.currency
+      );
+      console.log(`💱 [AccountService] Convirtiendo ${amount} ${transactionCurrency} a ${amountInAccountCurrency.toFixed(2)} ${account.currency}`);
+    }
+
     const accounts = this.accountsSubject.value.map(acc =>
       acc.id === accountId
-        ? { ...acc, balance: acc.balance + amount, updatedAt: new Date() }
+        ? { ...acc, balance: acc.balance + amountInAccountCurrency, updatedAt: new Date() }
         : acc
     );
     this.saveAccounts(accounts);

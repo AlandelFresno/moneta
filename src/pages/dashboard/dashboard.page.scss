@@ -167,9 +167,14 @@
 // Content Grid
 .content-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 400px 1fr 1fr;
   gap: 1.25rem;
   margin-bottom: 2rem;
+}
+
+.currency-widget-container {
+  display: flex;
+  flex-direction: column;
 }
 
 .card {
@@ -475,9 +480,23 @@
 }
 
 // Responsive
+@media (max-width: 1280px) {
+  .content-grid {
+    grid-template-columns: 1fr 1fr;
+
+    .currency-widget-container {
+      grid-column: 1 / -1;
+    }
+  }
+}
+
 @media (max-width: 1024px) {
   .content-grid {
     grid-template-columns: 1fr;
+
+    .currency-widget-container {
+      grid-column: auto;
+    }
   }
 }
 

@@ -655,6 +655,26 @@
       }
     }
   }
+
+  .conversion-note {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    margin-top: 0.75rem;
+    padding: 0.625rem 0.875rem;
+    background: #e0f2fe;
+    border: 1px solid #0ea5e9;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    color: #075985;
+    line-height: 1.4;
+
+    i {
+      color: #0ea5e9;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+  }
 }
 
 // Button styles

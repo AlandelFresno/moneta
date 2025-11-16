@@ -1,0 +1,373 @@
+.fuel-page {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+
+    h1 {
+      margin: 0;
+      color: var(--text-color);
+      font-size: 2rem;
+      font-weight: 600;
+    }
+  }
+
+  // Vehicle Section
+  .vehicle-section {
+    margin-bottom: 2rem;
+
+    h2 {
+      margin-bottom: 1rem;
+      color: var(--text-color);
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .vehicle-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+
+      .vehicle-card {
+        background: var(--surface-card);
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        &.selected {
+          border-color: var(--primary-color);
+          box-shadow: 0 0 0 1px var(--primary-color);
+        }
+
+        .vehicle-header {
+          padding: 1rem;
+          color: white;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+
+          h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+          }
+
+          .fuel-type-badge {
+            background: rgba(255, 255, 255, 0.3);
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+          }
+        }
+
+        .vehicle-body {
+          padding: 1rem;
+
+          p {
+            margin: 0.5rem 0;
+            color: var(--text-color);
+          }
+
+          .vehicle-km {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0.75rem 0;
+          }
+
+          .vehicle-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--surface-border);
+          }
+        }
+      }
+    }
+  }
+
+  // Fuel Logs Section
+  .fuel-logs-section {
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+
+      h2 {
+        margin: 0;
+        color: var(--text-color);
+        font-size: 1.5rem;
+        font-weight: 600;
+      }
+    }
+
+    // Statistics Cards
+    .stats-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+
+      .stat-card {
+        background: var(--surface-card);
+        border-radius: 8px;
+        padding: 1.5rem;
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+
+        .stat-icon {
+          width: 60px;
+          height: 60px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 1.5rem;
+        }
+
+        .stat-content {
+          display: flex;
+          flex-direction: column;
+
+          .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-color-secondary);
+            margin-bottom: 0.25rem;
+          }
+
+          .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-color);
+          }
+        }
+      }
+    }
+
+    // Fuel Logs Table
+    .fuel-logs-table {
+      background: var(--surface-card);
+      border-radius: 8px;
+      overflow: hidden;
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+
+        thead {
+          background: var(--surface-50);
+
+          tr th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-color);
+            border-bottom: 2px solid var(--surface-border);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+        }
+
+        tbody {
+          tr {
+            border-bottom: 1px solid var(--surface-border);
+            transition: background 0.2s;
+
+            &:hover {
+              background: var(--surface-hover);
+            }
+
+            td {
+              padding: 1rem;
+              color: var(--text-color);
+              font-size: 0.9375rem;
+
+              &:last-child {
+                text-align: center;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Empty States
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--surface-card);
+    border-radius: 8px;
+
+    h2 {
+      color: var(--text-color);
+      margin: 1rem 0;
+    }
+
+    p {
+      color: var(--text-color-secondary);
+      margin: 0;
+    }
+  }
+
+  .empty-state-small {
+    text-align: center;
+    padding: 2rem;
+    background: var(--surface-card);
+    border-radius: 8px;
+    color: var(--text-color-secondary);
+  }
+
+}
+
+// Estilos específicos para diálogos de combustible
+:host ::ng-deep .p-dialog {
+  background: #ffffff !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+
+  .p-dialog-header {
+    background: #f9fafb !important;
+    color: #111827 !important;
+    border-bottom: 1px solid #e5e7eb !important;
+    padding: 1.25rem 1.5rem !important;
+  }
+
+  .p-dialog-content {
+    background: #ffffff !important;
+    color: #111827 !important;
+    padding: 1.5rem !important;
+  }
+
+  .p-dialog-footer {
+    background: #f9fafb !important;
+    color: #111827 !important;
+    border-top: 1px solid #e5e7eb !important;
+    padding: 1rem 1.5rem !important;
+  }
+}
+
+:host ::ng-deep .p-dialog-mask {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+// Forms (fuera de .fuel-page para que funcionen en diálogos)
+.vehicle-form,
+.fuel-log-form {
+  .form-group {
+    margin-bottom: 1.25rem;
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--text-color);
+      font-size: 0.9375rem;
+
+      input[type="checkbox"] {
+        margin-right: 0.5rem;
+      }
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--surface-border);
+      border-radius: 6px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+      background: var(--surface-ground);
+      color: var(--text-color);
+
+      &:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+
+      &:disabled {
+        background: var(--surface-100);
+        color: var(--text-color-secondary);
+        cursor: not-allowed;
+      }
+    }
+
+    textarea.form-control {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .color-input {
+      height: 50px;
+      cursor: pointer;
+    }
+
+    select.form-control {
+      cursor: pointer;
+    }
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .fuel-page {
+    padding: 1rem;
+
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .vehicle-section .vehicle-cards {
+      grid-template-columns: 1fr;
+    }
+
+    .stats-cards {
+      grid-template-columns: 1fr !important;
+    }
+
+    .fuel-logs-table {
+      overflow-x: auto;
+
+      table {
+        min-width: 800px;
+      }
+    }
+  }
+
+  .vehicle-form,
+  .fuel-log-form {
+    .form-row {
+      grid-template-columns: 1fr !important;
+    }
+  }
+}

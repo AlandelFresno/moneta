@@ -128,6 +128,23 @@
   }
 }
 
+.export-button {
+  border: none;
+  width: 100%;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  background: transparent !important;
+
+  &:hover {
+    background: #f0fdf4 !important;
+    color: #16a34a !important;
+  }
+
+  i {
+    color: #16a34a;
+  }
+}
+
 // Mobile overlay
 .sidebar-overlay {
   display: none;
