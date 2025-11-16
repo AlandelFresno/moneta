@@ -61,7 +61,7 @@ export class CurrencyDisplayService {
   }
 
   /**
-   * Formatea un monto mostrando la moneda preferida (ARS) como principal
+   * Formatea un monto mostrando la moneda preferida como principal
    * y la moneda original como secundaria si es diferente
    */
   formatWithPreferredCurrency(
@@ -76,8 +76,8 @@ export class CurrencyDisplayService {
 
     // Validar originalCurrency
     if (!originalCurrency || originalCurrency === 'undefined' || originalCurrency === 'null') {
-      console.warn('Currency no válida en formatWithPreferredCurrency, usando ARS');
-      originalCurrency = 'ARS';
+      console.warn('Currency no válida en formatWithPreferredCurrency, usando USD');
+      originalCurrency = 'USD';
     }
 
     const preferredCurrency = this.preferencesService.getPreferredCurrency();

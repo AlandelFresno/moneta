@@ -14,7 +14,7 @@ export class PreferencesService {
   private readonly STORAGE_KEY = 'budget_preferences';
 
   private defaultPreferences: UserPreferences = {
-    preferredCurrency: 'ARS',
+    preferredCurrency: 'USD',
     locale: 'es-AR',
     theme: 'light'
   };
