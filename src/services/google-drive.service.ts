@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
 declare var gapi: any;
+declare var google: any;
 
 @Injectable({
   providedIn: 'root'
@@ -19,7 +20,8 @@ export class GoogleDriveService {
   public isSignedIn$ = this.isSignedInSubject.asObservable();
 
   private gapiInitialized = false;
-  private authInstance: any;
+  private tokenClient: any;
+  private accessToken: string | null = null;
 
   constructor() {
     this.loadGoogleDriveConfig();
@@ -76,32 +78,42 @@ export class GoogleDriveService {
     }
 
     return new Promise((resolve, reject) => {
-      // Cargar el script de Google API
-      if (typeof gapi === 'undefined') {
-        const script = document.createElement('script');
-        script.src = 'https://apis.google.com/js/api.js';
-        script.onload = () => {
-          gapi.load('client:auth2', async () => {
+      // Cargar scripts de Google
+      this.loadGoogleScripts()
+        .then(() => {
+          gapi.load('client', async () => {
             try {
               await this.initializeGapiClient();
+              this.initializeGISClient();
               resolve();
             } catch (error) {
               reject(error);
             }
           });
-        };
-        script.onerror = () => reject(new Error('Failed to load Google API script'));
-        document.body.appendChild(script);
-      } else {
-        gapi.load('client:auth2', async () => {
-          try {
-            await this.initializeGapiClient();
-            resolve();
-          } catch (error) {
-            reject(error);
-          }
-        });
-      }
+        })
+        .catch(reject);
+    });
+  }
+
+  private async loadGoogleScripts(): Promise<void> {
+    // Cargar GAPI (para Drive API)
+    if (typeof gapi === 'undefined') {
+      await this.loadScript('https://apis.google.com/js/api.js');
+    }
+
+    // Cargar GIS (para autenticación)
+    if (typeof google === 'undefined' || !google.accounts) {
+      await this.loadScript('https://accounts.google.com/gsi/client');
+    }
+  }
+
+  private loadScript(src: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+      document.body.appendChild(script);
     });
   }
 
@@ -110,25 +122,13 @@ export class GoogleDriveService {
       console.log('🔧 [GoogleDriveService] Inicializando cliente GAPI...');
       await gapi.client.init({
         apiKey: this.API_KEY,
-        clientId: this.CLIENT_ID,
-        discoveryDocs: this.DISCOVERY_DOCS,
-        scope: this.SCOPES
+        discoveryDocs: this.DISCOVERY_DOCS
       });
 
-      this.authInstance = gapi.auth2.getAuthInstance();
       this.gapiInitialized = true;
-
-      // Escuchar cambios en el estado de autenticación
-      this.authInstance.isSignedIn.listen((isSignedIn: boolean) => {
-        this.isSignedInSubject.next(isSignedIn);
-      });
-
-      // Actualizar estado inicial
-      this.isSignedInSubject.next(this.authInstance.isSignedIn.get());
-
-      console.log('✅ [GoogleDriveService] Google Drive API inicializada correctamente');
+      console.log('✅ [GoogleDriveService] Cliente GAPI inicializado correctamente');
     } catch (error: any) {
-      console.error('❌ [GoogleDriveService] Error al inicializar Google Drive API:', error);
+      console.error('❌ [GoogleDriveService] Error al inicializar GAPI:', error);
 
       let errorMessage = 'Error al inicializar Google Drive API';
 
@@ -140,10 +140,41 @@ export class GoogleDriveService {
         errorMessage += `: ${error.message}`;
       }
 
-      // Agregar sugerencias comunes
-      if (error.error === 'idpiframe_initialization_failed' || error.details?.includes('cookies')) {
-        errorMessage += '. Verifica que las cookies de terceros estén habilitadas en tu navegador.';
-      } else if (error.details?.includes('origin') || error.error?.includes('origin')) {
+      throw new Error(errorMessage);
+    }
+  }
+
+  private initializeGISClient(): void {
+    try {
+      console.log('🔧 [GoogleDriveService] Inicializando cliente GIS...');
+
+      this.tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: this.CLIENT_ID,
+        scope: this.SCOPES,
+        callback: (response: any) => {
+          if (response.error) {
+            console.error('❌ [GoogleDriveService] Error en autenticación:', response);
+            this.isSignedInSubject.next(false);
+            return;
+          }
+
+          console.log('✅ [GoogleDriveService] Token obtenido exitosamente');
+          this.accessToken = response.access_token;
+          this.isSignedInSubject.next(true);
+        },
+      });
+
+      console.log('✅ [GoogleDriveService] Cliente GIS inicializado correctamente');
+    } catch (error: any) {
+      console.error('❌ [GoogleDriveService] Error al inicializar GIS:', error);
+
+      let errorMessage = 'Error al inicializar autenticación de Google';
+
+      if (error.message) {
+        errorMessage += `: ${error.message}`;
+      }
+
+      if (error.message?.includes('origin')) {
         errorMessage += '. Verifica que http://localhost:4200 esté autorizado en Google Cloud Console.';
       }
 
@@ -158,15 +189,46 @@ export class GoogleDriveService {
     if (!this.gapiInitialized) {
       await this.initClient();
     }
-    return this.authInstance.signIn();
+
+    console.log('🔐 [GoogleDriveService] Solicitando autenticación...');
+
+    // Solicitar token con GIS
+    return new Promise((resolve, reject) => {
+      try {
+        // Configurar callback temporal
+        const originalCallback = this.tokenClient.callback;
+        this.tokenClient.callback = (response: any) => {
+          // Restaurar callback original
+          this.tokenClient.callback = originalCallback;
+
+          if (response.error) {
+            reject(new Error(response.error));
+            return;
+          }
+
+          this.accessToken = response.access_token;
+          this.isSignedInSubject.next(true);
+          resolve();
+        };
+
+        // Solicitar token
+        this.tokenClient.requestAccessToken({ prompt: 'consent' });
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 
   /**
    * Cerrar sesión
    */
   async signOut(): Promise<void> {
-    if (this.authInstance) {
-      return this.authInstance.signOut();
+    if (this.accessToken) {
+      google.accounts.oauth2.revoke(this.accessToken, () => {
+        console.log('✅ [GoogleDriveService] Sesión cerrada');
+      });
+      this.accessToken = null;
+      this.isSignedInSubject.next(false);
     }
   }
 
@@ -174,22 +236,7 @@ export class GoogleDriveService {
    * Verificar si el usuario está autenticado
    */
   isSignedIn(): boolean {
-    return this.isSignedInSubject.value;
-  }
-
-  /**
-   * Obtener información del usuario
-   */
-  getUserInfo(): any {
-    if (!this.authInstance) return null;
-    const user = this.authInstance.currentUser.get();
-    const profile = user.getBasicProfile();
-    return {
-      id: profile.getId(),
-      name: profile.getName(),
-      email: profile.getEmail(),
-      imageUrl: profile.getImageUrl()
-    };
+    return this.isSignedInSubject.value && !!this.accessToken;
   }
 
   /**
@@ -206,7 +253,7 @@ export class GoogleDriveService {
     }
 
     if (!this.isSignedIn()) {
-      throw new Error('User not signed in. Please sign in to Google Drive first.');
+      throw new Error('Usuario no autenticado. Por favor inicia sesión en Google Drive primero.');
     }
 
     const metadata = {
@@ -219,29 +266,28 @@ export class GoogleDriveService {
     form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
     form.append('file', fileContent);
 
-    const accessToken = gapi.auth.getToken().access_token;
-
     try {
       const response = await fetch(
         'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${accessToken}`
+            'Authorization': `Bearer ${this.accessToken}`
           },
           body: form
         }
       );
 
       if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Fallo al subir archivo: ${response.statusText} - ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('✅ File uploaded to Google Drive:', result);
+      console.log('✅ [GoogleDriveService] Archivo subido a Google Drive:', result);
       return result;
     } catch (error) {
-      console.error('❌ Error uploading file to Google Drive:', error);
+      console.error('❌ [GoogleDriveService] Error al subir archivo a Google Drive:', error);
       throw error;
     }
   }
