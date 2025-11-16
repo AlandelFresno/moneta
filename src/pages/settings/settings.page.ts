@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ExchangeRateService, CacheInfo, ExchangeRates } from '../../services/exchange-rate.service';
 import { PreferencesService } from '../../services/preferences.service';
+import { GoogleDriveService } from '../../services/google-drive.service';
 
 interface CurrencyDisplay {
   code: string;
@@ -56,7 +57,8 @@ export class SettingsPage implements OnInit {
 
   constructor(
     public exchangeRateService: ExchangeRateService,
-    private preferencesService: PreferencesService
+    private preferencesService: PreferencesService,
+    private googleDriveService: GoogleDriveService
   ) {}
 
   ngOnInit(): void {
@@ -72,14 +74,15 @@ export class SettingsPage implements OnInit {
   }
 
   loadGoogleCredentials(): void {
-    const clientId = localStorage.getItem('google_client_id');
-    const apiKey = localStorage.getItem('google_api_key');
-
-    if (clientId) {
-      this.googleClientId = clientId;
-    }
-    if (apiKey) {
-      this.googleApiKey = apiKey;
+    const config = localStorage.getItem('google_drive_config');
+    if (config) {
+      try {
+        const { clientId, apiKey } = JSON.parse(config);
+        this.googleClientId = clientId || '';
+        this.googleApiKey = apiKey || '';
+      } catch (error) {
+        console.error('❌ [Settings] Error loading Google credentials:', error);
+      }
     }
   }
 
@@ -89,27 +92,29 @@ export class SettingsPage implements OnInit {
     this.googleSaveError = null;
 
     try {
-      // Validar que al menos una credencial esté presente
-      if (!this.googleClientId && !this.googleApiKey) {
-        this.googleSaveError = 'Por favor ingresa al menos una credencial';
+      // Validar que ambas credenciales estén presentes
+      if (!this.googleClientId || !this.googleApiKey) {
+        this.googleSaveError = 'Por favor ingresa ambas credenciales (Client ID y API Key)';
         setTimeout(() => this.googleSaveError = null, 5000);
         return;
       }
 
       // Validar formato básico del Client ID
-      if (this.googleClientId && !this.googleClientId.includes('.apps.googleusercontent.com')) {
+      if (!this.googleClientId.includes('.apps.googleusercontent.com')) {
         this.googleSaveError = 'El Client ID debe terminar en .apps.googleusercontent.com';
         setTimeout(() => this.googleSaveError = null, 5000);
         return;
       }
 
-      // Guardar en localStorage
-      if (this.googleClientId) {
-        localStorage.setItem('google_client_id', this.googleClientId);
+      // Validar formato básico de la API Key
+      if (!this.googleApiKey.startsWith('AIza')) {
+        this.googleSaveError = 'La API Key debe comenzar con "AIza"';
+        setTimeout(() => this.googleSaveError = null, 5000);
+        return;
       }
-      if (this.googleApiKey) {
-        localStorage.setItem('google_api_key', this.googleApiKey);
-      }
+
+      // Guardar usando el servicio de Google Drive
+      this.googleDriveService.saveGoogleDriveConfig(this.googleClientId, this.googleApiKey);
 
       this.googleSaveSuccess = true;
       console.log('✅ [Settings] Credenciales guardadas exitosamente');
@@ -130,10 +135,10 @@ export class SettingsPage implements OnInit {
 
   clearGoogleCredentials(): void {
     if (confirm('¿Estás seguro de que deseas eliminar las credenciales de Google Drive?')) {
-      localStorage.removeItem('google_client_id');
-      localStorage.removeItem('google_api_key');
+      localStorage.removeItem('google_drive_config');
       this.googleClientId = '';
       this.googleApiKey = '';
+      this.googleDriveService.saveGoogleDriveConfig('', '');
       console.log('🗑️ [Settings] Credenciales de Google Drive eliminadas');
     }
   }
