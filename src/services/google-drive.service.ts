@@ -54,7 +54,13 @@ export class GoogleDriveService {
    * Verificar si las credenciales están configuradas
    */
   hasCredentials(): boolean {
-    return !!this.CLIENT_ID && !!this.API_KEY;
+    const hasCredentials = !!this.CLIENT_ID && !!this.API_KEY;
+    console.log('🔍 [GoogleDriveService] Verificando credenciales:', {
+      hasClientId: !!this.CLIENT_ID,
+      hasApiKey: !!this.API_KEY,
+      hasCredentials
+    });
+    return hasCredentials;
   }
 
   /**
@@ -66,7 +72,7 @@ export class GoogleDriveService {
     }
 
     if (!this.hasCredentials()) {
-      throw new Error('Google Drive credentials not configured. Please configure CLIENT_ID and API_KEY in Settings.');
+      throw new Error('Credenciales de Google Drive no configuradas. Por favor ve a Settings y configura el Client ID y API Key.');
     }
 
     return new Promise((resolve, reject) => {
@@ -101,6 +107,7 @@ export class GoogleDriveService {
 
   private async initializeGapiClient(): Promise<void> {
     try {
+      console.log('🔧 [GoogleDriveService] Inicializando cliente GAPI...');
       await gapi.client.init({
         apiKey: this.API_KEY,
         clientId: this.CLIENT_ID,
@@ -119,10 +126,28 @@ export class GoogleDriveService {
       // Actualizar estado inicial
       this.isSignedInSubject.next(this.authInstance.isSignedIn.get());
 
-      console.log('✅ Google Drive API initialized');
-    } catch (error) {
-      console.error('❌ Error initializing Google Drive API:', error);
-      throw error;
+      console.log('✅ [GoogleDriveService] Google Drive API inicializada correctamente');
+    } catch (error: any) {
+      console.error('❌ [GoogleDriveService] Error al inicializar Google Drive API:', error);
+
+      let errorMessage = 'Error al inicializar Google Drive API';
+
+      if (error.details) {
+        errorMessage += `: ${error.details}`;
+      } else if (error.error) {
+        errorMessage += `: ${error.error}`;
+      } else if (error.message) {
+        errorMessage += `: ${error.message}`;
+      }
+
+      // Agregar sugerencias comunes
+      if (error.error === 'idpiframe_initialization_failed' || error.details?.includes('cookies')) {
+        errorMessage += '. Verifica que las cookies de terceros estén habilitadas en tu navegador.';
+      } else if (error.details?.includes('origin') || error.error?.includes('origin')) {
+        errorMessage += '. Verifica que http://localhost:4200 esté autorizado en Google Cloud Console.';
+      }
+
+      throw new Error(errorMessage);
     }
   }
 

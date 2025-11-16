@@ -566,9 +566,22 @@ export class ExportService {
       };
     } catch (error: any) {
       console.error('❌ [ExportService] Error al exportar a Google Drive:', error);
+
+      let errorMessage = 'Error desconocido';
+
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error.error && error.error.message) {
+        errorMessage = error.error.message;
+      } else if (error.result && error.result.error) {
+        errorMessage = error.result.error.message || JSON.stringify(error.result.error);
+      }
+
       return {
         success: false,
-        message: `Error al guardar en Google Drive: ${error.message || error}`
+        message: `Error al guardar en Google Drive: ${errorMessage}`
       };
     }
   }
