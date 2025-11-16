@@ -342,17 +342,39 @@ export class TransactionsPage implements OnInit, OnDestroy {
       // Switched to auto, recalculate
       this.calculateConversion();
     } else {
-      // Switched to manual, set source
+      // Switched to manual, set source and keep current rate
       this.formData.conversionSource = 'manual';
+      // Keep the current rate for editing
     }
+  }
+
+  onManualRateChange(): void {
+    // When user changes the rate manually, recalculate converted amount
+    if (this.formData.amount > 0 && this.formData.conversionRate > 0) {
+      this.formData.convertedAmount = this.formData.amount * this.formData.conversionRate;
+      console.log('✅ [Transactions] Tasa manual actualizada:', {
+        amount: this.formData.amount,
+        rate: this.formData.conversionRate,
+        converted: this.formData.convertedAmount
+      });
+    }
+  }
+
+  shouldShowConversion(): boolean {
+    const preferredCurrency = this.preferencesService.getPreferredCurrency();
+    return this.formData.currency !== preferredCurrency && this.formData.amount > 0;
+  }
+
+  getPreferredCurrency(): string {
+    return this.preferencesService.getPreferredCurrency();
   }
 
   getConversionSourceLabel(): string {
     switch (this.formData.conversionSource) {
       case 'api':
-        return 'API (Today)';
+        return 'API (Hoy)';
       case 'cache':
-        return 'Cache (Yesterday)';
+        return 'Caché (Ayer)';
       case 'manual':
         return 'Manual';
       default:
