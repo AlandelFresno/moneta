@@ -30,8 +30,8 @@ export class SettingsPage implements OnInit {
   // Para mostrar conversión de ejemplo
   showConversionExample = true;
   exampleAmount = 100;
-  exampleFromCurrency = 'USD';
-  exampleToCurrency = 'ARS';
+  exampleFromCurrency = 'ARS';
+  exampleToCurrency = 'USD';
   exampleResult = 0;
 
   // Tasas de cambio para mostrar
