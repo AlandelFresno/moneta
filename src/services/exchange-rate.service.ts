@@ -204,13 +204,14 @@ export class ExchangeRateService {
         throw new Error('No se pudo obtener ninguna tasa de dólar');
       }
 
-      // Usar el promedio entre compra y venta
-      const rate = (dolarData.compra + dolarData.venta) / 2;
+      // Usar siempre el valor de compra
+      const rate = dolarData.compra;
 
       console.log(`✅ [ExchangeRateService] Tasa de dólar ${dolarData.nombre} obtenida:`, {
         compra: dolarData.compra,
         venta: dolarData.venta,
-        promedio: rate,
+        usada: rate,
+        tipo: 'compra',
         fecha: dolarData.fechaActualizacion
       });
 
