@@ -107,9 +107,9 @@
               <span class="category"><i [class]="'pi ' + txn.categoryIcon"></i> {{ txn.categoryName }}</span>
               <span class="account"><i class="pi pi-building"></i> {{ txn.accountName }}</span>
               <span class="date"><i class="pi pi-calendar"></i> {{ formatDate(txn.date) }}</span>
-              <span class="exchange-rate" *ngIf="txn.conversionRate && txn.currency !== getPreferredCurrency()">
+              <span class="exchange-rate" *ngIf="txn.usdRate && txn.currency !== 'USD'">
                 <i class="pi pi-dollar"></i>
-                1 {{ txn.currency }} = {{ txn.conversionRate | number:'1.2-4' }} {{ getPreferredCurrency() }}
+                {{ txn.usdRate | number:'1.2-4' }} {{ txn.currency }} = 1 USD
                 <span class="rate-badge" *ngIf="txn.manualConversion" [class]="txn.conversionSource">{{ txn.conversionSource === 'manual' ? 'Manual' : 'Auto' }}</span>
               </span>
             </div>
@@ -213,21 +213,20 @@
         </div>
 
         <div class="conversion-row">
-          <span class="label">Tasa de Cambio:</span>
+          <span class="label">Tasa USD:</span>
           <span class="value" *ngIf="!formData.useManualConversion">
-            1 {{ formData.currency }} = {{ formData.conversionRate | number:'1.2-4' }} {{ getPreferredCurrency() }}
+            {{ formData.usdRate | number:'1.2-4' }} {{ formData.currency }} = 1 USD
           </span>
           <div class="rate-input-container" *ngIf="formData.useManualConversion">
-            <span class="rate-prefix">1 {{ formData.currency }} =</span>
             <input
               type="number"
-              [(ngModel)]="formData.conversionRate"
+              [(ngModel)]="formData.usdRate"
               (ngModelChange)="onManualRateChange()"
               placeholder="0.00"
               step="0.01"
               min="0"
               class="manual-rate-input" />
-            <span class="rate-suffix">{{ getPreferredCurrency() }}</span>
+            <span class="rate-suffix">{{ formData.currency }} = 1 USD</span>
           </div>
         </div>
 
