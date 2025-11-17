@@ -36,6 +36,65 @@ export class DashboardPage implements OnInit, OnDestroy {
   // Data
   accounts: Account[] = [];
   recentTransactions: ExtendedTransaction[] = [];
+  selectedCurrency = 'ARS';
+
+  // Account dialog
+  showAccountDialog = false;
+  editingAccount: Account | null = null;
+  accountFormData: any = {
+    name: '',
+    type: 'bank',
+    balance: 0,
+    currency: 'ARS',
+    color: '#3b82f6',
+    icon: 'wallet'
+  };
+
+  // Available options
+  accountTypes = [
+    { value: 'bank', label: 'Banco' },
+    { value: 'cash', label: 'Efectivo' },
+    { value: 'credit', label: 'Tarjeta de Crédito' },
+    { value: 'savings', label: 'Ahorros' },
+    { value: 'investment', label: 'Inversión' }
+  ];
+
+  currencies = [
+    { code: 'ARS' },
+    { code: 'USD' },
+    { code: 'EUR' },
+    { code: 'BRL' },
+    { code: 'GBP' },
+    { code: 'JPY' },
+    { code: 'CAD' },
+    { code: 'AUD' }
+  ];
+
+  availableColors = [
+    '#3b82f6', // blue
+    '#10b981', // green
+    '#f59e0b', // amber
+    '#ef4444', // red
+    '#8b5cf6', // purple
+    '#ec4899', // pink
+    '#06b6d4', // cyan
+    '#f97316', // orange
+    '#6366f1', // indigo
+    '#14b8a6'  // teal
+  ];
+
+  availableIcons = [
+    'wallet',
+    'building',
+    'credit-card',
+    'shield',
+    'chart-line',
+    'dollar',
+    'money-bill',
+    'piggy-bank',
+    'university',
+    'briefcase'
+  ];
 
   constructor(
     private accountService: AccountService,
@@ -48,6 +107,9 @@ export class DashboardPage implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // Cargar la moneda preferida
+    this.selectedCurrency = this.preferencesService.getPreferredCurrency();
+
     combineLatest([
       this.accountService.accounts$,
       this.categoryService.categories$,
@@ -91,6 +153,11 @@ export class DashboardPage implements OnInit, OnDestroy {
         return t.type === 'income' && txDate >= startOfMonth && txDate <= endOfMonth;
       })
       .reduce((sum, t) => {
+        // Usar la tasa histórica guardada si existe
+        if (t.convertedAmount && t.conversionRate) {
+          return sum + (t.currency === preferredCurrency ? t.amount : t.convertedAmount);
+        }
+        // Fallback para transacciones antiguas sin tasa guardada
         const convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
           t.amount,
           t.currency,
@@ -105,6 +172,11 @@ export class DashboardPage implements OnInit, OnDestroy {
         return t.type === 'expense' && txDate >= startOfMonth && txDate <= endOfMonth;
       })
       .reduce((sum, t) => {
+        // Usar la tasa histórica guardada si existe
+        if (t.convertedAmount && t.conversionRate) {
+          return sum + (t.currency === preferredCurrency ? t.amount : t.convertedAmount);
+        }
+        // Fallback para transacciones antiguas sin tasa guardada
         const convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
           t.amount,
           t.currency,
@@ -174,8 +246,74 @@ export class DashboardPage implements OnInit, OnDestroy {
     this.router.navigate(['/categories']);
   }
 
-  navigateToAccounts(): void {
-    // TODO: Navigate to accounts page when implemented
-    console.log('Navigate to accounts');
+  onCurrencyChange(): void {
+    this.preferencesService.setPreferredCurrency(this.selectedCurrency);
+    // Recalcular estadísticas con la nueva moneda
+    this.calculateStats(this.accounts, this.transactionService.getTransactions());
+  }
+
+  openCreateAccountDialog(): void {
+    this.editingAccount = null;
+    this.accountFormData = {
+      name: '',
+      type: 'bank',
+      balance: 0,
+      currency: this.preferencesService.getPreferredCurrency(),
+      color: '#3b82f6',
+      icon: 'wallet'
+    };
+    this.showAccountDialog = true;
+  }
+
+  editAccount(account: Account): void {
+    this.editingAccount = account;
+    this.accountFormData = {
+      name: account.name,
+      type: account.type,
+      balance: account.balance,
+      currency: account.currency,
+      color: account.color,
+      icon: account.icon
+    };
+    this.showAccountDialog = true;
+  }
+
+  deleteAccount(account: Account): void {
+    if (confirm(`¿Estás seguro de que quieres eliminar la cuenta "${account.name}"?`)) {
+      this.accountService.deleteAccount(account.id);
+    }
+  }
+
+  closeAccountDialog(): void {
+    this.showAccountDialog = false;
+    this.editingAccount = null;
+  }
+
+  saveAccount(): void {
+    if (!this.accountFormData.name) return;
+
+    if (this.editingAccount) {
+      // Update existing account
+      this.accountService.updateAccount(this.editingAccount.id, {
+        name: this.accountFormData.name,
+        type: this.accountFormData.type,
+        balance: this.accountFormData.balance,
+        currency: this.accountFormData.currency,
+        color: this.accountFormData.color,
+        icon: this.accountFormData.icon
+      });
+    } else {
+      // Create new account
+      this.accountService.createAccount({
+        name: this.accountFormData.name,
+        type: this.accountFormData.type,
+        balance: this.accountFormData.balance,
+        currency: this.accountFormData.currency,
+        color: this.accountFormData.color,
+        icon: this.accountFormData.icon
+      });
+    }
+
+    this.closeAccountDialog();
   }
 }

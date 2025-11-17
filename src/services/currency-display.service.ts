@@ -61,7 +61,7 @@ export class CurrencyDisplayService {
   }
 
   /**
-   * Formatea un monto mostrando la moneda preferida (ARS) como principal
+   * Formatea un monto mostrando la moneda preferida como principal
    * y la moneda original como secundaria si es diferente
    */
   formatWithPreferredCurrency(
@@ -151,5 +151,83 @@ export class CurrencyDisplayService {
         <span class="secondary-amount">(${formatted.secondary})</span>
       </span>
     `;
+  }
+
+  /**
+   * Formatea un monto mostrando la moneda principal y secundaria configuradas
+   * Usa las tasas guardadas en exchangeRates si están disponibles
+   *
+   * @param amount - Monto en la moneda original
+   * @param currency - Moneda original del monto
+   * @param exchangeRates - Tasas desde la moneda original hacia otras monedas
+   *                        (ej: si currency=USD, exchangeRates.ARS=1050 significa 1 USD = 1050 ARS)
+   */
+  formatWithDualCurrency(
+    amount: number,
+    currency: string,
+    exchangeRates?: { ARS: number, USD: number, EUR: number, BRL: number }
+  ): FormattedCurrency {
+    const primaryCurrency = this.preferencesService.getPreferredCurrency();
+    const secondaryCurrency = this.preferencesService.getSecondaryCurrency();
+
+    console.log('💱 [CurrencyDisplay] formatWithDualCurrency llamado:', {
+      amount,
+      currency,
+      primaryCurrency,
+      secondaryCurrency,
+      hasExchangeRates: !!exchangeRates,
+      exchangeRates
+    });
+
+    // Calcular monto en moneda principal
+    let primaryAmount: number;
+    if (currency === primaryCurrency) {
+      primaryAmount = amount;
+    } else if (exchangeRates && exchangeRates[primaryCurrency as keyof typeof exchangeRates]) {
+      // Usar tasas guardadas (desde currency hacia primaryCurrency)
+      primaryAmount = amount * exchangeRates[primaryCurrency as keyof typeof exchangeRates];
+      console.log('💱 [CurrencyDisplay] Usando tasa guardada para primary:', {
+        rate: exchangeRates[primaryCurrency as keyof typeof exchangeRates],
+        primaryAmount
+      });
+    } else {
+      // Fallback a conversión actual si no hay tasas guardadas
+      primaryAmount = this.exchangeRateService.convertToPreferredCurrency(amount, currency, primaryCurrency);
+      console.log('💱 [CurrencyDisplay] Usando tasa actual (fallback) para primary:', primaryAmount);
+    }
+
+    const result: FormattedCurrency = {
+      primary: this.formatAmount(primaryAmount, primaryCurrency),
+      isConverted: currency !== primaryCurrency
+    };
+
+    // Agregar monto secundario si está configurado y es diferente de la primaria
+    if (secondaryCurrency && secondaryCurrency !== primaryCurrency) {
+      let secondaryAmount: number;
+      if (currency === secondaryCurrency) {
+        secondaryAmount = amount;
+      } else if (exchangeRates && exchangeRates[secondaryCurrency as keyof typeof exchangeRates]) {
+        // Usar tasas guardadas (desde currency hacia secondaryCurrency)
+        secondaryAmount = amount * exchangeRates[secondaryCurrency as keyof typeof exchangeRates];
+        console.log('💱 [CurrencyDisplay] Usando tasa guardada para secondary:', {
+          rate: exchangeRates[secondaryCurrency as keyof typeof exchangeRates],
+          secondaryAmount
+        });
+      } else {
+        // Fallback a conversión actual si no hay tasas guardadas
+        secondaryAmount = this.exchangeRateService.convertToPreferredCurrency(amount, currency, secondaryCurrency);
+        console.log('💱 [CurrencyDisplay] Usando tasa actual (fallback) para secondary:', secondaryAmount);
+      }
+      result.secondary = this.formatAmount(secondaryAmount, secondaryCurrency);
+      console.log('💱 [CurrencyDisplay] Secondary formateado:', result.secondary);
+    } else {
+      console.log('💱 [CurrencyDisplay] No se agregó secondary porque:', {
+        hasSecondaryCurrency: !!secondaryCurrency,
+        isDifferentFromPrimary: secondaryCurrency !== primaryCurrency
+      });
+    }
+
+    console.log('💱 [CurrencyDisplay] Resultado final:', result);
+    return result;
   }
 }

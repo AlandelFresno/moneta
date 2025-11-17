@@ -3,6 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 
 export interface UserPreferences {
   preferredCurrency: string;
+  secondaryCurrency?: string;  // Moneda a mostrar en paréntesis
   locale: string;
   theme?: 'light' | 'dark';
 }
@@ -15,6 +16,7 @@ export class PreferencesService {
 
   private defaultPreferences: UserPreferences = {
     preferredCurrency: 'ARS',
+    secondaryCurrency: 'USD',
     locale: 'es-AR',
     theme: 'light'
   };
@@ -70,6 +72,21 @@ export class PreferencesService {
   setPreferredCurrency(currency: string): void {
     const current = this.preferencesSubject.value;
     this.savePreferences({ ...current, preferredCurrency: currency });
+  }
+
+  /**
+   * Obtiene la moneda secundaria
+   */
+  getSecondaryCurrency(): string | undefined {
+    return this.preferencesSubject.value.secondaryCurrency;
+  }
+
+  /**
+   * Establece la moneda secundaria (para mostrar en paréntesis)
+   */
+  setSecondaryCurrency(currency: string): void {
+    const current = this.preferencesSubject.value;
+    this.savePreferences({ ...current, secondaryCurrency: currency });
   }
 
   /**

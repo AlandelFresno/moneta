@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule, Routes } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
 
 import { DashboardPage } from './dashboard.page';
 import { CurrencyRatesWidgetComponent } from '../../components/currency-rates-widget/currency-rates-widget.component';
@@ -25,7 +26,8 @@ const routes: Routes = [
     FormsModule,
     RouterModule.forChild(routes),
     ButtonModule,
-    TooltipModule
+    TooltipModule,
+    DialogModule
   ]
 })
 export class DashboardModule { }

@@ -233,8 +233,14 @@ export class ExportService {
             'Categoría ID': transaction.categoryId,
             'Cuenta': account ? account.name : 'N/A',
             'Cuenta ID': transaction.accountId,
+            // Tasas de cambio guardadas
+            'Tasa a ARS': transaction.exchangeRates?.ARS || '',
+            'Tasa a USD': transaction.exchangeRates?.USD || '',
+            'Tasa a EUR': transaction.exchangeRates?.EUR || '',
+            'Tasa a BRL': transaction.exchangeRates?.BRL || '',
+            // Campos antiguos (para compatibilidad)
             'Monto Convertido': transaction.convertedAmount || '',
-            'Tasa de Cambio': transaction.conversionRate || '',
+            'Tasa de Cambio (legacy)': transaction.conversionRate || '',
             'Fuente de Conversión': transaction.conversionSource || '',
             'Fecha de Conversión': transaction.conversionDate ? this.formatDate(transaction.conversionDate) : '',
             'Conversión Manual': transaction.manualConversion ? 'Sí' : 'No'
@@ -429,8 +435,14 @@ export class ExportService {
             'Categoría ID': transaction.categoryId,
             'Cuenta': account ? account.name : 'N/A',
             'Cuenta ID': transaction.accountId,
+            // Tasas de cambio guardadas
+            'Tasa a ARS': transaction.exchangeRates?.ARS || '',
+            'Tasa a USD': transaction.exchangeRates?.USD || '',
+            'Tasa a EUR': transaction.exchangeRates?.EUR || '',
+            'Tasa a BRL': transaction.exchangeRates?.BRL || '',
+            // Campos antiguos (para compatibilidad)
             'Monto Convertido': transaction.convertedAmount || '',
-            'Tasa de Cambio': transaction.conversionRate || '',
+            'Tasa de Cambio (legacy)': transaction.conversionRate || '',
             'Fuente de Conversión': transaction.conversionSource || '',
             'Fecha de Conversión': transaction.conversionDate ? this.formatDate(transaction.conversionDate) : '',
             'Conversión Manual': transaction.manualConversion ? 'Sí' : 'No'
@@ -551,16 +563,15 @@ export class ExportService {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       });
 
-      // Subir a Google Drive
-      const fileName = `budget_tracker_completo_${this.getTimestamp()}.xlsx`;
-      const folderId = await this.googleDriveService.getOrCreateBudgetFolder();
-      const result = await this.googleDriveService.uploadFile(fileName, blob, blob.type, folderId);
+      // Subir o actualizar en Google Drive (nombre fijo, en root)
+      const fileName = 'Budget_Tracker_Export.xlsx';
+      const result = await this.googleDriveService.uploadOrUpdateFile(fileName, blob, blob.type);
 
-      console.log(`✅ [ExportService] Archivo subido a Google Drive: ${result.id}`);
+      console.log(`✅ [ExportService] Archivo guardado en Google Drive: ${result.id}`);
 
       return {
         success: true,
-        message: `Archivo guardado en Google Drive exitosamente. ${sheetsAdded} hoja(s) incluida(s).`,
+        message: `Archivo "${fileName}" guardado exitosamente en Google Drive. ${sheetsAdded} hoja(s) incluida(s).`,
         fileId: result.id,
         webViewLink: result.webViewLink
       };

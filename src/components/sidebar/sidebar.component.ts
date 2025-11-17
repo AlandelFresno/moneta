@@ -8,6 +8,7 @@ import { AccountService } from '../../services/account.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { BillingService } from '../../services/billing.service';
 import { GoogleDriveService } from '../../services/google-drive.service';
+import { SUPPORTED_CURRENCIES } from '../../constants/currencies';
 
 export interface MenuItem {
   label: string;
@@ -25,6 +26,9 @@ export interface MenuItem {
 export class SidebarComponent {
   isCollapsed = signal(false);
   isMobileMenuOpen = signal(false);
+  currencies = SUPPORTED_CURRENCIES;
+  primaryCurrency: string;
+  secondaryCurrency: string;
 
   constructor(
     private exportService: ExportService,
@@ -36,7 +40,11 @@ export class SidebarComponent {
     private preferencesService: PreferencesService,
     private billingService: BillingService,
     private googleDriveService: GoogleDriveService
-  ) {}
+  ) {
+    // Cargar las monedas preferidas
+    this.primaryCurrency = this.preferencesService.getPreferredCurrency();
+    this.secondaryCurrency = this.preferencesService.getSecondaryCurrency() || 'USD';
+  }
 
   menuItems: MenuItem[] = [
     {
@@ -184,5 +192,19 @@ export class SidebarComponent {
       console.error('❌ [Sidebar] Error en exportación a Google Drive:', error);
       alert(`Error: ${error.message || 'Error desconocido. Por favor, revisa la consola.'}`);
     }
+  }
+
+  onPrimaryCurrencyChange(): void {
+    console.log('💱 [Sidebar] Cambiando moneda principal a:', this.primaryCurrency);
+    this.preferencesService.setPreferredCurrency(this.primaryCurrency);
+    // Recargar la página para aplicar cambios
+    window.location.reload();
+  }
+
+  onSecondaryCurrencyChange(): void {
+    console.log('💱 [Sidebar] Cambiando moneda secundaria a:', this.secondaryCurrency);
+    this.preferencesService.setSecondaryCurrency(this.secondaryCurrency);
+    // Recargar la página para aplicar cambios
+    window.location.reload();
   }
 }

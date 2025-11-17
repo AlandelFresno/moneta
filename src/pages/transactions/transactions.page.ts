@@ -8,6 +8,7 @@ import { CsvService } from '../../services/csv.service';
 import { ExchangeRateService } from '../../services/exchange-rate.service';
 import { CurrencyDisplayService, FormattedCurrency } from '../../services/currency-display.service';
 import { PreferencesService } from '../../services/preferences.service';
+import { SUPPORTED_CURRENCIES } from '../../constants/currencies';
 
 interface TransactionWithDetails extends Transaction {
   accountName: string;
@@ -36,11 +37,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
   showAccountDialog = false;
   editingTransaction: Transaction | null = null;
 
-  currencies = [
-    { code: 'ARS', symbol: '$', name: 'Argentine Peso' },
-    { code: 'USD', symbol: '$', name: 'US Dollar' },
-    { code: 'EUR', symbol: '€', name: 'Euro' }
-  ];
+  currencies = SUPPORTED_CURRENCIES;
 
   formData = {
     accountId: '',
@@ -54,7 +51,9 @@ export class TransactionsPage implements OnInit, OnDestroy {
     convertedAmount: 0,
     conversionRate: 0,
     conversionSource: '' as 'api' | 'cache' | 'manual' | '',
-    useManualConversion: false
+    useManualConversion: false,
+    // USD-based rate (SIEMPRE relativo a 1 USD)
+    usdRate: 0  // Ejemplo: 1050 ARS = 1 USD
   };
 
   categoryFormData = {
@@ -199,9 +198,18 @@ export class TransactionsPage implements OnInit, OnDestroy {
     const preferredCurrency = this.preferencesService.getPreferredCurrency();
 
     // Convertir todas las transacciones a la moneda preferida antes de sumar
+    // IMPORTANTE: Usar la tasa guardada en la transacción si existe
     this.stats.totalIncome = this.filteredTransactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => {
+        // Si la transacción tiene una conversión guardada y la moneda preferida no ha cambiado, usar ese valor
+        if (t.convertedAmount && t.conversionRate) {
+          // La conversión guardada podría ser a una moneda diferente, necesitamos verificar
+          // Por ahora asumimos que convertedAmount está en la moneda preferida al momento de la transacción
+          return sum + (t.currency === preferredCurrency ? t.amount : t.convertedAmount);
+        }
+
+        // Fallback: Si no hay conversión guardada, usar el servicio (transacciones antiguas)
         const convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
           t.amount,
           t.currency,
@@ -213,6 +221,12 @@ export class TransactionsPage implements OnInit, OnDestroy {
     this.stats.totalExpense = this.filteredTransactions
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => {
+        // Usar la tasa guardada si existe
+        if (t.convertedAmount && t.conversionRate) {
+          return sum + (t.currency === preferredCurrency ? t.amount : t.convertedAmount);
+        }
+
+        // Fallback: Si no hay conversión guardada, usar el servicio
         const convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
           t.amount,
           t.currency,
@@ -227,7 +241,15 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   openCreateDialog(): void {
     this.editingTransaction = null;
-    const today = new Date().toISOString().split('T')[0];
+    // Formato datetime-local: "YYYY-MM-DDTHH:mm"
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const todayWithTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+
     const defaultCurrency = this.accounts[0]?.currency || 'ARS';
     this.formData = {
       accountId: this.accounts[0]?.id || '',
@@ -236,11 +258,12 @@ export class TransactionsPage implements OnInit, OnDestroy {
       amount: 0,
       currency: defaultCurrency,
       description: '',
-      date: today,
+      date: todayWithTime,
       convertedAmount: 0,
       conversionRate: 0,
       conversionSource: '',
-      useManualConversion: false
+      useManualConversion: false,
+      usdRate: 0
     };
     this.calculateConversion();
     this.showDialog = true;
@@ -248,6 +271,15 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   openEditDialog(transaction: Transaction): void {
     this.editingTransaction = transaction;
+    // Formato datetime-local: "YYYY-MM-DDTHH:mm"
+    const date = new Date(transaction.date);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+
     this.formData = {
       accountId: transaction.accountId,
       categoryId: transaction.categoryId,
@@ -255,11 +287,12 @@ export class TransactionsPage implements OnInit, OnDestroy {
       amount: transaction.amount,
       currency: transaction.currency,
       description: transaction.description,
-      date: new Date(transaction.date).toISOString().split('T')[0],
+      date: formattedDate,
       convertedAmount: transaction.convertedAmount || 0,
       conversionRate: transaction.conversionRate || 0,
       conversionSource: transaction.conversionSource || '',
-      useManualConversion: transaction.manualConversion || false
+      useManualConversion: transaction.manualConversion || false,
+      usdRate: transaction.usdRate || 0
     };
     if (!this.formData.useManualConversion) {
       this.calculateConversion();
@@ -281,35 +314,42 @@ export class TransactionsPage implements OnInit, OnDestroy {
     if (!this.formData.amount || !this.formData.currency) {
       this.formData.convertedAmount = 0;
       this.formData.conversionRate = 0;
+      this.formData.usdRate = 0;
       this.formData.conversionSource = '';
       return;
     }
 
     const preferredCurrency = this.preferencesService.getPreferredCurrency();
+    const ratesInfo = this.exchangeRateService.getRatesInfo();
 
-    // If same currency, no conversion needed
+    // PASO 1: SIEMPRE calcular la tasa respecto a USD (base universal)
+    if (this.formData.currency === 'USD') {
+      // Si la transacción es en USD, la tasa es 1
+      this.formData.usdRate = 1;
+    } else {
+      // Obtener cuántas unidades de esta moneda = 1 USD
+      this.formData.usdRate = this.exchangeRateService.getExchangeRate('USD', this.formData.currency);
+    }
+
+    // PASO 2: Calcular el monto convertido a la moneda preferida
     if (this.formData.currency === preferredCurrency) {
-      console.log('✅ [Transactions] Misma moneda, sin conversión necesaria');
+      // Misma moneda, no necesita conversión
       this.formData.convertedAmount = this.formData.amount;
       this.formData.conversionRate = 1;
-      this.formData.conversionSource = '';
-      return;
+    } else {
+      // Convertir a la moneda preferida
+      this.formData.convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
+        this.formData.amount,
+        this.formData.currency,
+        preferredCurrency
+      );
+      // Calcular tasa (para compatibilidad con código existente)
+      if (this.formData.amount > 0) {
+        this.formData.conversionRate = this.formData.convertedAmount / this.formData.amount;
+      }
     }
 
-    // Get conversion info
-    const ratesInfo = this.exchangeRateService.getRatesInfo();
-    this.formData.convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
-      this.formData.amount,
-      this.formData.currency,
-      preferredCurrency
-    );
-
-    // Calculate rate
-    if (this.formData.amount > 0) {
-      this.formData.conversionRate = this.formData.convertedAmount / this.formData.amount;
-    }
-
-    // Determine source
+    // PASO 3: Determinar fuente de datos
     if (ratesInfo) {
       const today = new Date().toISOString().split('T')[0];
       const rateDate = new Date(ratesInfo.date).toISOString().split('T')[0];
@@ -326,7 +366,8 @@ export class TransactionsPage implements OnInit, OnDestroy {
     console.log('✅ [Transactions] Conversión calculada:', {
       from: `${this.formData.amount} ${this.formData.currency}`,
       to: `${this.formData.convertedAmount.toFixed(2)} ${preferredCurrency}`,
-      rate: `1 ${this.formData.currency} = ${this.formData.conversionRate.toFixed(4)} ${preferredCurrency}`,
+      usdRate: `${this.formData.usdRate.toFixed(4)} ${this.formData.currency}/USD`,
+      conversionRate: `1 ${this.formData.currency} = ${this.formData.conversionRate.toFixed(4)} ${preferredCurrency}`,
       source: this.formData.conversionSource
     });
   }
@@ -342,17 +383,70 @@ export class TransactionsPage implements OnInit, OnDestroy {
       // Switched to auto, recalculate
       this.calculateConversion();
     } else {
-      // Switched to manual, set source
+      // Switched to manual, set source and keep current rate
       this.formData.conversionSource = 'manual';
+      // Keep the current rate for editing
     }
+  }
+
+  onManualRateChange(): void {
+    // When user changes the USD rate manually, recalculate converted amount
+    if (this.formData.amount > 0 && this.formData.usdRate > 0) {
+      // El usuario ingresa la tasa basada en USD
+      // Por ejemplo: 1050 ARS = 1 USD, entonces usdRate = 1050
+
+      const preferredCurrency = this.preferencesService.getPreferredCurrency();
+
+      if (this.formData.currency === 'USD') {
+        // Si es USD, convertir directamente
+        if (preferredCurrency === 'USD') {
+          this.formData.convertedAmount = this.formData.amount;
+        } else {
+          // Obtener tasa de la moneda preferida a USD
+          const preferredToUsdRate = this.exchangeRateService.getExchangeRate('USD', preferredCurrency);
+          this.formData.convertedAmount = this.formData.amount * preferredToUsdRate;
+        }
+      } else {
+        // Si no es USD, usar la tasa ingresada
+        // Primero convertir a USD
+        const amountInUSD = this.formData.amount / this.formData.usdRate;
+
+        // Luego convertir USD a moneda preferida
+        if (preferredCurrency === 'USD') {
+          this.formData.convertedAmount = amountInUSD;
+          this.formData.conversionRate = 1 / this.formData.usdRate;
+        } else {
+          const usdToPreferredRate = this.exchangeRateService.getExchangeRate('USD', preferredCurrency);
+          this.formData.convertedAmount = amountInUSD * usdToPreferredRate;
+          this.formData.conversionRate = this.formData.convertedAmount / this.formData.amount;
+        }
+      }
+
+      console.log('✅ [Transactions] Tasa USD manual actualizada:', {
+        amount: this.formData.amount,
+        currency: this.formData.currency,
+        usdRate: this.formData.usdRate,
+        converted: this.formData.convertedAmount,
+        preferredCurrency: preferredCurrency
+      });
+    }
+  }
+
+  shouldShowConversion(): boolean {
+    const preferredCurrency = this.preferencesService.getPreferredCurrency();
+    return this.formData.currency !== preferredCurrency && this.formData.amount > 0;
+  }
+
+  getPreferredCurrency(): string {
+    return this.preferencesService.getPreferredCurrency();
   }
 
   getConversionSourceLabel(): string {
     switch (this.formData.conversionSource) {
       case 'api':
-        return 'API (Today)';
+        return 'API (Hoy)';
       case 'cache':
-        return 'Cache (Yesterday)';
+        return 'Caché (Ayer)';
       case 'manual':
         return 'Manual';
       default:
@@ -365,6 +459,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
       return;
     }
 
+    // IMPORTANTE: Guardar TODAS las tasas de cambio con la transacción
+    // Esto permite mostrar cualquier moneda en cualquier otra sin recalcular
+    const allRates = this.exchangeRateService.getAllExchangeRates(this.formData.currency);
+
     const txnData = {
       accountId: this.formData.accountId,
       categoryId: this.formData.categoryId,
@@ -373,18 +471,23 @@ export class TransactionsPage implements OnInit, OnDestroy {
       currency: this.formData.currency,
       description: this.formData.description,
       date: new Date(this.formData.date),
-      // Add conversion data
-      convertedAmount: this.formData.convertedAmount || undefined,
-      conversionRate: this.formData.conversionRate || undefined,
+      // Guardar datos de conversión histórica
+      convertedAmount: this.formData.convertedAmount > 0 ? this.formData.convertedAmount : undefined,
+      conversionRate: this.formData.conversionRate > 0 ? this.formData.conversionRate : undefined,
       conversionSource: this.formData.conversionSource || undefined,
       conversionDate: new Date(),
-      manualConversion: this.formData.useManualConversion
+      manualConversion: this.formData.useManualConversion,
+      // Tasa respecto a USD (para compatibilidad)
+      usdRate: this.formData.usdRate > 0 ? this.formData.usdRate : undefined,
+      // NUEVO: Todas las tasas de cambio guardadas
+      exchangeRates: allRates
     };
 
     console.log(`💾 [Transactions] ${this.editingTransaction ? 'Actualizando' : 'Creando'} transacción:`, {
       amount: `${txnData.amount} ${txnData.currency}`,
       convertedAmount: txnData.convertedAmount ? `${txnData.convertedAmount.toFixed(2)} ${this.preferencesService.getPreferredCurrency()}` : 'N/A',
-      conversionRate: txnData.conversionRate,
+      exchangeRates: txnData.exchangeRates,
+      usdRate: `${txnData.usdRate} ${txnData.currency}/USD`,
       conversionSource: txnData.conversionSource,
       manualConversion: txnData.manualConversion,
       type: txnData.type,
@@ -532,15 +635,17 @@ export class TransactionsPage implements OnInit, OnDestroy {
     return this.currencyDisplayService.formatAmount(amount, currency || preferredCurrency);
   }
 
-  formatCurrencyWithOriginal(amount: number, originalCurrency: string): FormattedCurrency {
-    return this.currencyDisplayService.formatWithPreferredCurrency(amount, originalCurrency);
+  formatCurrencyWithOriginal(amount: number, originalCurrency: string, exchangeRates?: { ARS: number, USD: number, EUR: number, BRL: number }): FormattedCurrency {
+    return this.currencyDisplayService.formatWithDualCurrency(amount, originalCurrency, exchangeRates);
   }
 
   formatDate(date: Date): string {
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     }).format(new Date(date));
   }
 }

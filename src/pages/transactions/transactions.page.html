@@ -107,10 +107,15 @@
               <span class="category"><i [class]="'pi ' + txn.categoryIcon"></i> {{ txn.categoryName }}</span>
               <span class="account"><i class="pi pi-building"></i> {{ txn.accountName }}</span>
               <span class="date"><i class="pi pi-calendar"></i> {{ formatDate(txn.date) }}</span>
+              <span class="exchange-rate" *ngIf="txn.usdRate && txn.currency !== 'USD'">
+                <i class="pi pi-dollar"></i>
+                {{ txn.usdRate | number:'1.2-4' }} {{ txn.currency }} = 1 USD
+                <span class="rate-badge" *ngIf="txn.manualConversion" [class]="txn.conversionSource">{{ txn.conversionSource === 'manual' ? 'Manual' : 'Auto' }}</span>
+              </span>
             </div>
           </div>
           <div class="transaction-amount">
-            <ng-container *ngIf="formatCurrencyWithOriginal(txn.amount, txn.currency) as formatted">
+            <ng-container *ngIf="formatCurrencyWithOriginal(txn.amount, txn.currency, txn.exchangeRates) as formatted">
               <span class="amount" [class.income]="txn.type === 'income'" [class.expense]="txn.type === 'expense'">
                 <span>{{ txn.type === 'income' ? '+' : '-' }}</span>
                 <span class="currency-display">
@@ -192,37 +197,44 @@
     </div>
 
     <!-- Conversion Info -->
-    <div class="conversion-section" *ngIf="formData.currency && formData.currency !== 'ARS' && formData.amount > 0">
+    <div class="conversion-section" *ngIf="shouldShowConversion()">
       <div class="conversion-header">
-        <label>Conversion to Preferred Currency (ARS)</label>
+        <label>Conversión a Moneda Preferida ({{ getPreferredCurrency() }})</label>
         <div class="conversion-toggle">
           <input type="checkbox" id="manualConversion" [(ngModel)]="formData.useManualConversion" (ngModelChange)="onManualConversionToggle()" />
-          <label for="manualConversion">Manual Entry</label>
+          <label for="manualConversion">Tasa Manual</label>
         </div>
       </div>
 
       <div class="conversion-info-box">
         <div class="conversion-row">
-          <span class="label">Source:</span>
+          <span class="label">Fuente:</span>
           <span class="value source-badge" [class]="formData.conversionSource">{{ getConversionSourceLabel() }}</span>
         </div>
-        <div class="conversion-row" *ngIf="!formData.useManualConversion && formData.conversionRate > 0">
-          <span class="label">Rate:</span>
-          <span class="value">1 {{ formData.currency }} = {{ formData.conversionRate | number:'1.4-4' }} ARS</span>
-        </div>
+
         <div class="conversion-row">
-          <span class="label">Converted Amount:</span>
-          <span class="value converted-amount" *ngIf="!formData.useManualConversion">
-            {{ formData.convertedAmount | number:'1.2-2' }} ARS
+          <span class="label">Tasa USD:</span>
+          <span class="value" *ngIf="!formData.useManualConversion">
+            {{ formData.usdRate | number:'1.2-4' }} {{ formData.currency }} = 1 USD
           </span>
-          <input
-            *ngIf="formData.useManualConversion"
-            type="number"
-            [(ngModel)]="formData.convertedAmount"
-            placeholder="Enter amount in ARS"
-            step="0.01"
-            min="0"
-            class="manual-input" />
+          <div class="rate-input-container" *ngIf="formData.useManualConversion">
+            <input
+              type="number"
+              [(ngModel)]="formData.usdRate"
+              (ngModelChange)="onManualRateChange()"
+              placeholder="0.00"
+              step="0.01"
+              min="0"
+              class="manual-rate-input" />
+            <span class="rate-suffix">{{ formData.currency }} = 1 USD</span>
+          </div>
+        </div>
+
+        <div class="conversion-row">
+          <span class="label">Monto Convertido:</span>
+          <span class="value converted-amount">
+            {{ formData.convertedAmount | number:'1.2-2' }} {{ getPreferredCurrency() }}
+          </span>
         </div>
       </div>
 
@@ -234,7 +246,7 @@
 
     <div class="form-group">
       <label>Date</label>
-      <input type="date" [(ngModel)]="formData.date" class="macos-input" />
+      <input type="datetime-local" [(ngModel)]="formData.date" class="macos-input" />
     </div>
 
     <div class="form-group">

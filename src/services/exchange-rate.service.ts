@@ -205,16 +205,16 @@ export class ExchangeRateService {
       return amount;
     }
 
-    const rates = await this.getRates('USD'); // Usar USD como base común
+    const rates = await this.getRates('ARS'); // Usar ARS como base común
 
-    // Convertir a USD primero, luego a la moneda destino
-    const amountInUSD = fromCurrency === 'USD'
+    // Convertir a ARS primero, luego a la moneda destino
+    const amountInARS = fromCurrency === 'ARS'
       ? amount
       : amount / rates.rates[fromCurrency];
 
-    const convertedAmount = toCurrency === 'USD'
-      ? amountInUSD
-      : amountInUSD * rates.rates[toCurrency];
+    const convertedAmount = toCurrency === 'ARS'
+      ? amountInARS
+      : amountInARS * rates.rates[toCurrency];
 
     return convertedAmount;
   }
@@ -345,5 +345,44 @@ export class ExchangeRateService {
       console.error('❌ [ExchangeRateService] Error getting exchange rate:', error);
       return 1;
     }
+  }
+
+  /**
+   * Obtiene todas las tasas de cambio para las monedas soportadas
+   * Retorna cuánto de cada moneda equivale a 1 unidad de la moneda origen
+   *
+   * Ejemplo: getAllExchangeRates('USD') retorna:
+   * - ARS: 1050 (significa 1 USD = 1050 ARS)
+   * - USD: 1 (significa 1 USD = 1 USD)
+   * - EUR: 0.95 (significa 1 USD = 0.95 EUR)
+   * - BRL: 5.8 (significa 1 USD = 5.8 BRL)
+   */
+  getAllExchangeRates(fromCurrency: string): { ARS: number, USD: number, EUR: number, BRL: number } {
+    console.log(`💱 [ExchangeRateService] getAllExchangeRates para ${fromCurrency}`);
+
+    const rates = this.ratesSubject.value;
+    console.log('📊 [ExchangeRateService] Tasas actuales de la API:', {
+      base: rates?.base,
+      USD: rates?.rates['USD'],
+      ARS: rates?.rates['ARS'],
+      EUR: rates?.rates['EUR'],
+      BRL: rates?.rates['BRL']
+    });
+
+    const result = {
+      ARS: this.getExchangeRate(fromCurrency, 'ARS'),
+      USD: this.getExchangeRate(fromCurrency, 'USD'),
+      EUR: this.getExchangeRate(fromCurrency, 'EUR'),
+      BRL: this.getExchangeRate(fromCurrency, 'BRL')
+    };
+
+    console.log(`✅ [ExchangeRateService] Tasas calculadas para 1 ${fromCurrency}:`, {
+      'ARS': `1 ${fromCurrency} = ${result.ARS.toFixed(4)} ARS`,
+      'USD': `1 ${fromCurrency} = ${result.USD.toFixed(4)} USD`,
+      'EUR': `1 ${fromCurrency} = ${result.EUR.toFixed(4)} EUR`,
+      'BRL': `1 ${fromCurrency} = ${result.BRL.toFixed(4)} BRL`
+    });
+
+    return result;
   }
 }
