@@ -293,7 +293,113 @@ export class GoogleDriveService {
   }
 
   /**
+   * Buscar archivo por nombre en el root de Drive
+   */
+  async findFileByName(fileName: string): Promise<string | null> {
+    try {
+      const response = await gapi.client.drive.files.list({
+        q: `name='${fileName}' and trashed=false and 'root' in parents`,
+        fields: 'files(id, name, webViewLink)',
+        spaces: 'drive'
+      });
+
+      if (response.result.files && response.result.files.length > 0) {
+        console.log(`✅ [GoogleDriveService] Archivo encontrado: ${fileName} (ID: ${response.result.files[0].id})`);
+        return response.result.files[0].id;
+      }
+
+      console.log(`ℹ️ [GoogleDriveService] Archivo no encontrado: ${fileName}`);
+      return null;
+    } catch (error) {
+      console.error('❌ [GoogleDriveService] Error buscando archivo:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Actualizar archivo existente en Drive
+   */
+  async updateFile(
+    fileId: string,
+    fileContent: Blob,
+    mimeType: string
+  ): Promise<any> {
+    if (!this.isSignedIn()) {
+      throw new Error('Usuario no autenticado. Por favor inicia sesión en Google Drive primero.');
+    }
+
+    try {
+      const response = await fetch(
+        `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${this.accessToken}`,
+            'Content-Type': mimeType
+          },
+          body: fileContent
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Fallo al actualizar archivo: ${response.statusText} - ${errorText}`);
+      }
+
+      const result = await response.json();
+
+      // Obtener webViewLink del archivo actualizado
+      const fileInfo = await gapi.client.drive.files.get({
+        fileId: fileId,
+        fields: 'id,name,webViewLink'
+      });
+
+      console.log('✅ [GoogleDriveService] Archivo actualizado en Google Drive:', fileInfo.result);
+      return fileInfo.result;
+    } catch (error) {
+      console.error('❌ [GoogleDriveService] Error al actualizar archivo:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Subir o actualizar archivo con nombre fijo en el root de Drive
+   */
+  async uploadOrUpdateFile(
+    fileName: string,
+    fileContent: Blob,
+    mimeType: string
+  ): Promise<any> {
+    if (!this.gapiInitialized) {
+      await this.initClient();
+    }
+
+    if (!this.isSignedIn()) {
+      throw new Error('Usuario no autenticado. Por favor inicia sesión en Google Drive primero.');
+    }
+
+    try {
+      // Buscar si ya existe el archivo
+      const existingFileId = await this.findFileByName(fileName);
+
+      if (existingFileId) {
+        // Actualizar archivo existente
+        console.log(`🔄 [GoogleDriveService] Actualizando archivo existente: ${fileName}`);
+        return await this.updateFile(existingFileId, fileContent, mimeType);
+      } else {
+        // Crear archivo nuevo en root (sin folderId)
+        console.log(`📝 [GoogleDriveService] Creando archivo nuevo: ${fileName}`);
+        return await this.uploadFile(fileName, fileContent, mimeType);
+      }
+    } catch (error) {
+      console.error('❌ [GoogleDriveService] Error en uploadOrUpdateFile:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Crear o obtener carpeta "Budget Tracker" en Drive
+   * @deprecated Usar uploadOrUpdateFile en lugar de carpetas
    */
   async getOrCreateBudgetFolder(): Promise<string> {
     try {
