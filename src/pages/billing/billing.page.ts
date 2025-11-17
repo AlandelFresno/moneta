@@ -184,7 +184,8 @@ export class BillingPage implements OnInit {
     if (suggestedIndex > currentIndex) {
       return `Deberías aumentar a categoría ${this.suggestedCategory}. ${this.canRecategorize ? 'Podés hacerlo ahora.' : 'Próximo período: ' + this.nextRecategorizationPeriod}`;
     } else {
-      return `Podrías bajar a categoría ${this.suggestedCategory} y ahorrar ${this.formatCurrency(currentCat.monthlyFee - suggestedCat.monthlyFee)}/mes. ${this.canRecategorize ? 'Podés hacerlo ahora.' : 'Próximo período: ' + this.nextRecategorizationPeriod}`;
+      // Usar cuota de servicios para el cálculo de ahorro (más común)
+      return `Podrías bajar a categoría ${this.suggestedCategory} y ahorrar ${this.formatCurrency(currentCat.monthlyFeeServices - suggestedCat.monthlyFeeServices)}/mes. ${this.canRecategorize ? 'Podés hacerlo ahora.' : 'Próximo período: ' + this.nextRecategorizationPeriod}`;
     }
   }
 }
