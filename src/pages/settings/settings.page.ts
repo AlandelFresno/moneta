@@ -20,6 +20,7 @@ interface CurrencyDisplay {
 })
 export class SettingsPage implements OnInit {
   preferredCurrency: string = 'ARS';
+  dollarType: 'oficial' | 'blue' | 'mep' | 'ccl' | 'mayorista' = 'oficial';
   cacheInfo: CacheInfo | null = null;
   exchangeRates: ExchangeRates | null = null;
   isUpdatingRates = false;
@@ -71,6 +72,7 @@ export class SettingsPage implements OnInit {
 
   loadSettings(): void {
     this.preferredCurrency = this.preferencesService.getPreferredCurrency();
+    this.dollarType = this.preferencesService.getDollarType();
   }
 
   loadGoogleCredentials(): void {
@@ -175,6 +177,11 @@ export class SettingsPage implements OnInit {
     this.preferencesService.setPreferredCurrency(this.preferredCurrency);
     this.exampleToCurrency = this.preferredCurrency;
     this.calculateExampleConversion();
+  }
+
+  onDollarTypeChange(): void {
+    console.log('💱 [Settings] Cambiando tipo de dólar a:', this.dollarType);
+    this.preferencesService.setDollarType(this.dollarType);
   }
 
   calculateExampleConversion(): void {

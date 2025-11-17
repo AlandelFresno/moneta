@@ -6,6 +6,7 @@ export interface UserPreferences {
   secondaryCurrency?: string;  // Moneda a mostrar en paréntesis
   locale: string;
   theme?: 'light' | 'dark';
+  dollarType?: 'oficial' | 'blue' | 'mep' | 'ccl' | 'mayorista';  // Tipo de dólar a usar para tasas argentinas
 }
 
 @Injectable({
@@ -18,7 +19,8 @@ export class PreferencesService {
     preferredCurrency: 'ARS',
     secondaryCurrency: 'USD',
     locale: 'es-AR',
-    theme: 'light'
+    theme: 'light',
+    dollarType: 'oficial'
   };
 
   private preferencesSubject = new BehaviorSubject<UserPreferences>(this.defaultPreferences);
@@ -110,5 +112,20 @@ export class PreferencesService {
   updatePreferences(partial: Partial<UserPreferences>): void {
     const current = this.preferencesSubject.value;
     this.savePreferences({ ...current, ...partial });
+  }
+
+  /**
+   * Obtiene el tipo de dólar preferido
+   */
+  getDollarType(): 'oficial' | 'blue' | 'mep' | 'ccl' | 'mayorista' {
+    return this.preferencesSubject.value.dollarType || 'oficial';
+  }
+
+  /**
+   * Establece el tipo de dólar a usar
+   */
+  setDollarType(dollarType: 'oficial' | 'blue' | 'mep' | 'ccl' | 'mayorista'): void {
+    const current = this.preferencesSubject.value;
+    this.savePreferences({ ...current, dollarType });
   }
 }

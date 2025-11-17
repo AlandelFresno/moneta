@@ -37,6 +37,45 @@
       </div>
     </div>
 
+    <!-- Tipo de Dólar Settings Card -->
+    <div class="settings-card">
+      <div class="card-header">
+        <div class="header-icon">
+          <i class="pi pi-flag"></i>
+        </div>
+        <div>
+          <h2>Tipo de Dólar (Argentina)</h2>
+          <p class="subtitle">Selecciona qué tipo de dólar usar para las tasas de cambio</p>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="form-group">
+          <label for="dollarType">Tipo de Dólar</label>
+          <select
+            id="dollarType"
+            [(ngModel)]="dollarType"
+            (ngModelChange)="onDollarTypeChange()"
+            class="macos-select"
+          >
+            <option value="oficial">Oficial</option>
+            <option value="blue">Blue</option>
+            <option value="mep">MEP (Bolsa)</option>
+            <option value="ccl">Contado con Liquidación (CCL)</option>
+            <option value="mayorista">Mayorista</option>
+          </select>
+          <small class="help-text">
+            Este tipo de dólar se usará al obtener tasas desde la API de DolarApi.com. La tasa seleccionada afecta la conversión USD-ARS.
+          </small>
+        </div>
+
+        <div class="info-note">
+          <i class="pi pi-info-circle"></i>
+          <p><strong>Nota:</strong> Esta configuración solo afecta las tasas de Argentina (ARS). Para otras monedas se usa la API internacional. Debes actualizar las tasas desde la API para que este cambio tenga efecto.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Gestión de Tasas de Cambio - Todo en un solo card -->
     <div class="settings-card exchange-rates-card">
       <div class="card-header">

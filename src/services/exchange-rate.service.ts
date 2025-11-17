@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
+import { PreferencesService } from './preferences.service';
 
 export interface ExchangeRates {
   base: string;
@@ -16,17 +17,30 @@ export interface CacheInfo {
   needsUpdate: boolean;
 }
 
+export interface DolarApiResponse {
+  compra: number;
+  venta: number;
+  casa: string;
+  nombre: string;
+  moneda: string;
+  fechaActualizacion: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class ExchangeRateService {
   private readonly STORAGE_KEY = 'budget_exchange_rates';
   private readonly API_URL = 'https://api.exchangerate-api.com/v4/latest/';
+  private readonly DOLAR_API_URL = 'https://dolarapi.com/v1/dolares';
 
   private ratesSubject = new BehaviorSubject<ExchangeRates | null>(null);
   public rates$ = this.ratesSubject.asObservable();
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private preferencesService: PreferencesService
+  ) {
     this.loadRatesFromCache();
   }
 
@@ -147,11 +161,73 @@ export class ExchangeRateService {
   }
 
   /**
-   * Obtiene tasas desde la API
+   * Obtiene la tasa de dólar desde DolarApi.com (API argentina)
+   */
+  private async fetchArgentineDollarRate(): Promise<number> {
+    const dollarType = this.preferencesService.getDollarType();
+    console.log(`🇦🇷 [ExchangeRateService] Obteniendo tasa de dólar ${dollarType} desde DolarApi.com...`);
+
+    try {
+      const response = await firstValueFrom(
+        this.http.get<DolarApiResponse[]>(this.DOLAR_API_URL)
+      );
+
+      // Buscar el tipo de dólar configurado
+      let dolarData: DolarApiResponse | undefined;
+
+      switch (dollarType) {
+        case 'oficial':
+          dolarData = response.find(d => d.nombre === 'Oficial');
+          break;
+        case 'blue':
+          dolarData = response.find(d => d.nombre === 'Blue');
+          break;
+        case 'mep':
+          dolarData = response.find(d => d.nombre === 'Bolsa');
+          break;
+        case 'ccl':
+          dolarData = response.find(d => d.nombre === 'Contado con liquidación' || d.nombre === 'Contado con Liquidación');
+          break;
+        case 'mayorista':
+          dolarData = response.find(d => d.nombre === 'Mayorista');
+          break;
+        default:
+          dolarData = response.find(d => d.nombre === 'Oficial');
+      }
+
+      if (!dolarData) {
+        console.warn(`⚠️ [ExchangeRateService] No se encontró tasa para dólar ${dollarType}, usando Oficial por defecto`);
+        dolarData = response.find(d => d.nombre === 'Oficial');
+      }
+
+      if (!dolarData) {
+        throw new Error('No se pudo obtener ninguna tasa de dólar');
+      }
+
+      // Usar el promedio entre compra y venta
+      const rate = (dolarData.compra + dolarData.venta) / 2;
+
+      console.log(`✅ [ExchangeRateService] Tasa de dólar ${dolarData.nombre} obtenida:`, {
+        compra: dolarData.compra,
+        venta: dolarData.venta,
+        promedio: rate,
+        fecha: dolarData.fechaActualizacion
+      });
+
+      return rate;
+    } catch (error) {
+      console.error('❌ [ExchangeRateService] Error obteniendo tasa argentina:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene tasas desde la API combinando datos internacionales con tasas argentinas
    */
   private async fetchRatesFromAPI(baseCurrency: string): Promise<ExchangeRates> {
     console.log(`🌐 [ExchangeRateService] Obteniendo tasas desde API para ${baseCurrency}...`);
     try {
+      // Obtener tasas internacionales desde exchangerate-api.com
       const response = await firstValueFrom(
         this.http.get<any>(`${this.API_URL}${baseCurrency}`)
       );
@@ -162,6 +238,20 @@ export class ExchangeRateService {
         rates: response.rates,
         timestamp: Date.now()
       };
+
+      // Si la moneda base es USD, reemplazar la tasa ARS con la tasa argentina real
+      if (baseCurrency === 'USD' && rates.rates['ARS']) {
+        try {
+          const argentineRate = await this.fetchArgentineDollarRate();
+          console.log('🔄 [ExchangeRateService] Reemplazando tasa ARS internacional con tasa argentina:', {
+            tasaInternacional: rates.rates['ARS'],
+            tasaArgentina: argentineRate
+          });
+          rates.rates['ARS'] = argentineRate;
+        } catch (argentineError) {
+          console.warn('⚠️ [ExchangeRateService] Error obteniendo tasa argentina, usando tasa internacional:', argentineError);
+        }
+      }
 
       console.log('✅ [ExchangeRateService] Tasas obtenidas exitosamente:', {
         base: rates.base,
