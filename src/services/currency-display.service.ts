@@ -170,6 +170,15 @@ export class CurrencyDisplayService {
     const primaryCurrency = this.preferencesService.getPreferredCurrency();
     const secondaryCurrency = this.preferencesService.getSecondaryCurrency();
 
+    console.log('💱 [CurrencyDisplay] formatWithDualCurrency llamado:', {
+      amount,
+      currency,
+      primaryCurrency,
+      secondaryCurrency,
+      hasExchangeRates: !!exchangeRates,
+      exchangeRates
+    });
+
     // Calcular monto en moneda principal
     let primaryAmount: number;
     if (currency === primaryCurrency) {
@@ -177,9 +186,14 @@ export class CurrencyDisplayService {
     } else if (exchangeRates && exchangeRates[primaryCurrency as keyof typeof exchangeRates]) {
       // Usar tasas guardadas (desde currency hacia primaryCurrency)
       primaryAmount = amount * exchangeRates[primaryCurrency as keyof typeof exchangeRates];
+      console.log('💱 [CurrencyDisplay] Usando tasa guardada para primary:', {
+        rate: exchangeRates[primaryCurrency as keyof typeof exchangeRates],
+        primaryAmount
+      });
     } else {
       // Fallback a conversión actual si no hay tasas guardadas
       primaryAmount = this.exchangeRateService.convertToPreferredCurrency(amount, currency, primaryCurrency);
+      console.log('💱 [CurrencyDisplay] Usando tasa actual (fallback) para primary:', primaryAmount);
     }
 
     const result: FormattedCurrency = {
@@ -195,13 +209,25 @@ export class CurrencyDisplayService {
       } else if (exchangeRates && exchangeRates[secondaryCurrency as keyof typeof exchangeRates]) {
         // Usar tasas guardadas (desde currency hacia secondaryCurrency)
         secondaryAmount = amount * exchangeRates[secondaryCurrency as keyof typeof exchangeRates];
+        console.log('💱 [CurrencyDisplay] Usando tasa guardada para secondary:', {
+          rate: exchangeRates[secondaryCurrency as keyof typeof exchangeRates],
+          secondaryAmount
+        });
       } else {
         // Fallback a conversión actual si no hay tasas guardadas
         secondaryAmount = this.exchangeRateService.convertToPreferredCurrency(amount, currency, secondaryCurrency);
+        console.log('💱 [CurrencyDisplay] Usando tasa actual (fallback) para secondary:', secondaryAmount);
       }
       result.secondary = this.formatAmount(secondaryAmount, secondaryCurrency);
+      console.log('💱 [CurrencyDisplay] Secondary formateado:', result.secondary);
+    } else {
+      console.log('💱 [CurrencyDisplay] No se agregó secondary porque:', {
+        hasSecondaryCurrency: !!secondaryCurrency,
+        isDifferentFromPrimary: secondaryCurrency !== primaryCurrency
+      });
     }
 
+    console.log('💱 [CurrencyDisplay] Resultado final:', result);
     return result;
   }
 }
