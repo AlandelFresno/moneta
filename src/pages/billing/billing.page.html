@@ -71,6 +71,7 @@
           <tr>
             <th>Categoría</th>
             <th>Límite Anual</th>
+            <th>Límite Mensual</th>
             <th>Cuota Mensual</th>
             <th>Tu Facturación</th>
             <th>Estado</th>
@@ -89,6 +90,7 @@
               </div>
             </td>
             <td>{{ formatCurrency(cat.maxAnnualBilling) }}</td>
+            <td>{{ formatCurrency(cat.maxMonthlyBilling) }}</td>
             <td>{{ formatCurrency(cat.monthlyFee) }}</td>
             <td>
               <div class="progress-bar">
