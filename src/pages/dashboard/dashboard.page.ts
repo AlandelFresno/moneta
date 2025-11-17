@@ -153,6 +153,11 @@ export class DashboardPage implements OnInit, OnDestroy {
         return t.type === 'income' && txDate >= startOfMonth && txDate <= endOfMonth;
       })
       .reduce((sum, t) => {
+        // Usar la tasa histórica guardada si existe
+        if (t.convertedAmount && t.conversionRate) {
+          return sum + (t.currency === preferredCurrency ? t.amount : t.convertedAmount);
+        }
+        // Fallback para transacciones antiguas sin tasa guardada
         const convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
           t.amount,
           t.currency,
@@ -167,6 +172,11 @@ export class DashboardPage implements OnInit, OnDestroy {
         return t.type === 'expense' && txDate >= startOfMonth && txDate <= endOfMonth;
       })
       .reduce((sum, t) => {
+        // Usar la tasa histórica guardada si existe
+        if (t.convertedAmount && t.conversionRate) {
+          return sum + (t.currency === preferredCurrency ? t.amount : t.convertedAmount);
+        }
+        // Fallback para transacciones antiguas sin tasa guardada
         const convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
           t.amount,
           t.currency,

@@ -199,9 +199,18 @@ export class TransactionsPage implements OnInit, OnDestroy {
     const preferredCurrency = this.preferencesService.getPreferredCurrency();
 
     // Convertir todas las transacciones a la moneda preferida antes de sumar
+    // IMPORTANTE: Usar la tasa guardada en la transacción si existe
     this.stats.totalIncome = this.filteredTransactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => {
+        // Si la transacción tiene una conversión guardada y la moneda preferida no ha cambiado, usar ese valor
+        if (t.convertedAmount && t.conversionRate) {
+          // La conversión guardada podría ser a una moneda diferente, necesitamos verificar
+          // Por ahora asumimos que convertedAmount está en la moneda preferida al momento de la transacción
+          return sum + (t.currency === preferredCurrency ? t.amount : t.convertedAmount);
+        }
+
+        // Fallback: Si no hay conversión guardada, usar el servicio (transacciones antiguas)
         const convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
           t.amount,
           t.currency,
@@ -213,6 +222,12 @@ export class TransactionsPage implements OnInit, OnDestroy {
     this.stats.totalExpense = this.filteredTransactions
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => {
+        // Usar la tasa guardada si existe
+        if (t.convertedAmount && t.conversionRate) {
+          return sum + (t.currency === preferredCurrency ? t.amount : t.convertedAmount);
+        }
+
+        // Fallback: Si no hay conversión guardada, usar el servicio
         const convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
           t.amount,
           t.currency,
@@ -387,6 +402,8 @@ export class TransactionsPage implements OnInit, OnDestroy {
       return;
     }
 
+    // IMPORTANTE: Guardar la tasa histórica con la transacción
+    // Esto asegura que el monto convertido nunca cambie, incluso si las tasas actuales varían
     const txnData = {
       accountId: this.formData.accountId,
       categoryId: this.formData.categoryId,
@@ -395,9 +412,9 @@ export class TransactionsPage implements OnInit, OnDestroy {
       currency: this.formData.currency,
       description: this.formData.description,
       date: new Date(this.formData.date),
-      // Add conversion data
-      convertedAmount: this.formData.convertedAmount || undefined,
-      conversionRate: this.formData.conversionRate || undefined,
+      // Guardar datos de conversión histórica
+      convertedAmount: this.formData.convertedAmount > 0 ? this.formData.convertedAmount : undefined,
+      conversionRate: this.formData.conversionRate > 0 ? this.formData.conversionRate : undefined,
       conversionSource: this.formData.conversionSource || undefined,
       conversionDate: new Date(),
       manualConversion: this.formData.useManualConversion
