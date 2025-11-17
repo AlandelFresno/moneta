@@ -204,14 +204,14 @@ export class ExchangeRateService {
         throw new Error('No se pudo obtener ninguna tasa de dólar');
       }
 
-      // Usar siempre el valor de compra
-      const rate = dolarData.compra;
+      // Usar el valor de VENTA del banco (lo que pagás cuando comprás dólares)
+      const rate = dolarData.venta;
 
       console.log(`✅ [ExchangeRateService] Tasa de dólar ${dolarData.nombre} obtenida:`, {
         compra: dolarData.compra,
         venta: dolarData.venta,
         usada: rate,
-        tipo: 'compra',
+        tipo: 'venta (lo que pagás al comprar dólares)',
         fecha: dolarData.fechaActualizacion
       });
 
