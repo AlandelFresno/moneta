@@ -233,8 +233,14 @@ export class ExportService {
             'Categoría ID': transaction.categoryId,
             'Cuenta': account ? account.name : 'N/A',
             'Cuenta ID': transaction.accountId,
+            // Tasas de cambio guardadas
+            'Tasa a ARS': transaction.exchangeRates?.ARS || '',
+            'Tasa a USD': transaction.exchangeRates?.USD || '',
+            'Tasa a EUR': transaction.exchangeRates?.EUR || '',
+            'Tasa a BRL': transaction.exchangeRates?.BRL || '',
+            // Campos antiguos (para compatibilidad)
             'Monto Convertido': transaction.convertedAmount || '',
-            'Tasa de Cambio': transaction.conversionRate || '',
+            'Tasa de Cambio (legacy)': transaction.conversionRate || '',
             'Fuente de Conversión': transaction.conversionSource || '',
             'Fecha de Conversión': transaction.conversionDate ? this.formatDate(transaction.conversionDate) : '',
             'Conversión Manual': transaction.manualConversion ? 'Sí' : 'No'
@@ -429,8 +435,14 @@ export class ExportService {
             'Categoría ID': transaction.categoryId,
             'Cuenta': account ? account.name : 'N/A',
             'Cuenta ID': transaction.accountId,
+            // Tasas de cambio guardadas
+            'Tasa a ARS': transaction.exchangeRates?.ARS || '',
+            'Tasa a USD': transaction.exchangeRates?.USD || '',
+            'Tasa a EUR': transaction.exchangeRates?.EUR || '',
+            'Tasa a BRL': transaction.exchangeRates?.BRL || '',
+            // Campos antiguos (para compatibilidad)
             'Monto Convertido': transaction.convertedAmount || '',
-            'Tasa de Cambio': transaction.conversionRate || '',
+            'Tasa de Cambio (legacy)': transaction.conversionRate || '',
             'Fuente de Conversión': transaction.conversionSource || '',
             'Fecha de Conversión': transaction.conversionDate ? this.formatDate(transaction.conversionDate) : '',
             'Conversión Manual': transaction.manualConversion ? 'Sí' : 'No'
