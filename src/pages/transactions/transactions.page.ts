@@ -257,7 +257,8 @@ export class TransactionsPage implements OnInit, OnDestroy {
       convertedAmount: 0,
       conversionRate: 0,
       conversionSource: '',
-      useManualConversion: false
+      useManualConversion: false,
+      usdRate: 0
     };
     this.calculateConversion();
     this.showDialog = true;
