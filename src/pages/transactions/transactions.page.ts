@@ -241,7 +241,15 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   openCreateDialog(): void {
     this.editingTransaction = null;
-    const today = new Date().toISOString().split('T')[0];
+    // Formato datetime-local: "YYYY-MM-DDTHH:mm"
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const todayWithTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+
     const defaultCurrency = this.accounts[0]?.currency || 'ARS';
     this.formData = {
       accountId: this.accounts[0]?.id || '',
@@ -250,7 +258,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       amount: 0,
       currency: defaultCurrency,
       description: '',
-      date: today,
+      date: todayWithTime,
       convertedAmount: 0,
       conversionRate: 0,
       conversionSource: '',
@@ -263,6 +271,15 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   openEditDialog(transaction: Transaction): void {
     this.editingTransaction = transaction;
+    // Formato datetime-local: "YYYY-MM-DDTHH:mm"
+    const date = new Date(transaction.date);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+
     this.formData = {
       accountId: transaction.accountId,
       categoryId: transaction.categoryId,
@@ -270,7 +287,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       amount: transaction.amount,
       currency: transaction.currency,
       description: transaction.description,
-      date: new Date(transaction.date).toISOString().split('T')[0],
+      date: formattedDate,
       convertedAmount: transaction.convertedAmount || 0,
       conversionRate: transaction.conversionRate || 0,
       conversionSource: transaction.conversionSource || '',
@@ -626,7 +643,9 @@ export class TransactionsPage implements OnInit, OnDestroy {
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     }).format(new Date(date));
   }
 }
