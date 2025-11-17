@@ -346,4 +346,17 @@ export class ExchangeRateService {
       return 1;
     }
   }
+
+  /**
+   * Obtiene todas las tasas de cambio para las monedas soportadas
+   * Retorna cuánto de cada moneda equivale a 1 unidad de la moneda origen
+   */
+  getAllExchangeRates(fromCurrency: string): { ARS: number, USD: number, EUR: number, BRL: number } {
+    return {
+      ARS: this.getExchangeRate(fromCurrency, 'ARS'),
+      USD: this.getExchangeRate(fromCurrency, 'USD'),
+      EUR: this.getExchangeRate(fromCurrency, 'EUR'),
+      BRL: this.getExchangeRate(fromCurrency, 'BRL')
+    };
+  }
 }

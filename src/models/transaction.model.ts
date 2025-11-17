@@ -19,6 +19,15 @@ export interface Transaction {
 
   // USD-based exchange rate (ALWAYS relative to 1 USD)
   usdRate?: number;                  // Tasa respecto al USD: X currency = 1 USD (ej: 1050 ARS = 1 USD)
+
+  // Tasas de cambio guardadas para todas las monedas soportadas
+  // Esto permite mostrar cualquier moneda en cualquier otra sin recalcular
+  exchangeRates?: {
+    ARS: number;  // Cuántos ARS = 1 de la moneda de esta transacción
+    USD: number;  // Cuántos USD = 1 de la moneda de esta transacción
+    EUR: number;  // Cuántos EUR = 1 de la moneda de esta transacción
+    BRL: number;  // Cuántos BRL = 1 de la moneda de esta transacción
+  };
 }
 
 export type TransactionType = Transaction['type'];

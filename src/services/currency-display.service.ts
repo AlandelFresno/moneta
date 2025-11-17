@@ -152,4 +152,56 @@ export class CurrencyDisplayService {
       </span>
     `;
   }
+
+  /**
+   * Formatea un monto mostrando la moneda principal y secundaria configuradas
+   * Usa las tasas guardadas en exchangeRates si están disponibles
+   *
+   * @param amount - Monto en la moneda original
+   * @param currency - Moneda original del monto
+   * @param exchangeRates - Tasas desde la moneda original hacia otras monedas
+   *                        (ej: si currency=USD, exchangeRates.ARS=1050 significa 1 USD = 1050 ARS)
+   */
+  formatWithDualCurrency(
+    amount: number,
+    currency: string,
+    exchangeRates?: { ARS: number, USD: number, EUR: number, BRL: number }
+  ): FormattedCurrency {
+    const primaryCurrency = this.preferencesService.getPreferredCurrency();
+    const secondaryCurrency = this.preferencesService.getSecondaryCurrency();
+
+    // Calcular monto en moneda principal
+    let primaryAmount: number;
+    if (currency === primaryCurrency) {
+      primaryAmount = amount;
+    } else if (exchangeRates && exchangeRates[primaryCurrency as keyof typeof exchangeRates]) {
+      // Usar tasas guardadas (desde currency hacia primaryCurrency)
+      primaryAmount = amount * exchangeRates[primaryCurrency as keyof typeof exchangeRates];
+    } else {
+      // Fallback a conversión actual si no hay tasas guardadas
+      primaryAmount = this.exchangeRateService.convertToPreferredCurrency(amount, currency, primaryCurrency);
+    }
+
+    const result: FormattedCurrency = {
+      primary: this.formatAmount(primaryAmount, primaryCurrency),
+      isConverted: currency !== primaryCurrency
+    };
+
+    // Agregar monto secundario si está configurado y es diferente de la primaria
+    if (secondaryCurrency && secondaryCurrency !== primaryCurrency) {
+      let secondaryAmount: number;
+      if (currency === secondaryCurrency) {
+        secondaryAmount = amount;
+      } else if (exchangeRates && exchangeRates[secondaryCurrency as keyof typeof exchangeRates]) {
+        // Usar tasas guardadas (desde currency hacia secondaryCurrency)
+        secondaryAmount = amount * exchangeRates[secondaryCurrency as keyof typeof exchangeRates];
+      } else {
+        // Fallback a conversión actual si no hay tasas guardadas
+        secondaryAmount = this.exchangeRateService.convertToPreferredCurrency(amount, currency, secondaryCurrency);
+      }
+      result.secondary = this.formatAmount(secondaryAmount, secondaryCurrency);
+    }
+
+    return result;
+  }
 }

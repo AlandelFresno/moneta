@@ -8,6 +8,7 @@ import { CsvService } from '../../services/csv.service';
 import { ExchangeRateService } from '../../services/exchange-rate.service';
 import { CurrencyDisplayService, FormattedCurrency } from '../../services/currency-display.service';
 import { PreferencesService } from '../../services/preferences.service';
+import { SUPPORTED_CURRENCIES } from '../../constants/currencies';
 
 interface TransactionWithDetails extends Transaction {
   accountName: string;
@@ -36,11 +37,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
   showAccountDialog = false;
   editingTransaction: Transaction | null = null;
 
-  currencies = [
-    { code: 'ARS', symbol: '$', name: 'Argentine Peso' },
-    { code: 'USD', symbol: '$', name: 'US Dollar' },
-    { code: 'EUR', symbol: '€', name: 'Euro' }
-  ];
+  currencies = SUPPORTED_CURRENCIES;
 
   formData = {
     accountId: '',
@@ -445,9 +442,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
       return;
     }
 
-    // IMPORTANTE: Guardar la tasa histórica con la transacción
-    // Esto asegura que el monto convertido nunca cambie, incluso si las tasas actuales varían
-    // SIEMPRE guardamos la tasa respecto a USD como referencia universal
+    // IMPORTANTE: Guardar TODAS las tasas de cambio con la transacción
+    // Esto permite mostrar cualquier moneda en cualquier otra sin recalcular
+    const allRates = this.exchangeRateService.getAllExchangeRates(this.formData.currency);
+
     const txnData = {
       accountId: this.formData.accountId,
       categoryId: this.formData.categoryId,
@@ -462,14 +460,16 @@ export class TransactionsPage implements OnInit, OnDestroy {
       conversionSource: this.formData.conversionSource || undefined,
       conversionDate: new Date(),
       manualConversion: this.formData.useManualConversion,
-      // NUEVO: Tasa respecto a USD (SIEMPRE se guarda)
-      usdRate: this.formData.usdRate > 0 ? this.formData.usdRate : undefined
+      // Tasa respecto a USD (para compatibilidad)
+      usdRate: this.formData.usdRate > 0 ? this.formData.usdRate : undefined,
+      // NUEVO: Todas las tasas de cambio guardadas
+      exchangeRates: allRates
     };
 
     console.log(`💾 [Transactions] ${this.editingTransaction ? 'Actualizando' : 'Creando'} transacción:`, {
       amount: `${txnData.amount} ${txnData.currency}`,
       convertedAmount: txnData.convertedAmount ? `${txnData.convertedAmount.toFixed(2)} ${this.preferencesService.getPreferredCurrency()}` : 'N/A',
-      conversionRate: txnData.conversionRate,
+      exchangeRates: txnData.exchangeRates,
       usdRate: `${txnData.usdRate} ${txnData.currency}/USD`,
       conversionSource: txnData.conversionSource,
       manualConversion: txnData.manualConversion,
@@ -618,8 +618,8 @@ export class TransactionsPage implements OnInit, OnDestroy {
     return this.currencyDisplayService.formatAmount(amount, currency || preferredCurrency);
   }
 
-  formatCurrencyWithOriginal(amount: number, originalCurrency: string): FormattedCurrency {
-    return this.currencyDisplayService.formatWithPreferredCurrency(amount, originalCurrency);
+  formatCurrencyWithOriginal(amount: number, originalCurrency: string, exchangeRates?: { ARS: number, USD: number, EUR: number, BRL: number }): FormattedCurrency {
+    return this.currencyDisplayService.formatWithDualCurrency(amount, originalCurrency, exchangeRates);
   }
 
   formatDate(date: Date): string {

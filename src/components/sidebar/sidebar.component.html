@@ -33,6 +33,39 @@
       <span class="badge" *ngIf="item.badge && (!isCollapsed() || isMobileMenuOpen())">{{ item.badge }}</span>
     </a>
 
+    <!-- Currency Selectors -->
+    <div class="currency-section" *ngIf="!isCollapsed() || isMobileMenuOpen()">
+      <div class="currency-selector-container">
+        <label class="currency-label">
+          <i class="pi pi-money-bill"></i>
+          <span>Moneda Principal</span>
+        </label>
+        <select
+          [(ngModel)]="primaryCurrency"
+          (change)="onPrimaryCurrencyChange()"
+          class="currency-select">
+          <option *ngFor="let currency of currencies" [value]="currency.code">
+            {{ currency.code }} - {{ currency.name }}
+          </option>
+        </select>
+      </div>
+
+      <div class="currency-selector-container">
+        <label class="currency-label">
+          <i class="pi pi-info-circle"></i>
+          <span>Detalle en</span>
+        </label>
+        <select
+          [(ngModel)]="secondaryCurrency"
+          (change)="onSecondaryCurrencyChange()"
+          class="currency-select">
+          <option *ngFor="let currency of currencies" [value]="currency.code">
+            {{ currency.code }} - {{ currency.name }}
+          </option>
+        </select>
+      </div>
+    </div>
+
     <!-- Export Buttons -->
     <button
       class="nav-item export-button"

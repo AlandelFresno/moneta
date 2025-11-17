@@ -115,7 +115,7 @@
             </div>
           </div>
           <div class="transaction-amount">
-            <ng-container *ngIf="formatCurrencyWithOriginal(txn.amount, txn.currency) as formatted">
+            <ng-container *ngIf="formatCurrencyWithOriginal(txn.amount, txn.currency, txn.exchangeRates) as formatted">
               <span class="amount" [class.income]="txn.type === 'income'" [class.expense]="txn.type === 'expense'">
                 <span>{{ txn.type === 'income' ? '+' : '-' }}</span>
                 <span class="currency-display">
