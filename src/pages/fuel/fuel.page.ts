@@ -170,14 +170,18 @@ export class FuelPage implements OnInit {
     this.editingLog = null;
     this.resetFuelLogForm();
 
-    // Pre-llenar con datos del vehículo
-    this.fuelLogForm.totalKm = this.selectedVehicle.currentKm;
-
-    // Calcular km desde la última carga
+    // Obtener el último kilometraje registrado
     const lastLog = this.fuelLogService.getLastLog(this.selectedVehicle.id);
     if (lastLog) {
-      this.fuelLogForm.kmTraveled = this.fuelLogForm.totalKm - lastLog.totalKm;
+      // El km total inicial es el último registrado
+      this.fuelLogForm.totalKm = lastLog.totalKm;
+    } else {
+      // Si no hay registros previos, usar el km actual del vehículo
+      this.fuelLogForm.totalKm = this.selectedVehicle.currentKm;
     }
+
+    // El usuario ingresará los km recorridos manualmente
+    this.fuelLogForm.kmTraveled = 0;
 
     this.showFuelLogDialog = true;
   }
@@ -185,8 +189,13 @@ export class FuelPage implements OnInit {
   saveFuelLog(): void {
     if (!this.selectedVehicle) return;
 
-    if (this.fuelLogForm.liters <= 0 || this.fuelLogForm.totalKm <= 0) {
-      alert('Por favor completa los campos obligatorios con valores válidos');
+    if (this.fuelLogForm.liters <= 0) {
+      alert('Por favor ingresa la cantidad de litros cargados');
+      return;
+    }
+
+    if (this.fuelLogForm.kmTraveled <= 0) {
+      alert('Por favor ingresa los kilómetros recorridos con este tanque');
       return;
     }
 
@@ -231,6 +240,12 @@ export class FuelPage implements OnInit {
     };
 
     this.fuelLogService.createLog(logData);
+
+    // Actualizar el kilometraje del vehículo con el nuevo total
+    this.vehicleService.updateVehicle(this.selectedVehicle.id, {
+      currentKm: this.fuelLogForm.totalKm
+    });
+
     this.loadData();
     this.selectVehicle(this.selectedVehicle);
     this.showFuelLogDialog = false;
@@ -261,12 +276,18 @@ export class FuelPage implements OnInit {
   }
 
   // Calculations
-  onTotalKmChange(): void {
+  onKmTraveledChange(): void {
     if (!this.selectedVehicle) return;
 
+    // Obtener el último kilometraje registrado
     const lastLog = this.fuelLogService.getLastLog(this.selectedVehicle.id);
-    if (lastLog && this.fuelLogForm.totalKm > lastLog.totalKm) {
-      this.fuelLogForm.kmTraveled = this.fuelLogForm.totalKm - lastLog.totalKm;
+    const lastKm = lastLog ? lastLog.totalKm : this.selectedVehicle.currentKm;
+
+    // Calcular el nuevo km total sumando los km recorridos
+    if (this.fuelLogForm.kmTraveled > 0) {
+      this.fuelLogForm.totalKm = lastKm + this.fuelLogForm.kmTraveled;
+    } else {
+      this.fuelLogForm.totalKm = lastKm;
     }
   }
 
