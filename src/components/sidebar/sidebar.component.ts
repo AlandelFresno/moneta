@@ -167,6 +167,16 @@ export class SidebarComponent {
       const preferences = this.preferencesService.getPreferences();
       const billings = this.billingService.getBillings();
 
+      console.log('📊 [Sidebar] Datos obtenidos de los servicios para backup:', {
+        transactions: transactions.length,
+        vehicles: vehicles.length,
+        fuelLogs: fuelLogs.length,
+        categories: categories.length,
+        accounts: accounts.length,
+        billings: billings.length,
+        preferences: preferences
+      });
+
       const result = await this.exportService.exportAllDataToGoogleDrive(
         transactions,
         vehicles,
