@@ -57,38 +57,280 @@
   }
 }
 
-/* PrimeNG Dialog Styles - Estilos globales para todos los modales */
-.p-dialog {
-  background: #ffffff !important;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
-  border-radius: 8px !important;
-}
+/* ============================================
+   PrimeNG Toast Styles - Notificaciones
+   ============================================ */
+.p-toast {
+  opacity: 1;
 
-.p-dialog-header {
-  background: #f9fafb !important;
-  color: #111827 !important;
-  border-bottom: 1px solid #e5e7eb !important;
-  padding: 1.25rem 1.5rem !important;
+  .p-toast-message {
+    border-radius: 12px !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+    border: none !important;
+    backdrop-filter: blur(10px);
+    margin: 0.5rem 0;
 
-  .p-dialog-title {
-    color: #111827 !important;
-    font-weight: 600 !important;
+    &.p-toast-message-success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+      color: white !important;
+
+      .p-toast-message-icon,
+      .p-toast-icon-close {
+        color: white !important;
+      }
+    }
+
+    &.p-toast-message-error {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+      color: white !important;
+
+      .p-toast-message-icon,
+      .p-toast-icon-close {
+        color: white !important;
+      }
+    }
+
+    &.p-toast-message-warn {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+      color: white !important;
+
+      .p-toast-message-icon,
+      .p-toast-icon-close {
+        color: white !important;
+      }
+    }
+
+    &.p-toast-message-info {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+      color: white !important;
+
+      .p-toast-message-icon,
+      .p-toast-icon-close {
+        color: white !important;
+      }
+    }
+
+    .p-toast-message-content {
+      padding: 1rem 1.25rem !important;
+
+      .p-toast-summary {
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+        margin-bottom: 0.25rem !important;
+      }
+
+      .p-toast-detail {
+        font-size: 0.875rem !important;
+        opacity: 0.95 !important;
+        margin-top: 0.25rem !important;
+        line-height: 1.5 !important;
+        white-space: pre-line !important;
+      }
+    }
+
+    .p-toast-icon-close {
+      width: 1.5rem !important;
+      height: 1.5rem !important;
+      opacity: 0.9 !important;
+      transition: all 0.2s ease !important;
+
+      &:hover {
+        opacity: 1 !important;
+        background: rgba(255, 255, 255, 0.2) !important;
+        border-radius: 50% !important;
+      }
+    }
   }
 }
 
-.p-dialog-content {
-  background: #ffffff !important;
-  color: #111827 !important;
-  padding: 1.5rem !important;
-}
-
-.p-dialog-footer {
-  background: #f9fafb !important;
-  color: #111827 !important;
-  border-top: 1px solid #e5e7eb !important;
-  padding: 1rem 1.5rem !important;
-}
-
+/* ============================================
+   PrimeNG Confirm Dialog Styles - Modales
+   ============================================ */
 .p-dialog-mask {
-  background-color: rgba(0, 0, 0, 0.4) !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.p-confirm-dialog {
+  border: none !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+  overflow: hidden;
+  animation: slideDown 0.3s ease-out;
+  max-width: 90%;
+  width: 440px;
+
+  .p-dialog-header {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%) !important;
+    color: white !important;
+    border-bottom: none !important;
+    padding: 1.5rem 1.75rem !important;
+
+    .p-dialog-title {
+      color: white !important;
+      font-weight: 600 !important;
+      font-size: 1.125rem !important;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .p-dialog-header-icon {
+      color: white !important;
+      width: 2rem !important;
+      height: 2rem !important;
+      opacity: 0.8;
+      transition: all 0.2s ease;
+
+      &:hover {
+        opacity: 1;
+        background: rgba(255, 255, 255, 0.1) !important;
+        border-radius: 50%;
+      }
+    }
+  }
+
+  .p-dialog-content {
+    background: white !important;
+    color: #374151 !important;
+    padding: 2rem 1.75rem !important;
+    font-size: 0.95rem !important;
+    line-height: 1.6 !important;
+
+    .p-confirm-dialog-icon {
+      font-size: 2.5rem !important;
+      color: #f59e0b !important;
+      margin-right: 1rem !important;
+      flex-shrink: 0;
+    }
+
+    .p-confirm-dialog-message {
+      color: #1f2937 !important;
+      font-size: 0.95rem !important;
+      line-height: 1.6 !important;
+    }
+  }
+
+  .p-dialog-footer {
+    background: #f9fafb !important;
+    border-top: 1px solid #e5e7eb !important;
+    padding: 1.25rem 1.75rem !important;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+
+    button {
+      padding: 0.625rem 1.5rem !important;
+      border-radius: 8px !important;
+      font-weight: 500 !important;
+      font-size: 0.9rem !important;
+      transition: all 0.2s ease !important;
+      border: none !important;
+      cursor: pointer;
+      min-width: 90px;
+
+      &.p-button-text {
+        background: transparent !important;
+        color: #6b7280 !important;
+
+        &:hover {
+          background: #e5e7eb !important;
+          color: #374151 !important;
+        }
+
+        &:active {
+          background: #d1d5db !important;
+        }
+      }
+
+      &.p-confirm-dialog-accept {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+        color: white !important;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+
+        &:hover {
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+          transform: translateY(-1px);
+        }
+
+        &:active {
+          transform: translateY(0);
+        }
+      }
+
+      &.p-confirm-dialog-reject {
+        background: white !important;
+        color: #6b7280 !important;
+        border: 1px solid #d1d5db !important;
+
+        &:hover {
+          background: #f9fafb !important;
+          color: #374151 !important;
+          border-color: #9ca3af !important;
+        }
+
+        &:active {
+          background: #f3f4f6 !important;
+        }
+      }
+    }
+  }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .p-confirm-dialog {
+    width: 95% !important;
+    margin: 1rem;
+
+    .p-dialog-header {
+      padding: 1.25rem !important;
+
+      .p-dialog-title {
+        font-size: 1rem !important;
+      }
+    }
+
+    .p-dialog-content {
+      padding: 1.5rem 1.25rem !important;
+    }
+
+    .p-dialog-footer {
+      padding: 1rem 1.25rem !important;
+      flex-direction: column-reverse;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+
+  .p-toast {
+    width: calc(100% - 2rem) !important;
+    right: 1rem !important;
+    top: 1rem !important;
+  }
 }
