@@ -81,8 +81,12 @@ export class SettingsPage implements OnInit {
       return;
     }
 
+    // Usar la moneda preferida como base para las conversiones, no this.exchangeRates.base
+    const baseCurrency = this.preferredCurrency;
+
     this.currencyRates = this.currencies.map(currency => {
-      const rate = this.exchangeRateService.getExchangeRate(this.exchangeRates!.base, currency.code);
+      // Calcular la tasa desde la moneda preferida hacia cada moneda
+      const rate = this.exchangeRateService.getExchangeRate(baseCurrency, currency.code);
       return {
         code: currency.code,
         name: currency.name,
@@ -99,8 +103,13 @@ export class SettingsPage implements OnInit {
   }
 
   onPreferredCurrencyChange(): void {
+    console.log('💱 [Settings] Cambiando moneda preferida a:', this.preferredCurrency);
     this.preferencesService.setPreferredCurrency(this.preferredCurrency);
     this.exampleToCurrency = this.preferredCurrency;
+
+    // CRÍTICO: Reconstruir la tabla de tasas con la nueva moneda base
+    this.buildCurrencyRatesList();
+
     this.calculateExampleConversion();
   }
 
