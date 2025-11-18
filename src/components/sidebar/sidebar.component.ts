@@ -271,15 +271,11 @@ export class SidebarComponent {
   onPrimaryCurrencyChange(): void {
     console.log('💱 [Sidebar] Cambiando moneda principal a:', this.primaryCurrency);
     this.preferencesService.setPreferredCurrency(this.primaryCurrency);
-    // Recargar la página para aplicar cambios
-    window.location.reload();
   }
 
   onSecondaryCurrencyChange(): void {
     console.log('💱 [Sidebar] Cambiando moneda secundaria a:', this.secondaryCurrency);
     this.preferencesService.setSecondaryCurrency(this.secondaryCurrency);
-    // Recargar la página para aplicar cambios
-    window.location.reload();
   }
 
   async importFromExcel(event: any) {
