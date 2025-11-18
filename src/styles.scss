@@ -153,7 +153,8 @@
   -webkit-backdrop-filter: blur(8px) !important;
 }
 
-/* Estilos del modal */
+/* Estilos del modal - aplicar al contenedor principal */
+::ng-deep .p-dialog.macos-dialog,
 ::ng-deep .macos-dialog .p-dialog,
 ::ng-deep .p-confirm-dialog .p-dialog {
   border-radius: 20px !important;
@@ -162,6 +163,14 @@
   border: 2px solid rgba(0, 0, 0, 0.15) !important;
   background: #ffffff !important;
   opacity: 1 !important;
+}
+
+/* Borde más visible para todos los diálogos macos */
+::ng-deep .p-dialog-content-container.macos-dialog,
+::ng-deep app-sidebar .p-dialog,
+::ng-deep .macos-dialog {
+  border: 2px solid rgba(0, 0, 0, 0.15) !important;
+  border-radius: 20px !important;
 }
 
 /* Asegurar que el wrapper del modal también sea sólido */
