@@ -153,8 +153,11 @@
 
 /* Estilos del modal - aplicar al contenedor principal */
 ::ng-deep .p-dialog.macos-dialog,
+::ng-deep .macos-dialog.p-dialog,
 ::ng-deep .macos-dialog .p-dialog,
-::ng-deep .p-confirm-dialog .p-dialog {
+::ng-deep .p-confirm-dialog .p-dialog,
+::ng-deep .p-dialog-mask.macos-dialog + .p-component-overlay-enter .p-dialog,
+::ng-deep app-sidebar .p-dialog {
   border-radius: 20px !important;
   overflow: hidden !important;
   box-shadow: none !important;
@@ -165,7 +168,7 @@
 
 /* Borde más visible para todos los diálogos macos */
 ::ng-deep .p-dialog-content-container.macos-dialog,
-::ng-deep app-sidebar .p-dialog,
+::ng-deep .macos-dialog .p-dialog-content,
 ::ng-deep .macos-dialog {
   border: 1px solid #9ca3af !important;
   border-radius: 20px !important;
@@ -183,7 +186,7 @@
 
 ::ng-deep .macos-dialog .p-dialog-header,
 ::ng-deep .p-confirm-dialog .p-dialog-header {
-  background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%) !important;
+  background: #ffffff !important;
   border-bottom: 1px solid #e5e7eb !important;
   padding: 1.5rem 2rem !important;
 }
@@ -259,7 +262,7 @@
 
 ::ng-deep .macos-dialog .p-dialog-footer,
 ::ng-deep .p-confirm-dialog .p-dialog-footer {
-  background: #f9fafb !important;
+  background: #ffffff !important;
   border-top: 1px solid #e5e7eb !important;
   padding: 1.25rem 2rem !important;
   display: flex !important;
