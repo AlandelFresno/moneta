@@ -34,10 +34,34 @@ export class CategoriesPage implements OnInit, OnDestroy {
   ];
 
   availableIcons = [
-    'tag', 'tags', 'briefcase', 'desktop', 'chart-line', 'gift',
-    'shopping-cart', 'car', 'shopping-bag', 'video', 'file',
-    'heart', 'book', 'home', 'send', 'coffee', 'list', 'palette',
-    'credit-card', 'dollar', 'shield', 'wallet'
+    // General
+    'tag', 'tags', 'star', 'flag', 'bookmark',
+    // Trabajo e ingresos
+    'briefcase', 'desktop', 'chart-line', 'building', 'users',
+    // Compras y consumo
+    'shopping-cart', 'shopping-bag', 'gift', 'ticket', 'box',
+    // Transporte
+    'car', 'plane', 'map', 'compass', 'send',
+    // Hogar
+    'home', 'key', 'wrench', 'bolt', 'lightbulb',
+    // Comida y bebida
+    'coffee', 'pizza', 'apple', 'glass',
+    // Entretenimiento
+    'video', 'camera', 'music', 'gamepad', 'tv', 'palette',
+    // Salud y bienestar
+    'heart', 'medkit', 'moon', 'sun',
+    // Educación y cultura
+    'book', 'graduation-cap', 'pencil',
+    // Tecnología y servicios
+    'mobile', 'tablet', 'phone', 'wifi', 'cloud', 'database',
+    // Finanzas
+    'credit-card', 'dollar', 'wallet', 'money-bill', 'percentage',
+    // Utilidades y documentos
+    'file', 'folder', 'calendar', 'clock', 'bell',
+    // Seguros y protección
+    'shield', 'umbrella', 'lock',
+    // Mascotas y otros
+    'paw', 'leaf', 'globe', 'truck', 'cog'
   ];
 
   constructor(
