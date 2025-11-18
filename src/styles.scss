@@ -67,7 +67,6 @@
     border-radius: 12px !important;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
     border: none !important;
-    backdrop-filter: blur(10px);
     margin: 0.5rem 0;
 
     &.p-toast-message-success {
@@ -147,12 +146,13 @@
    PrimeNG Confirm Dialog Styles - Modales
    ============================================ */
 .p-dialog-mask {
-  background-color: rgba(0, 0, 0, 0.5) !important;
+  background-color: rgba(0, 0, 0, 0.6) !important;
   backdrop-filter: blur(4px);
   animation: fadeIn 0.2s ease-in-out;
 }
 
 .p-confirm-dialog {
+  background: #ffffff !important;
   border: none !important;
   border-radius: 16px !important;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
@@ -192,7 +192,7 @@
   }
 
   .p-dialog-content {
-    background: white !important;
+    background: #ffffff !important;
     color: #374151 !important;
     padding: 2rem 1.75rem !important;
     font-size: 0.95rem !important;
@@ -261,7 +261,7 @@
       }
 
       &.p-confirm-dialog-reject {
-        background: white !important;
+        background: #ffffff !important;
         color: #6b7280 !important;
         border: 1px solid #d1d5db !important;
 
