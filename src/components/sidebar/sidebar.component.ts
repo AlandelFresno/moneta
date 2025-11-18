@@ -88,7 +88,7 @@ export class SidebarComponent {
     },
     {
       label: 'Facturación',
-      icon: 'file-invoice',
+      icon: 'file-edit',
       route: '/billing'
     },
     {

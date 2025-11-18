@@ -284,6 +284,88 @@
       </div>
     </div>
 
+    <!-- Import/Export/Backup Card -->
+    <div class="settings-card">
+      <div class="card-header">
+        <div class="header-icon">
+          <i class="pi pi-cloud"></i>
+        </div>
+        <div>
+          <h2>Importar / Exportar / Backup</h2>
+          <p class="subtitle">Gestiona tus datos: importa, exporta o haz backup en Google Drive</p>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="action-buttons-grid">
+          <!-- Importar Excel -->
+          <div class="action-card">
+            <div class="action-icon import">
+              <i class="pi pi-upload"></i>
+            </div>
+            <div class="action-info">
+              <h3>Importar desde Excel</h3>
+              <p>Importa transacciones, vehículos, combustible y más desde un archivo Excel</p>
+            </div>
+            <input
+              type="file"
+              #fileInput
+              accept=".xls,.xlsx"
+              (change)="importFromExcel($event)"
+              style="display: none" />
+            <button
+              pButton
+              label="Importar"
+              icon="pi pi-upload"
+              class="btn-primary"
+              (click)="fileInput.click()">
+            </button>
+          </div>
+
+          <!-- Exportar Excel -->
+          <div class="action-card">
+            <div class="action-icon export">
+              <i class="pi pi-download"></i>
+            </div>
+            <div class="action-info">
+              <h3>Exportar a Excel</h3>
+              <p>Descarga todos tus datos en un archivo Excel para respaldo local</p>
+            </div>
+            <button
+              pButton
+              label="Exportar"
+              icon="pi pi-download"
+              class="btn-secondary"
+              (click)="exportAllData()">
+            </button>
+          </div>
+
+          <!-- Backup a Drive -->
+          <div class="action-card">
+            <div class="action-icon backup">
+              <i class="pi pi-google"></i>
+            </div>
+            <div class="action-info">
+              <h3>Backup a Google Drive</h3>
+              <p>Guarda una copia de seguridad de todos tus datos en Google Drive</p>
+            </div>
+            <button
+              pButton
+              label="Backup a Drive"
+              icon="pi pi-google"
+              class="btn-success"
+              (click)="exportToGoogleDrive()">
+            </button>
+          </div>
+        </div>
+
+        <div class="info-note">
+          <i class="pi pi-info-circle"></i>
+          <p><strong>Nota:</strong> La importación desde Excel combina los datos nuevos con los existentes. Los registros duplicados (mismo ID) se ignoran.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Information Card -->
     <div class="settings-card info-card">
       <div class="card-header">
@@ -325,3 +407,34 @@
     </div>
   </div>
 </div>
+
+<!-- Import Confirmation Dialog -->
+<p-dialog
+  [(visible)]="showImportDialog"
+  [modal]="true"
+  [closable]="true"
+  styleClass="macos-dialog"
+  [style]="{ width: '500px' }"
+  (onHide)="closeImportDialog()">
+  <ng-template pTemplate="header">
+    <h3>Confirmar importación</h3>
+  </ng-template>
+
+  <div class="dialog-content">
+    <p>¿Deseas importar datos desde este archivo Excel? Esto agregará los datos al sistema actual.</p>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      label="Cancelar"
+      class="p-button-text"
+      (click)="closeImportDialog()">
+    </button>
+    <button
+      pButton
+      label="Sí, importar"
+      (click)="confirmImport()">
+    </button>
+  </ng-template>
+</p-dialog>

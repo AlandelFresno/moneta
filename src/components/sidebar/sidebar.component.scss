@@ -384,3 +384,14 @@
     z-index: 999;
   }
 }
+
+// Divisor de navegación
+.nav-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 0.5rem 0.75rem;
+
+  .sidebar.collapsed & {
+    margin: 0.5rem 0.5rem;
+  }
+}
