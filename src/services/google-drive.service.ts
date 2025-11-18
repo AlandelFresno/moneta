@@ -192,13 +192,20 @@ export class GoogleDriveService {
    * @param forceConsent Si es true, fuerza a mostrar el selector de cuenta
    */
   async signIn(forceConsent: boolean = false): Promise<void> {
+    // SIEMPRE inicializar gapi primero
     if (!this.gapiInitialized) {
       await this.initClient();
     }
 
-    // Si ya hay token y no se fuerza consent, usar token existente
+    // Si ya hay token y no se fuerza consent, validar que esté disponible
     if (this.accessToken && !forceConsent) {
       console.log('✅ [GoogleDriveService] Usando token existente');
+      // Validar que gapi esté listo
+      if (typeof gapi === 'undefined') {
+        console.warn('⚠️ [GoogleDriveService] gapi no está definido, reinicializando...');
+        this.gapiInitialized = false;
+        await this.initClient();
+      }
       return Promise.resolve();
     }
 
@@ -234,6 +241,17 @@ export class GoogleDriveService {
   }
 
   /**
+   * Asegurar que gapi esté inicializado antes de usarlo
+   */
+  private async ensureInitialized(): Promise<void> {
+    if (!this.gapiInitialized || typeof gapi === 'undefined') {
+      console.log('🔄 [GoogleDriveService] Inicializando gapi...');
+      this.gapiInitialized = false;
+      await this.initClient();
+    }
+  }
+
+  /**
    * Cerrar sesión
    */
   async signOut(): Promise<void> {
@@ -261,9 +279,7 @@ export class GoogleDriveService {
     mimeType: string,
     folderId?: string
   ): Promise<any> {
-    if (!this.gapiInitialized) {
-      await this.initClient();
-    }
+    await this.ensureInitialized();
 
     if (!this.isSignedIn()) {
       throw new Error('Usuario no autenticado. Por favor inicia sesión en Google Drive primero.');
@@ -309,6 +325,8 @@ export class GoogleDriveService {
    * Buscar archivo por nombre en el root de Drive
    */
   async findFileByName(fileName: string): Promise<string | null> {
+    await this.ensureInitialized();
+
     try {
       const response = await gapi.client.drive.files.list({
         q: `name='${fileName}' and trashed=false and 'root' in parents`,
@@ -337,6 +355,8 @@ export class GoogleDriveService {
     fileContent: Blob,
     mimeType: string
   ): Promise<any> {
+    await this.ensureInitialized();
+
     if (!this.isSignedIn()) {
       throw new Error('Usuario no autenticado. Por favor inicia sesión en Google Drive primero.');
     }
@@ -383,9 +403,7 @@ export class GoogleDriveService {
     fileContent: Blob,
     mimeType: string
   ): Promise<any> {
-    if (!this.gapiInitialized) {
-      await this.initClient();
-    }
+    await this.ensureInitialized();
 
     if (!this.isSignedIn()) {
       throw new Error('Usuario no autenticado. Por favor inicia sesión en Google Drive primero.');
