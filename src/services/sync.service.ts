@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import * as XLSX from 'xlsx';
 import { GoogleDriveService } from './google-drive.service';
 import { TransactionService } from './transaction.service';
 import { VehicleService } from './vehicle.service';
@@ -53,7 +54,7 @@ interface SyncResult {
   providedIn: 'root'
 })
 export class SyncService {
-  private readonly SYNC_FILE_NAME = 'budget_tracker_sync_data.json';
+  private readonly SYNC_FILE_NAME = 'budget_tracker_sync_data.xlsx';
   private readonly SYNC_METADATA_KEY = 'budget_sync_metadata';
   private readonly DEVICE_ID_KEY = 'budget_device_id';
 
@@ -156,35 +157,130 @@ export class SyncService {
         throw new Error(`Error al descargar archivo: ${response.statusText}`);
       }
 
-      const driveData = await response.json();
+      const arrayBuffer = await response.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
 
-      // Convertir fechas de strings a Date
-      driveData.metadata.lastSyncDate = new Date(driveData.metadata.lastSyncDate);
-      driveData.transactions = driveData.transactions.map((t: any) => ({
-        ...t,
-        date: new Date(t.date),
-        createdAt: new Date(t.createdAt),
-        updatedAt: new Date(t.updatedAt)
-      }));
-      driveData.vehicles = driveData.vehicles.map((v: any) => ({
-        ...v,
-        createdAt: new Date(v.createdAt),
-        updatedAt: new Date(v.updatedAt)
-      }));
-      driveData.fuelLogs = driveData.fuelLogs.map((f: any) => ({
-        ...f,
-        date: new Date(f.date),
-        createdAt: new Date(f.createdAt),
-        updatedAt: new Date(f.updatedAt)
-      }));
-      driveData.billings = driveData.billings.map((b: any) => ({
-        ...b,
-        createdAt: new Date(b.createdAt),
-        updatedAt: new Date(b.updatedAt)
-      }));
+      // Leer metadata
+      const metadataSheet = workbook.Sheets['Metadata'];
+      const metadataArray = XLSX.utils.sheet_to_json(metadataSheet);
+      const metadataRow: any = metadataArray[0] || {};
 
-      console.log('✅ [SyncService] Datos descargados desde Drive');
-      return driveData;
+      const metadata: SyncMetadata = {
+        lastSyncTimestamp: metadataRow['Last Sync Timestamp'] || 0,
+        lastSyncDate: new Date(metadataRow['Last Sync Date'] || 0),
+        deviceId: metadataRow['Device ID'] || '',
+        dataVersion: metadataRow['Data Version'] || 1
+      };
+
+      // Leer transacciones
+      const transactionsSheet = workbook.Sheets['Transacciones'];
+      const transactions = transactionsSheet ? XLSX.utils.sheet_to_json(transactionsSheet).map((row: any) => ({
+        id: row['ID'],
+        date: new Date(row['Fecha']),
+        description: row['Descripción'],
+        amount: row['Monto'],
+        currency: row['Moneda'],
+        type: row['Tipo'] === 'Ingreso' ? 'income' : 'expense',
+        categoryId: row['Categoría ID'],
+        accountId: row['Cuenta ID'],
+        exchangeRates: {
+          ARS: row['Tasa a ARS'] || undefined,
+          USD: row['Tasa a USD'] || undefined,
+          EUR: row['Tasa a EUR'] || undefined,
+          BRL: row['Tasa a BRL'] || undefined
+        },
+        createdAt: new Date(row['Creado'] || row['Fecha']),
+        updatedAt: new Date(row['Actualizado'] || row['Fecha'])
+      })) : [];
+
+      // Leer vehículos
+      const vehiclesSheet = workbook.Sheets['Vehículos'];
+      const vehicles = vehiclesSheet ? XLSX.utils.sheet_to_json(vehiclesSheet).map((row: any) => ({
+        id: row['ID'],
+        brand: row['Marca'],
+        model: row['Modelo'],
+        year: row['Año'],
+        plate: row['Patente'],
+        createdAt: new Date(row['Creado'] || Date.now()),
+        updatedAt: new Date(row['Actualizado'] || Date.now())
+      })) : [];
+
+      // Leer combustible
+      const fuelLogsSheet = workbook.Sheets['Combustible'];
+      const fuelLogs = fuelLogsSheet ? XLSX.utils.sheet_to_json(fuelLogsSheet).map((row: any) => ({
+        id: row['ID'],
+        vehicleId: row['Vehículo ID'],
+        date: new Date(row['Fecha']),
+        liters: row['Litros'],
+        pricePerLiter: row['Precio por Litro'],
+        totalAmount: row['Total'],
+        currency: row['Moneda'] || 'ARS',
+        odometer: row['Km actual'] || 0,
+        previousOdometer: row['Km anterior'] || 0,
+        notes: row['Notas'] || '',
+        createdAt: new Date(row['Creado'] || row['Fecha']),
+        updatedAt: new Date(row['Actualizado'] || row['Fecha'])
+      })) : [];
+
+      // Leer categorías
+      const categoriesSheet = workbook.Sheets['Categorías'];
+      const categories = categoriesSheet ? XLSX.utils.sheet_to_json(categoriesSheet).map((row: any) => ({
+        id: row['ID'],
+        name: row['Nombre'],
+        type: row['Tipo'] === 'Ingreso' ? 'income' : 'expense',
+        color: row['Color'],
+        icon: row['Icono']
+      })) : [];
+
+      // Leer cuentas
+      const accountsSheet = workbook.Sheets['Cuentas'];
+      const accounts = accountsSheet ? XLSX.utils.sheet_to_json(accountsSheet).map((row: any) => ({
+        id: row['ID'],
+        name: row['Nombre'],
+        type: row['Tipo'],
+        balance: row['Balance'],
+        currency: row['Moneda'],
+        color: row['Color'],
+        icon: row['Icono']
+      })) : [];
+
+      // Leer preferencias
+      const preferencesSheet = workbook.Sheets['Preferencias'];
+      const preferencesArray = preferencesSheet ? XLSX.utils.sheet_to_json(preferencesSheet) : [];
+      const preferencesRow: any = preferencesArray[0] || {};
+      const preferences: UserPreferences = {
+        preferredCurrency: preferencesRow['Moneda Preferida'] || 'ARS',
+        locale: preferencesRow['Locale'] || 'es-AR',
+        theme: preferencesRow['Tema'] || 'light'
+      };
+
+      // Leer facturaciones
+      const billingsSheet = workbook.Sheets['Facturaciones'];
+      const billings = billingsSheet ? XLSX.utils.sheet_to_json(billingsSheet).map((row: any) => ({
+        id: row['ID'],
+        month: row['Mes'],
+        year: row['Año'],
+        category: row['Categoría'],
+        totalIncome: row['Ingresos Totales'],
+        deductions: row['Deducciones'],
+        taxableIncome: row['Ingresos Imponibles'],
+        tax: row['Impuesto'],
+        notes: row['Notas'] || '',
+        createdAt: new Date(row['Creado'] || Date.now()),
+        updatedAt: new Date(row['Actualizado'] || Date.now())
+      })) : [];
+
+      console.log('✅ [SyncService] Datos descargados desde Drive (XLSX)');
+      return {
+        metadata,
+        transactions,
+        vehicles,
+        fuelLogs,
+        categories,
+        accounts,
+        preferences,
+        billings
+      };
     } catch (error) {
       console.error('❌ [SyncService] Error descargando desde Drive:', error);
       throw error;
@@ -195,19 +291,135 @@ export class SyncService {
    * Subir datos a Google Drive
    */
   private async uploadToDrive(data: SyncData): Promise<void> {
-    console.log('📤 [SyncService] Subiendo datos a Drive...');
+    console.log('📤 [SyncService] Subiendo datos a Drive (XLSX)...');
 
     try {
-      const jsonContent = JSON.stringify(data, null, 2);
-      const blob = new Blob([jsonContent], { type: 'application/json' });
+      const workbook = XLSX.utils.book_new();
+
+      // Metadata
+      const metadataData = [{
+        'Last Sync Timestamp': data.metadata.lastSyncTimestamp,
+        'Last Sync Date': data.metadata.lastSyncDate.toISOString(),
+        'Device ID': data.metadata.deviceId,
+        'Data Version': data.metadata.dataVersion
+      }];
+      const metadataSheet = XLSX.utils.json_to_sheet(metadataData);
+      XLSX.utils.book_append_sheet(workbook, metadataSheet, 'Metadata');
+
+      // Transacciones
+      const transactionsData = data.transactions.map(t => ({
+        'ID': t.id,
+        'Fecha': t.date.toISOString(),
+        'Descripción': t.description,
+        'Monto': t.amount,
+        'Moneda': t.currency,
+        'Tipo': t.type === 'income' ? 'Ingreso' : 'Gasto',
+        'Categoría ID': t.categoryId,
+        'Cuenta ID': t.accountId,
+        'Tasa a ARS': t.exchangeRates?.ARS || '',
+        'Tasa a USD': t.exchangeRates?.USD || '',
+        'Tasa a EUR': t.exchangeRates?.EUR || '',
+        'Tasa a BRL': t.exchangeRates?.BRL || '',
+        'Creado': t.createdAt.toISOString(),
+        'Actualizado': t.updatedAt.toISOString()
+      }));
+      const transactionsSheet = XLSX.utils.json_to_sheet(transactionsData);
+      XLSX.utils.book_append_sheet(workbook, transactionsSheet, 'Transacciones');
+
+      // Vehículos
+      const vehiclesData = data.vehicles.map(v => ({
+        'ID': v.id,
+        'Marca': v.brand,
+        'Modelo': v.model,
+        'Año': v.year,
+        'Patente': v.plate,
+        'Creado': v.createdAt.toISOString(),
+        'Actualizado': v.updatedAt.toISOString()
+      }));
+      const vehiclesSheet = XLSX.utils.json_to_sheet(vehiclesData);
+      XLSX.utils.book_append_sheet(workbook, vehiclesSheet, 'Vehículos');
+
+      // Combustible
+      const fuelLogsData = data.fuelLogs.map(f => ({
+        'ID': f.id,
+        'Vehículo ID': f.vehicleId,
+        'Fecha': f.date.toISOString(),
+        'Litros': f.liters,
+        'Precio por Litro': f.pricePerLiter,
+        'Total': f.totalAmount,
+        'Moneda': f.currency,
+        'Km actual': f.odometer,
+        'Km anterior': f.previousOdometer,
+        'Notas': f.notes || '',
+        'Creado': f.createdAt.toISOString(),
+        'Actualizado': f.updatedAt.toISOString()
+      }));
+      const fuelLogsSheet = XLSX.utils.json_to_sheet(fuelLogsData);
+      XLSX.utils.book_append_sheet(workbook, fuelLogsSheet, 'Combustible');
+
+      // Categorías
+      const categoriesData = data.categories.map(c => ({
+        'ID': c.id,
+        'Nombre': c.name,
+        'Tipo': c.type === 'income' ? 'Ingreso' : 'Gasto',
+        'Color': c.color,
+        'Icono': c.icon
+      }));
+      const categoriesSheet = XLSX.utils.json_to_sheet(categoriesData);
+      XLSX.utils.book_append_sheet(workbook, categoriesSheet, 'Categorías');
+
+      // Cuentas
+      const accountsData = data.accounts.map(a => ({
+        'ID': a.id,
+        'Nombre': a.name,
+        'Tipo': a.type,
+        'Balance': a.balance,
+        'Moneda': a.currency,
+        'Color': a.color,
+        'Icono': a.icon
+      }));
+      const accountsSheet = XLSX.utils.json_to_sheet(accountsData);
+      XLSX.utils.book_append_sheet(workbook, accountsSheet, 'Cuentas');
+
+      // Preferencias
+      const preferencesData = [{
+        'Moneda Preferida': data.preferences.preferredCurrency,
+        'Locale': data.preferences.locale,
+        'Tema': data.preferences.theme
+      }];
+      const preferencesSheet = XLSX.utils.json_to_sheet(preferencesData);
+      XLSX.utils.book_append_sheet(workbook, preferencesSheet, 'Preferencias');
+
+      // Facturaciones
+      const billingsData = data.billings.map(b => ({
+        'ID': b.id,
+        'Mes': b.month,
+        'Año': b.year,
+        'Categoría': b.category,
+        'Ingresos Totales': b.totalIncome,
+        'Deducciones': b.deductions,
+        'Ingresos Imponibles': b.taxableIncome,
+        'Impuesto': b.tax,
+        'Notas': b.notes || '',
+        'Creado': b.createdAt.toISOString(),
+        'Actualizado': b.updatedAt.toISOString()
+      }));
+      const billingsSheet = XLSX.utils.json_to_sheet(billingsData);
+      XLSX.utils.book_append_sheet(workbook, billingsSheet, 'Facturaciones');
+
+      // Convertir a blob
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([excelBuffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
 
       await this.googleDriveService.uploadOrUpdateFile(
         this.SYNC_FILE_NAME,
         blob,
-        'application/json'
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       );
 
-      console.log('✅ [SyncService] Datos subidos a Drive');
+      console.log('✅ [SyncService] Datos subidos a Drive (XLSX)');
     } catch (error) {
       console.error('❌ [SyncService] Error subiendo a Drive:', error);
       throw error;
