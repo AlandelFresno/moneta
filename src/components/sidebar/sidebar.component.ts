@@ -281,71 +281,67 @@ export class SidebarComponent {
       if (result.success && result.data) {
         console.log('✅ [Sidebar] Datos importados correctamente');
 
-        // Guardar los datos en los servicios correspondientes
-        if (result.data.categories.length > 0) {
-          result.data.categories.forEach(cat => {
-            // Verificar si la categoría ya existe
-            const existing = this.categoryService.getCategories().find(c => c.id === cat.id);
-            if (!existing) {
-              this.categoryService.addCategory(cat);
-            }
-          });
-        }
+        // Combinar con datos existentes
+        const existingCategories = this.categoryService.getCategories();
+        const existingAccounts = this.accountService.getAccounts();
+        const existingVehicles = this.vehicleService.getVehicles();
+        const existingTransactions = this.transactionService.getTransactions();
+        const existingFuelLogs = this.fuelLogService.getLogs();
+        const existingBillings = this.billingService.getBillings();
 
-        if (result.data.accounts.length > 0) {
-          result.data.accounts.forEach(acc => {
-            const existing = this.accountService.getAccounts().find(a => a.id === acc.id);
-            if (!existing) {
-              this.accountService.addAccount(acc);
-            }
-          });
-        }
+        // Filtrar datos nuevos (que no existan por ID)
+        const newCategories = result.data.categories.filter(
+          cat => !existingCategories.find(c => c.id === cat.id)
+        );
+        const newAccounts = result.data.accounts.filter(
+          acc => !existingAccounts.find(a => a.id === acc.id)
+        );
+        const newVehicles = result.data.vehicles.filter(
+          veh => !existingVehicles.find(v => v.id === veh.id)
+        );
+        const newTransactions = result.data.transactions.filter(
+          txn => !existingTransactions.find(t => t.id === txn.id)
+        );
+        const newFuelLogs = result.data.fuelLogs.filter(
+          log => !existingFuelLogs.find(l => l.id === log.id)
+        );
+        const newBillings = result.data.billings.filter(
+          bill => !existingBillings.find(b => b.id === bill.id)
+        );
 
-        if (result.data.vehicles.length > 0) {
-          result.data.vehicles.forEach(veh => {
-            const existing = this.vehicleService.getVehicles().find(v => v.id === veh.id);
-            if (!existing) {
-              this.vehicleService.addVehicle(veh);
-            }
-          });
+        // Guardar datos combinados directamente en localStorage
+        if (newCategories.length > 0) {
+          localStorage.setItem('budget_categories', JSON.stringify([...existingCategories, ...newCategories]));
         }
-
-        if (result.data.transactions.length > 0) {
-          result.data.transactions.forEach(txn => {
-            const existing = this.transactionService.getTransactions().find(t => t.id === txn.id);
-            if (!existing) {
-              this.transactionService.addTransaction(txn);
-            }
-          });
+        if (newAccounts.length > 0) {
+          localStorage.setItem('budget_accounts', JSON.stringify([...existingAccounts, ...newAccounts]));
         }
-
-        if (result.data.fuelLogs.length > 0) {
-          result.data.fuelLogs.forEach(log => {
-            const existing = this.fuelLogService.getLogs().find(l => l.id === log.id);
-            if (!existing) {
-              this.fuelLogService.addLog(log);
-            }
-          });
+        if (newVehicles.length > 0) {
+          localStorage.setItem('budget_vehicles', JSON.stringify([...existingVehicles, ...newVehicles]));
         }
-
-        if (result.data.billings.length > 0) {
-          result.data.billings.forEach(bill => {
-            const existing = this.billingService.getBillings().find(b => b.id === bill.id);
-            if (!existing) {
-              this.billingService.addBilling(bill);
-            }
-          });
+        if (newTransactions.length > 0) {
+          localStorage.setItem('budget_transactions', JSON.stringify([...existingTransactions, ...newTransactions]));
+        }
+        if (newFuelLogs.length > 0) {
+          localStorage.setItem('budget_fuel_logs', JSON.stringify([...existingFuelLogs, ...newFuelLogs]));
+        }
+        if (newBillings.length > 0) {
+          localStorage.setItem('budget_monthly_billing', JSON.stringify([...existingBillings, ...newBillings]));
         }
 
         // Actualizar preferencias
         if (result.data.preferences) {
           this.preferencesService.setPreferredCurrency(result.data.preferences.preferredCurrency);
-          if (result.data.preferences.locale) {
-            // Guardar locale si el servicio tiene ese método
-          }
         }
 
-        this.toastService.success('Importación completada', result.message, 6000);
+        const totalNew = newCategories.length + newAccounts.length + newVehicles.length +
+                        newTransactions.length + newFuelLogs.length + newBillings.length;
+
+        this.toastService.success(
+          'Importación completada',
+          `${totalNew} registros nuevos agregados. La página se recargará en 2 segundos.`,
+          6000
+        );
 
         // Recargar la página después de 2 segundos
         setTimeout(() => {
