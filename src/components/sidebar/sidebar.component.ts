@@ -1,4 +1,5 @@
 import { Component, signal } from '@angular/core';
+import { ConfirmationService } from 'primeng/api';
 import { ExportService } from '../../services/export.service';
 import { VehicleService } from '../../services/vehicle.service';
 import { FuelLogService } from '../../services/fuel-log.service';
@@ -43,7 +44,8 @@ export class SidebarComponent {
     private billingService: BillingService,
     private googleDriveService: GoogleDriveService,
     private syncService: SyncService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private confirmationService: ConfirmationService
   ) {
     // Cargar las monedas preferidas
     this.primaryCurrency = this.preferencesService.getPreferredCurrency();
@@ -216,15 +218,24 @@ export class SidebarComponent {
         return;
       }
 
-      const shouldContinue = await this.toastService.confirm(
-        'La sincronización combinará los datos locales con los de Drive. El más reciente prevalecerá. ¿Continuar?',
-        'Confirmar sincronización'
-      );
+      this.confirmationService.confirm({
+        message: 'La sincronización combinará los datos locales con los de Drive. El más reciente prevalecerá. ¿Continuar?',
+        header: 'Confirmar sincronización',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Sí',
+        rejectLabel: 'No',
+        accept: async () => {
+          await this.performSync();
+        }
+      });
+    } catch (error: any) {
+      console.error('❌ [Sidebar] Error en sincronización:', error);
+      this.toastService.error('Error en sincronización', error.message || 'Error desconocido. Por favor, revisa la consola.');
+    }
+  }
 
-      if (!shouldContinue) {
-        return;
-      }
-
+  private async performSync() {
+    try {
       const result = await this.syncService.sync();
 
       if (result.success) {
@@ -277,15 +288,29 @@ export class SidebarComponent {
     console.log('📥 [Sidebar] Iniciando importación desde Excel...');
 
     try {
-      const shouldContinue = await this.toastService.confirm(
-        '¿Deseas importar datos desde este archivo Excel? Esto agregará los datos al sistema actual.',
-        'Confirmar importación'
-      );
+      this.confirmationService.confirm({
+        message: '¿Deseas importar datos desde este archivo Excel? Esto agregará los datos al sistema actual.',
+        header: 'Confirmar importación',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Sí',
+        rejectLabel: 'No',
+        accept: async () => {
+          await this.performImport(file, event);
+        },
+        reject: () => {
+          // Limpiar el input file cuando se cancela
+          event.target.value = '';
+        }
+      });
+    } catch (error: any) {
+      console.error('❌ [Sidebar] Error en importación:', error);
+      this.toastService.error('Error en importación', error.message || 'Error desconocido');
+      event.target.value = '';
+    }
+  }
 
-      if (!shouldContinue) {
-        return;
-      }
-
+  private async performImport(file: File, event: any) {
+    try {
       const result = await this.exportService.importAllDataFromExcel(file);
 
       if (result.success && result.data) {
