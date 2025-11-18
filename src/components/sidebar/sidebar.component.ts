@@ -1,5 +1,4 @@
 import { Component, signal } from '@angular/core';
-import { ConfirmationService } from 'primeng/api';
 import { ExportService } from '../../services/export.service';
 import { VehicleService } from '../../services/vehicle.service';
 import { FuelLogService } from '../../services/fuel-log.service';
@@ -33,6 +32,11 @@ export class SidebarComponent {
   primaryCurrency: string;
   secondaryCurrency: string;
 
+  showSyncDialog = false;
+  showImportDialog = false;
+  pendingImportFile: File | null = null;
+  pendingImportEvent: any = null;
+
   constructor(
     private exportService: ExportService,
     private vehicleService: VehicleService,
@@ -44,8 +48,7 @@ export class SidebarComponent {
     private billingService: BillingService,
     private googleDriveService: GoogleDriveService,
     private syncService: SyncService,
-    private toastService: ToastService,
-    private confirmationService: ConfirmationService
+    private toastService: ToastService
   ) {
     // Cargar las monedas preferidas
     this.primaryCurrency = this.preferencesService.getPreferredCurrency();
@@ -218,20 +221,20 @@ export class SidebarComponent {
         return;
       }
 
-      this.confirmationService.confirm({
-        message: 'La sincronización combinará los datos locales con los de Drive. El más reciente prevalecerá. ¿Continuar?',
-        header: 'Confirmar sincronización',
-        icon: 'pi pi-exclamation-triangle',
-        acceptLabel: 'Sí',
-        rejectLabel: 'No',
-        accept: async () => {
-          await this.performSync();
-        }
-      });
+      this.showSyncDialog = true;
     } catch (error: any) {
       console.error('❌ [Sidebar] Error en sincronización:', error);
       this.toastService.error('Error en sincronización', error.message || 'Error desconocido. Por favor, revisa la consola.');
     }
+  }
+
+  closeSyncDialog() {
+    this.showSyncDialog = false;
+  }
+
+  async confirmSync() {
+    this.showSyncDialog = false;
+    await this.performSync();
   }
 
   private async performSync() {
@@ -288,25 +291,32 @@ export class SidebarComponent {
     console.log('📥 [Sidebar] Iniciando importación desde Excel...');
 
     try {
-      this.confirmationService.confirm({
-        message: '¿Deseas importar datos desde este archivo Excel? Esto agregará los datos al sistema actual.',
-        header: 'Confirmar importación',
-        icon: 'pi pi-exclamation-triangle',
-        acceptLabel: 'Sí',
-        rejectLabel: 'No',
-        accept: async () => {
-          await this.performImport(file, event);
-        },
-        reject: () => {
-          // Limpiar el input file cuando se cancela
-          event.target.value = '';
-        }
-      });
+      this.pendingImportFile = file;
+      this.pendingImportEvent = event;
+      this.showImportDialog = true;
     } catch (error: any) {
       console.error('❌ [Sidebar] Error en importación:', error);
       this.toastService.error('Error en importación', error.message || 'Error desconocido');
       event.target.value = '';
     }
+  }
+
+  closeImportDialog() {
+    this.showImportDialog = false;
+    if (this.pendingImportEvent) {
+      this.pendingImportEvent.target.value = '';
+    }
+    this.pendingImportFile = null;
+    this.pendingImportEvent = null;
+  }
+
+  async confirmImport() {
+    this.showImportDialog = false;
+    if (this.pendingImportFile && this.pendingImportEvent) {
+      await this.performImport(this.pendingImportFile, this.pendingImportEvent);
+    }
+    this.pendingImportFile = null;
+    this.pendingImportEvent = null;
   }
 
   private async performImport(file: File, event: any) {
