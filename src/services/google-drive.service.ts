@@ -410,7 +410,20 @@ export class GoogleDriveService {
 
       console.log(`ℹ️ [GoogleDriveService] Archivo no encontrado: ${fileName}`);
       return null;
-    } catch (error) {
+    } catch (error: any) {
+      // Detectar error 401 (token expirado)
+      if (error.status === 401 || error.result?.error?.code === 401) {
+        console.warn('⚠️ [GoogleDriveService] Token expirado (401). Limpiando token y solicitando re-autenticación...');
+
+        // Limpiar token expirado
+        this.clearToken();
+
+        // Lanzar error específico para que el usuario sepa que debe re-autenticarse
+        throw new Error(
+          'Tu sesión de Google Drive ha expirado. Por favor cierra sesión y vuelve a iniciar sesión.'
+        );
+      }
+
       console.error('❌ [GoogleDriveService] Error buscando archivo:', error);
       throw error;
     }
