@@ -66,7 +66,24 @@
       </div>
     </div>
 
-    <!-- Export Buttons -->
+    <!-- Import/Export Buttons -->
+    <input
+      type="file"
+      #fileInput
+      accept=".xls,.xlsx"
+      (change)="importFromExcel($event)"
+      style="display: none" />
+
+    <button
+      class="nav-item export-button import-button"
+      [class.collapsed]="isCollapsed()"
+      (click)="fileInput.click()"
+      pButton
+      [text]="true">
+      <i class="pi pi-upload"></i>
+      <span class="nav-text" *ngIf="!isCollapsed() || isMobileMenuOpen()">Importar Excel</span>
+    </button>
+
     <button
       class="nav-item export-button"
       [class.collapsed]="isCollapsed()"

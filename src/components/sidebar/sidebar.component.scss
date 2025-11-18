@@ -196,6 +196,39 @@
   i {
     color: #16a34a;
   }
+
+  &.import-button {
+    &:hover {
+      background: #eff6ff !important;
+      color: #3b82f6 !important;
+    }
+
+    i {
+      color: #3b82f6;
+    }
+  }
+
+  &.google-drive {
+    &:hover {
+      background: #fef3c7 !important;
+      color: #f59e0b !important;
+    }
+
+    i {
+      color: #f59e0b;
+    }
+  }
+
+  &.sync-drive {
+    &:hover {
+      background: #f3e8ff !important;
+      color: #a855f7 !important;
+    }
+
+    i {
+      color: #a855f7;
+    }
+  }
 }
 
 // Mobile overlay

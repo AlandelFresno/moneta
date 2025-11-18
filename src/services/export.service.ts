@@ -491,6 +491,235 @@ export class ExportService {
     return deviceId;
   }
 
+  /**
+   * Importar todos los datos desde un archivo Excel
+   */
+  async importAllDataFromExcel(file: File): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      transactions: Transaction[];
+      vehicles: Vehicle[];
+      fuelLogs: FuelLog[];
+      categories: Category[];
+      accounts: Account[];
+      preferences: UserPreferences;
+      billings: MonthlyBilling[];
+    };
+  }> {
+    console.log('📥 [ExportService] Importando datos desde Excel...');
+
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+
+      reader.onload = (e: any) => {
+        try {
+          const data = e.target.result;
+          const workbook = XLSX.read(data, { type: 'binary' });
+
+          console.log('📊 [ExportService] Hojas encontradas:', workbook.SheetNames);
+
+          const result: any = {
+            transactions: [],
+            vehicles: [],
+            fuelLogs: [],
+            categories: [],
+            accounts: [],
+            preferences: { preferredCurrency: 'ARS', locale: 'es-AR', theme: 'light' },
+            billings: []
+          };
+
+          // Importar Transacciones
+          if (workbook.SheetNames.includes('Transacciones')) {
+            const sheet = workbook.Sheets['Transacciones'];
+            const jsonData = XLSX.utils.sheet_to_json(sheet);
+            result.transactions = jsonData.map((row: any) => ({
+              id: row['ID'] || this.generateId(),
+              date: this.parseExcelDate(row['Fecha']),
+              description: row['Descripción'] || '',
+              amount: parseFloat(row['Monto']) || 0,
+              currency: row['Moneda'] || 'USD',
+              type: row['Tipo'] === 'Ingreso' ? 'income' : 'expense',
+              categoryId: row['Categoría ID'] || '',
+              accountId: row['Cuenta ID'] || '',
+              exchangeRates: {
+                ARS: parseFloat(row['Tasa a ARS']) || undefined,
+                USD: parseFloat(row['Tasa a USD']) || undefined,
+                EUR: parseFloat(row['Tasa a EUR']) || undefined,
+                BRL: parseFloat(row['Tasa a BRL']) || undefined
+              },
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }));
+            console.log('✅ [ExportService] Transacciones importadas:', result.transactions.length);
+          }
+
+          // Importar Vehículos
+          if (workbook.SheetNames.includes('Vehículos')) {
+            const sheet = workbook.Sheets['Vehículos'];
+            const jsonData = XLSX.utils.sheet_to_json(sheet);
+            result.vehicles = jsonData.map((row: any) => ({
+              id: row['ID'] || this.generateId(),
+              name: row['Nombre'] || '',
+              brand: row['Marca'] || '',
+              model: row['Modelo'] || '',
+              year: parseInt(row['Año']) || new Date().getFullYear(),
+              plateNumber: row['Patente'] || '',
+              currentKm: parseFloat(row['Km Actual']) || 0,
+              tankCapacity: parseFloat(row['Capacidad Tanque (L)']) || 50,
+              fuelType: row['Tipo Combustible'] || 'Nafta',
+              color: row['Color'] || '#3b82f6',
+              notes: row['Notas'] || '',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }));
+            console.log('✅ [ExportService] Vehículos importados:', result.vehicles.length);
+          }
+
+          // Importar Combustible
+          if (workbook.SheetNames.includes('Combustible')) {
+            const sheet = workbook.Sheets['Combustible'];
+            const jsonData = XLSX.utils.sheet_to_json(sheet);
+            result.fuelLogs = jsonData.map((row: any) => ({
+              id: row['ID'] || this.generateId(),
+              date: this.parseExcelDate(row['Fecha']),
+              vehicleId: row['Vehículo ID'] || '',
+              liters: parseFloat(row['Litros']) || 0,
+              pricePerLiter: parseFloat(row['Precio por Litro']) || 0,
+              totalPrice: parseFloat(row['Precio Total']) || 0,
+              currency: row['Moneda'] || 'ARS',
+              kmTraveled: parseFloat(row['Km Recorridos']) || 0,
+              totalKm: parseFloat(row['Km Total']) || 0,
+              efficiency: parseFloat(row['Rendimiento (km/L)']) || 0,
+              costPerKm: this.parseCostPerKm(row['Costo por km']),
+              fullTank: row['Tanque Lleno'] === 'Sí',
+              gasStation: row['Estación'] || '',
+              notes: row['Notas'] || '',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }));
+            console.log('✅ [ExportService] Combustible importado:', result.fuelLogs.length);
+          }
+
+          // Importar Categorías
+          if (workbook.SheetNames.includes('Categorías')) {
+            const sheet = workbook.Sheets['Categorías'];
+            const jsonData = XLSX.utils.sheet_to_json(sheet);
+            result.categories = jsonData.map((row: any) => ({
+              id: row['ID'] || this.generateId(),
+              name: row['Nombre'] || '',
+              type: row['Tipo'] === 'Ingreso' ? 'income' : 'expense',
+              color: row['Color'] || '#3b82f6',
+              icon: row['Icono'] || 'tag',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }));
+            console.log('✅ [ExportService] Categorías importadas:', result.categories.length);
+          }
+
+          // Importar Cuentas
+          if (workbook.SheetNames.includes('Cuentas')) {
+            const sheet = workbook.Sheets['Cuentas'];
+            const jsonData = XLSX.utils.sheet_to_json(sheet);
+            result.accounts = jsonData.map((row: any) => ({
+              id: row['ID'] || this.generateId(),
+              name: row['Nombre'] || '',
+              type: row['Tipo'] || 'checking',
+              balance: parseFloat(row['Balance']) || 0,
+              currency: row['Moneda'] || 'ARS',
+              color: row['Color'] || '#3b82f6',
+              icon: row['Icono'] || 'wallet',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }));
+            console.log('✅ [ExportService] Cuentas importadas:', result.accounts.length);
+          }
+
+          // Importar Facturación
+          if (workbook.SheetNames.includes('Facturación')) {
+            const sheet = workbook.Sheets['Facturación'];
+            const jsonData = XLSX.utils.sheet_to_json(sheet);
+            result.billings = jsonData.map((row: any) => ({
+              id: row['ID'] || this.generateId(),
+              month: this.getMonthNumber(row['Mes']),
+              year: parseInt(row['Año']) || new Date().getFullYear(),
+              amount: parseFloat(row['Monto']) || 0,
+              description: row['Descripción'] || '',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }));
+            console.log('✅ [ExportService] Facturación importada:', result.billings.length);
+          }
+
+          // Importar Preferencias
+          if (workbook.SheetNames.includes('Preferencias')) {
+            const sheet = workbook.Sheets['Preferencias'];
+            const jsonData = XLSX.utils.sheet_to_json(sheet);
+            if (jsonData.length > 0) {
+              const row: any = jsonData[0];
+              result.preferences = {
+                preferredCurrency: row['Moneda Preferida'] || 'ARS',
+                locale: row['Locale'] || 'es-AR',
+                theme: row['Tema'] || 'light'
+              };
+            }
+            console.log('✅ [ExportService] Preferencias importadas:', result.preferences);
+          }
+
+          console.log('✅ [ExportService] Importación completada exitosamente');
+
+          resolve({
+            success: true,
+            message: `Datos importados exitosamente. ${result.transactions.length} transacciones, ${result.vehicles.length} vehículos, ${result.fuelLogs.length} registros de combustible, ${result.categories.length} categorías, ${result.accounts.length} cuentas, ${result.billings.length} facturaciones.`,
+            data: result
+          });
+
+        } catch (error) {
+          console.error('❌ [ExportService] Error al importar:', error);
+          resolve({
+            success: false,
+            message: `Error al importar los datos: ${error}`
+          });
+        }
+      };
+
+      reader.onerror = (error) => {
+        console.error('❌ [ExportService] Error al leer archivo:', error);
+        resolve({
+          success: false,
+          message: 'Error al leer el archivo Excel'
+        });
+      };
+
+      reader.readAsBinaryString(file);
+    });
+  }
+
+  private parseExcelDate(dateStr: any): Date {
+    if (!dateStr) return new Date();
+
+    // Si es un número (serial date de Excel)
+    if (typeof dateStr === 'number') {
+      const date = XLSX.SSF.parse_date_code(dateStr);
+      return new Date(date.y, date.m - 1, date.d);
+    }
+
+    // Si es string con formato DD/MM/YYYY
+    if (typeof dateStr === 'string' && dateStr.includes('/')) {
+      const parts = dateStr.split('/');
+      if (parts.length === 3) {
+        return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+      }
+    }
+
+    // Fallback
+    return new Date(dateStr);
+  }
+
+  private generateId(): string {
+    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
   private getTimestamp(): string {
     const now = new Date();
     const year = now.getFullYear();

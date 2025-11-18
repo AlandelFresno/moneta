@@ -257,4 +257,110 @@ export class SidebarComponent {
     // Recargar la página para aplicar cambios
     window.location.reload();
   }
+
+  async importFromExcel(event: any) {
+    const file = event.target.files[0];
+    if (!file) {
+      return;
+    }
+
+    console.log('📥 [Sidebar] Iniciando importación desde Excel...');
+
+    try {
+      const shouldContinue = await this.toastService.confirm(
+        '¿Deseas importar datos desde este archivo Excel? Esto agregará los datos al sistema actual.',
+        'Confirmar importación'
+      );
+
+      if (!shouldContinue) {
+        return;
+      }
+
+      const result = await this.exportService.importAllDataFromExcel(file);
+
+      if (result.success && result.data) {
+        console.log('✅ [Sidebar] Datos importados correctamente');
+
+        // Guardar los datos en los servicios correspondientes
+        if (result.data.categories.length > 0) {
+          result.data.categories.forEach(cat => {
+            // Verificar si la categoría ya existe
+            const existing = this.categoryService.getCategories().find(c => c.id === cat.id);
+            if (!existing) {
+              this.categoryService.addCategory(cat);
+            }
+          });
+        }
+
+        if (result.data.accounts.length > 0) {
+          result.data.accounts.forEach(acc => {
+            const existing = this.accountService.getAccounts().find(a => a.id === acc.id);
+            if (!existing) {
+              this.accountService.addAccount(acc);
+            }
+          });
+        }
+
+        if (result.data.vehicles.length > 0) {
+          result.data.vehicles.forEach(veh => {
+            const existing = this.vehicleService.getVehicles().find(v => v.id === veh.id);
+            if (!existing) {
+              this.vehicleService.addVehicle(veh);
+            }
+          });
+        }
+
+        if (result.data.transactions.length > 0) {
+          result.data.transactions.forEach(txn => {
+            const existing = this.transactionService.getTransactions().find(t => t.id === txn.id);
+            if (!existing) {
+              this.transactionService.addTransaction(txn);
+            }
+          });
+        }
+
+        if (result.data.fuelLogs.length > 0) {
+          result.data.fuelLogs.forEach(log => {
+            const existing = this.fuelLogService.getLogs().find(l => l.id === log.id);
+            if (!existing) {
+              this.fuelLogService.addLog(log);
+            }
+          });
+        }
+
+        if (result.data.billings.length > 0) {
+          result.data.billings.forEach(bill => {
+            const existing = this.billingService.getBillings().find(b => b.id === bill.id);
+            if (!existing) {
+              this.billingService.addBilling(bill);
+            }
+          });
+        }
+
+        // Actualizar preferencias
+        if (result.data.preferences) {
+          this.preferencesService.setPreferredCurrency(result.data.preferences.preferredCurrency);
+          if (result.data.preferences.locale) {
+            // Guardar locale si el servicio tiene ese método
+          }
+        }
+
+        this.toastService.success('Importación completada', result.message, 6000);
+
+        // Recargar la página después de 2 segundos
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        console.warn('⚠️ [Sidebar] Error en importación:', result.message);
+        this.toastService.error('Error en importación', result.message);
+      }
+    } catch (error: any) {
+      console.error('❌ [Sidebar] Error en importación:', error);
+      this.toastService.error('Error en importación', error.message || 'Error desconocido');
+    } finally {
+      // Limpiar el input file
+      event.target.value = '';
+    }
+  }
 }
