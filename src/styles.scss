@@ -144,150 +144,153 @@
 
 /* ============================================
    PrimeNG Confirm Dialog Styles - Modales
-   Copiado exactamente del estilo .macos-dialog
+   Copiado EXACTAMENTE del estilo .macos-dialog de transactions.page.scss
    ============================================ */
-.p-confirm-dialog {
-  .p-dialog {
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35), 0 0 2px rgba(0, 0, 0, 0.15);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-  }
-
-  .p-dialog-header {
-    background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
-    border-bottom: 1px solid #e5e7eb;
-    padding: 1.5rem 2rem;
-
-    .p-dialog-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: #111827;
-      margin: 0;
-      letter-spacing: -0.02em;
+::ng-deep {
+  .p-confirm-dialog {
+    .p-dialog {
+      border-radius: 20px !important;
+      overflow: hidden !important;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35), 0 0 2px rgba(0, 0, 0, 0.15) !important;
+      border: 1px solid rgba(0, 0, 0, 0.08) !important;
+      background: white !important;
     }
 
-    .p-dialog-header-icon {
-      width: 2.25rem;
-      height: 2.25rem;
-      color: #6b7280;
-      border-radius: 8px;
-      transition: all 0.2s ease;
+    .p-dialog-header {
+      background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%) !important;
+      border-bottom: 1px solid #e5e7eb !important;
+      padding: 1.5rem 2rem !important;
 
-      &:hover {
-        background: #e5e7eb;
-        color: #111827;
-        transform: scale(1.05);
+      .p-dialog-title {
+        font-size: 1.25rem !important;
+        font-weight: 700 !important;
+        color: #111827 !important;
+        margin: 0 !important;
+        letter-spacing: -0.02em !important;
       }
-    }
-  }
 
-  .p-dialog-content {
-    background: white;
-    padding: 2rem;
-    max-height: calc(100vh - 250px);
-    overflow-y: auto;
-
-    .p-confirm-dialog-icon {
-      font-size: 2.5rem;
-      color: #f59e0b;
-      margin-right: 1rem;
-      flex-shrink: 0;
-    }
-
-    .p-confirm-dialog-message {
-      color: #1f2937;
-      font-size: 0.95rem;
-      line-height: 1.6;
-    }
-
-    &::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: #f9fafb;
-      border-radius: 10px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: #d1d5db;
-      border-radius: 10px;
-
-      &:hover {
-        background: #9ca3af;
-      }
-    }
-  }
-
-  .p-dialog-footer {
-    background: #f9fafb;
-    border-top: 1px solid #e5e7eb;
-    padding: 1.25rem 2rem;
-    display: flex;
-    gap: 0.75rem;
-    justify-content: flex-end;
-
-    button {
-      padding: 0.625rem 1.5rem;
-      border-radius: 8px;
-      font-weight: 500;
-      font-size: 0.9375rem;
-      transition: all 0.2s ease;
-      border: none;
-      cursor: pointer;
-      min-width: 90px;
-
-      &.p-button-text {
-        background: transparent;
-        color: #6b7280;
+      .p-dialog-header-icon {
+        width: 2.25rem !important;
+        height: 2.25rem !important;
+        color: #6b7280 !important;
+        border-radius: 8px !important;
+        transition: all 0.2s ease !important;
 
         &:hover {
-          background: #e5e7eb;
-          color: #374151;
-        }
-
-        &:active {
-          background: #d1d5db;
-        }
-      }
-
-      &.p-confirm-dialog-accept {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        color: white;
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-
-        &:hover {
-          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-          transform: translateY(-1px);
-        }
-
-        &:active {
-          transform: translateY(0);
-        }
-      }
-
-      &.p-confirm-dialog-reject {
-        background: #ffffff;
-        color: #6b7280;
-        border: 1.5px solid #d1d5db;
-
-        &:hover {
-          background: #f9fafb;
-          color: #374151;
-          border-color: #9ca3af;
-        }
-
-        &:active {
-          background: #f3f4f6;
+          background: #e5e7eb !important;
+          color: #111827 !important;
+          transform: scale(1.05);
         }
       }
     }
-  }
 
-  .p-dialog-mask {
-    background: rgba(0, 0, 0, 0.5);
+    .p-dialog-content {
+      background: white !important;
+      padding: 2rem !important;
+      max-height: calc(100vh - 250px) !important;
+      overflow-y: auto !important;
+
+      .p-confirm-dialog-icon {
+        font-size: 2.5rem !important;
+        color: #f59e0b !important;
+        margin-right: 1rem !important;
+        flex-shrink: 0;
+      }
+
+      .p-confirm-dialog-message {
+        color: #1f2937 !important;
+        font-size: 0.95rem !important;
+        line-height: 1.6 !important;
+      }
+
+      &::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #f9fafb;
+        border-radius: 10px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 10px;
+
+        &:hover {
+          background: #9ca3af;
+        }
+      }
+    }
+
+    .p-dialog-footer {
+      background: #f9fafb !important;
+      border-top: 1px solid #e5e7eb !important;
+      padding: 1.25rem 2rem !important;
+      display: flex !important;
+      gap: 0.75rem !important;
+      justify-content: flex-end !important;
+
+      button {
+        padding: 0.625rem 1.5rem !important;
+        border-radius: 8px !important;
+        font-weight: 500 !important;
+        font-size: 0.9375rem !important;
+        transition: all 0.2s ease !important;
+        border: none !important;
+        cursor: pointer;
+        min-width: 90px;
+
+        &.p-button-text {
+          background: transparent !important;
+          color: #6b7280 !important;
+
+          &:hover {
+            background: #e5e7eb !important;
+            color: #374151 !important;
+          }
+
+          &:active {
+            background: #d1d5db !important;
+          }
+        }
+
+        &.p-confirm-dialog-accept {
+          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+          color: white !important;
+          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+
+          &:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+            transform: translateY(-1px);
+          }
+
+          &:active {
+            transform: translateY(0);
+          }
+        }
+
+        &.p-confirm-dialog-reject {
+          background: #ffffff !important;
+          color: #6b7280 !important;
+          border: 1.5px solid #d1d5db !important;
+
+          &:hover {
+            background: #f9fafb !important;
+            color: #374151 !important;
+            border-color: #9ca3af !important;
+          }
+
+          &:active {
+            background: #f3f4f6 !important;
+          }
+        }
+      }
+    }
+
+    .p-dialog-mask {
+      background: rgba(0, 0, 0, 0.5) !important;
+    }
   }
 }
 
