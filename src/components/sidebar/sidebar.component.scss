@@ -240,7 +240,7 @@
 :host ::ng-deep {
   // Backdrop
   .p-dialog-mask {
-    background: rgba(0, 0, 0, 0.8) !important;
+    background: transparent !important;
   }
 
   // Modal container - fondo blanco sólido con borde visible

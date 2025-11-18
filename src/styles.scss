@@ -148,7 +148,7 @@
 
 /* BACKDROP - Aplicar primero para máxima especificidad */
 ::ng-deep .p-dialog-mask {
-  background: rgba(0, 0, 0, 0.8) !important;
+  background: transparent !important;
 }
 
 /* Estilos del modal - aplicar al contenedor principal */
