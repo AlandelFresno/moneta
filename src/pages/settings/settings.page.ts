@@ -37,12 +37,6 @@ export class SettingsPage implements OnInit {
   // Tasas de cambio para mostrar
   currencyRates: CurrencyDisplay[] = [];
 
-  // Google Drive credentials
-  googleClientId: string = '';
-  googleApiKey: string = '';
-  googleSaveSuccess = false;
-  googleSaveError: string | null = null;
-
   currencies = [
     { code: 'ARS', symbol: '$', name: 'Peso Argentino' },
     { code: 'USD', symbol: 'US$', name: 'Dólar Estadounidense' },
@@ -67,82 +61,11 @@ export class SettingsPage implements OnInit {
     this.updateCacheInfo();
     this.loadExchangeRates();
     this.calculateExampleConversion();
-    this.loadGoogleCredentials();
   }
 
   loadSettings(): void {
     this.preferredCurrency = this.preferencesService.getPreferredCurrency();
     this.dollarType = this.preferencesService.getDollarType();
-  }
-
-  loadGoogleCredentials(): void {
-    const config = localStorage.getItem('google_drive_config');
-    if (config) {
-      try {
-        const { clientId, apiKey } = JSON.parse(config);
-        this.googleClientId = clientId || '';
-        this.googleApiKey = apiKey || '';
-      } catch (error) {
-        console.error('❌ [Settings] Error loading Google credentials:', error);
-      }
-    }
-  }
-
-  saveGoogleCredentials(): void {
-    console.log('💾 [Settings] Guardando credenciales de Google Drive...');
-    this.googleSaveSuccess = false;
-    this.googleSaveError = null;
-
-    try {
-      // Validar que ambas credenciales estén presentes
-      if (!this.googleClientId || !this.googleApiKey) {
-        this.googleSaveError = 'Por favor ingresa ambas credenciales (Client ID y API Key)';
-        setTimeout(() => this.googleSaveError = null, 5000);
-        return;
-      }
-
-      // Validar formato básico del Client ID
-      if (!this.googleClientId.includes('.apps.googleusercontent.com')) {
-        this.googleSaveError = 'El Client ID debe terminar en .apps.googleusercontent.com';
-        setTimeout(() => this.googleSaveError = null, 5000);
-        return;
-      }
-
-      // Validar formato básico de la API Key
-      if (!this.googleApiKey.startsWith('AIza')) {
-        this.googleSaveError = 'La API Key debe comenzar con "AIza"';
-        setTimeout(() => this.googleSaveError = null, 5000);
-        return;
-      }
-
-      // Guardar usando el servicio de Google Drive
-      this.googleDriveService.saveGoogleDriveConfig(this.googleClientId, this.googleApiKey);
-
-      this.googleSaveSuccess = true;
-      console.log('✅ [Settings] Credenciales guardadas exitosamente');
-
-      // Ocultar mensaje de éxito después de 3 segundos
-      setTimeout(() => {
-        this.googleSaveSuccess = false;
-      }, 3000);
-    } catch (error) {
-      this.googleSaveError = 'Error al guardar las credenciales. Por favor, intenta de nuevo.';
-      console.error('❌ [Settings] Error saving Google credentials:', error);
-
-      setTimeout(() => {
-        this.googleSaveError = null;
-      }, 5000);
-    }
-  }
-
-  clearGoogleCredentials(): void {
-    if (confirm('¿Estás seguro de que deseas eliminar las credenciales de Google Drive?')) {
-      localStorage.removeItem('google_drive_config');
-      this.googleClientId = '';
-      this.googleApiKey = '';
-      this.googleDriveService.saveGoogleDriveConfig('', '');
-      console.log('🗑️ [Settings] Credenciales de Google Drive eliminadas');
-    }
   }
 
   loadExchangeRates(): void {

@@ -11,10 +11,11 @@ export class GoogleDriveService {
   private readonly DISCOVERY_DOCS = ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'];
   private readonly SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
-  // IMPORTANTE: El usuario debe configurar estas credenciales
-  // Ir a: https://console.cloud.google.com/apis/credentials
-  private CLIENT_ID = '';  // Configurar con tu Client ID
-  private API_KEY = '';    // Configurar con tu API Key
+  // Credenciales de Google OAuth
+  // IMPORTANTE: Estas credenciales están restringidas por dominio en Google Cloud Console
+  // Solo funcionarán desde los dominios autorizados (localhost:4200, tu-dominio.com, etc.)
+  private CLIENT_ID = '';  // Tu Client ID aquí
+  private API_KEY = '';    // Tu API Key aquí
 
   private isSignedInSubject = new BehaviorSubject<boolean>(false);
   public isSignedIn$ = this.isSignedInSubject.asObservable();
@@ -23,45 +24,16 @@ export class GoogleDriveService {
   private tokenClient: any;
   private accessToken: string | null = null;
 
-  constructor() {
-    this.loadGoogleDriveConfig();
-  }
-
-  /**
-   * Cargar configuración de Google Drive desde localStorage
-   */
-  private loadGoogleDriveConfig(): void {
-    const config = localStorage.getItem('google_drive_config');
-    if (config) {
-      try {
-        const { clientId, apiKey } = JSON.parse(config);
-        this.CLIENT_ID = clientId || '';
-        this.API_KEY = apiKey || '';
-      } catch (error) {
-        console.error('Error loading Google Drive config:', error);
-      }
-    }
-  }
-
-  /**
-   * Guardar configuración de Google Drive
-   */
-  saveGoogleDriveConfig(clientId: string, apiKey: string): void {
-    this.CLIENT_ID = clientId;
-    this.API_KEY = apiKey;
-    localStorage.setItem('google_drive_config', JSON.stringify({ clientId, apiKey }));
-  }
+  constructor() {}
 
   /**
    * Verificar si las credenciales están configuradas
    */
   hasCredentials(): boolean {
     const hasCredentials = !!this.CLIENT_ID && !!this.API_KEY;
-    console.log('🔍 [GoogleDriveService] Verificando credenciales:', {
-      hasClientId: !!this.CLIENT_ID,
-      hasApiKey: !!this.API_KEY,
-      hasCredentials
-    });
+    if (!hasCredentials) {
+      console.warn('⚠️ [GoogleDriveService] Credenciales no configuradas. Agrega tu Client ID y API Key en google-drive.service.ts');
+    }
     return hasCredentials;
   }
 
