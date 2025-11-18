@@ -327,8 +327,18 @@ export class GoogleDriveService {
   async findFileByName(fileName: string): Promise<string | null> {
     await this.ensureInitialized();
 
+    // CRÍTICO: Verificar que haya un token de acceso
+    if (!this.accessToken) {
+      console.error('❌ [GoogleDriveService] No hay access token. Usuario no autenticado.');
+      throw new Error('No hay token de acceso. Por favor inicia sesión en Google Drive primero.');
+    }
+
+    // Configurar el token en gapi.client para esta llamada
+    gapi.client.setToken({ access_token: this.accessToken });
+
     try {
       console.log(`🔍 [GoogleDriveService] Buscando archivo: ${fileName}`);
+      console.log(`🔐 [GoogleDriveService] Token presente:`, this.accessToken ? 'SÍ' : 'NO');
 
       const response = await gapi.client.drive.files.list({
         q: `name='${fileName}' and trashed=false and 'root' in parents`,
@@ -338,11 +348,33 @@ export class GoogleDriveService {
 
       console.log('📋 [GoogleDriveService] Respuesta de API:', {
         filesEncontrados: response.result.files?.length || 0,
-        files: response.result.files
+        files: response.result.files,
+        resultCompleto: response.result
       });
 
-      if (response.result.files && response.result.files.length > 0) {
+      // Validar que la respuesta tenga la estructura esperada
+      if (!response.result.files) {
+        console.warn('⚠️ [GoogleDriveService] response.result.files es undefined o null');
+        return null;
+      }
+
+      if (response.result.files.length > 0) {
         const file = response.result.files[0];
+
+        // Validar que el objeto file tenga las propiedades esperadas
+        if (!file) {
+          console.error('❌ [GoogleDriveService] files[0] es undefined o null');
+          return null;
+        }
+
+        if (!file.hasOwnProperty('id')) {
+          console.error('❌ [GoogleDriveService] El archivo no tiene propiedad "id":', file);
+          throw new Error(
+            `Google Drive retornó un archivo sin ID. ` +
+            `Archivo: ${JSON.stringify(file, null, 2)}`
+          );
+        }
+
         const fileId = file.id;
 
         console.log('📄 [GoogleDriveService] Archivo encontrado:', {
@@ -355,13 +387,21 @@ export class GoogleDriveService {
 
         // Validar que el fileId sea válido
         if (!fileId || fileId.trim() === '' || fileId === '.' || fileId === 'null' || fileId === 'undefined') {
-          console.error('❌ [GoogleDriveService] Google Drive retornó un fileId inválido:', {
+          const errorDetails = {
             fileId,
             fileIdTrim: fileId?.trim(),
             esIgualAPunto: fileId === '.',
-            archivo: file
-          });
-          return null;
+            archivo: file,
+            respuestaCompleta: response.result
+          };
+          console.error('❌ [GoogleDriveService] Google Drive retornó un fileId inválido:', errorDetails);
+
+          // LANZAR ERROR en lugar de retornar null para diagnosticar el problema
+          throw new Error(
+            `Google Drive API retornó un fileId inválido: "${fileId}". ` +
+            `Esto puede indicar un problema con tu cuenta de Google Drive. ` +
+            `Detalles: ${JSON.stringify(errorDetails, null, 2)}`
+          );
         }
 
         console.log(`✅ [GoogleDriveService] Archivo encontrado: ${fileName} (ID: ${fileId})`);
