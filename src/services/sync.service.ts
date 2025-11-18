@@ -5,9 +5,11 @@ import { VehicleService } from './vehicle.service';
 import { FuelLogService } from './fuel-log.service';
 import { CategoryService } from './category.service';
 import { AccountService } from './account.service';
-import { PreferencesService } from './preferences.service';
+import { PreferencesService, UserPreferences } from './preferences.service';
 import { BillingService } from './billing.service';
-import { Transaction, Vehicle, FuelLog, Category, Account, MonthlyBilling, UserPreferences } from '../models';
+import { Transaction, Category, Account, MonthlyBilling } from '../models';
+import { Vehicle } from '../models/vehicle.model';
+import { FuelLog } from '../models/fuel-log.model';
 
 interface SyncMetadata {
   lastSyncTimestamp: number;
