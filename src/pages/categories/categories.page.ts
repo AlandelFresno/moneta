@@ -25,7 +25,7 @@ export class CategoriesPage implements OnInit, OnDestroy {
     name: '',
     type: 'expense' as 'income' | 'expense',
     color: '#3b82f6',
-    icon: 'pi-tag'
+    icon: 'tag'
   };
 
   availableColors = [
@@ -34,10 +34,10 @@ export class CategoriesPage implements OnInit, OnDestroy {
   ];
 
   availableIcons = [
-    'pi-tag', 'pi-tags', 'pi-briefcase', 'pi-desktop', 'pi-chart-line', 'pi-gift',
-    'pi-shopping-cart', 'pi-car', 'pi-shopping-bag', 'pi-video', 'pi-file',
-    'pi-heart', 'pi-book', 'pi-home', 'pi-send', 'pi-coffee', 'pi-list', 'pi-palette',
-    'pi-credit-card', 'pi-dollar', 'pi-shield', 'pi-wallet'
+    'tag', 'tags', 'briefcase', 'desktop', 'chart-line', 'gift',
+    'shopping-cart', 'car', 'shopping-bag', 'video', 'file',
+    'heart', 'book', 'home', 'send', 'coffee', 'list', 'palette',
+    'credit-card', 'dollar', 'shield', 'wallet'
   ];
 
   constructor(
@@ -67,7 +67,7 @@ export class CategoriesPage implements OnInit, OnDestroy {
       name: '',
       type: 'expense',
       color: '#3b82f6',
-      icon: 'pi-tag'
+      icon: 'tag'
     };
     this.showDialog = true;
   }

@@ -125,7 +125,7 @@ export class BudgetsPage implements OnInit, OnDestroy {
         ...budget,
         categoryName: category?.name || 'Categoría eliminada',
         categoryColor: category?.color || '#6b7280',
-        categoryIcon: category?.icon || 'pi-question',
+        categoryIcon: category?.icon || 'question',
         spent,
         remaining,
         percentage: Math.min(100, percentage),

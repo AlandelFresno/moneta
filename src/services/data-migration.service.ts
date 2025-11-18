@@ -5,7 +5,7 @@ import { Injectable } from '@angular/core';
 })
 export class DataMigrationService {
   private readonly MIGRATION_VERSION_KEY = 'budget_migration_version';
-  private readonly CURRENT_VERSION = 2;
+  private readonly CURRENT_VERSION = 3;
 
   constructor() {}
 
@@ -27,6 +27,12 @@ export class DataMigrationService {
       console.log('Ejecutando migración v2: Agregar prefijo pi- a iconos de categorías');
       await this.migrationV2FixCategoryIcons();
       this.setMigrationVersion(2);
+    }
+
+    if (currentVersion < 3) {
+      console.log('Ejecutando migración v3: Remover prefijo pi- de iconos de categorías');
+      await this.migrationV3RemoveCategoryIconPrefix();
+      this.setMigrationVersion(3);
     }
 
     console.log('Todas las migraciones completadas');
@@ -111,6 +117,39 @@ export class DataMigrationService {
       console.log('✓ Migración v2 completada exitosamente');
     } catch (error) {
       console.error('Error en migración v2:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Migración v3: Remover prefijo pi- de iconos de categorías
+   * (Revertir cambio de v2 porque el template ya incluye el prefijo)
+   */
+  private async migrationV3RemoveCategoryIconPrefix(): Promise<void> {
+    try {
+      const categoriesData = localStorage.getItem('budget_categories');
+      if (categoriesData) {
+        const categories = JSON.parse(categoriesData);
+        let categoriesUpdated = false;
+
+        categories.forEach((category: any) => {
+          // Si el icono tiene el prefijo 'pi-', removerlo
+          if (category.icon && category.icon.startsWith('pi-')) {
+            category.icon = category.icon.substring(3); // Remover 'pi-'
+            categoriesUpdated = true;
+            console.log(`✓ Categoría "${category.name}" icono actualizado a: ${category.icon}`);
+          }
+        });
+
+        if (categoriesUpdated) {
+          localStorage.setItem('budget_categories', JSON.stringify(categories));
+          console.log('✓ Categorías actualizadas sin prefijo pi-');
+        }
+      }
+
+      console.log('✓ Migración v3 completada exitosamente');
+    } catch (error) {
+      console.error('Error en migración v3:', error);
       throw error;
     }
   }

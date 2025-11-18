@@ -81,7 +81,7 @@
       <div class="budget-header">
         <div class="budget-info">
           <div class="category-badge" [style.background-color]="budget.categoryColor">
-            <i class="pi" [class]="budget.categoryIcon"></i>
+            <i [class]="'pi pi-' + budget.categoryIcon"></i>
             <span>{{ budget.categoryName }}</span>
           </div>
           <h3>{{ budget.name }}</h3>

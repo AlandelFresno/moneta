@@ -143,7 +143,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
             accountName: account?.name || 'Unknown',
             categoryName: category?.name || 'Unknown',
             categoryColor: category?.color || '#6b7280',
-            categoryIcon: category?.icon || 'pi-tag'
+            categoryIcon: category?.icon || 'tag'
           };
         }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 

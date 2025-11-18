@@ -207,7 +207,7 @@ export class DashboardPage implements OnInit, OnDestroy {
         accountName: account?.name || 'Unknown',
         categoryName: category?.name || 'Unknown',
         categoryColor: category?.color || '#6b7280',
-        categoryIcon: category?.icon || 'pi-question'
+        categoryIcon: category?.icon || 'question'
       };
     });
   }
