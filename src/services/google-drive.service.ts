@@ -328,6 +328,8 @@ export class GoogleDriveService {
     await this.ensureInitialized();
 
     try {
+      console.log(`🔍 [GoogleDriveService] Buscando archivo: ${fileName}`);
+
       const response = await gapi.client.drive.files.list({
         q: `name='${fileName}' and trashed=false and 'root' in parents`,
         fields: 'files(id, name, webViewLink)',
@@ -335,8 +337,16 @@ export class GoogleDriveService {
       });
 
       if (response.result.files && response.result.files.length > 0) {
-        console.log(`✅ [GoogleDriveService] Archivo encontrado: ${fileName} (ID: ${response.result.files[0].id})`);
-        return response.result.files[0].id;
+        const fileId = response.result.files[0].id;
+
+        // Validar que el fileId sea válido
+        if (!fileId || fileId.trim() === '' || fileId === '.' || fileId === 'null' || fileId === 'undefined') {
+          console.error('❌ [GoogleDriveService] Google Drive retornó un fileId inválido:', fileId);
+          return null;
+        }
+
+        console.log(`✅ [GoogleDriveService] Archivo encontrado: ${fileName} (ID: ${fileId})`);
+        return fileId;
       }
 
       console.log(`ℹ️ [GoogleDriveService] Archivo no encontrado: ${fileName}`);
@@ -361,7 +371,15 @@ export class GoogleDriveService {
       throw new Error('Usuario no autenticado. Por favor inicia sesión en Google Drive primero.');
     }
 
+    // Validar fileId
+    if (!fileId || fileId.trim() === '' || fileId === '.' || fileId === 'null' || fileId === 'undefined') {
+      console.error('❌ [GoogleDriveService] fileId inválido:', fileId);
+      throw new Error(`fileId inválido: "${fileId}". No se puede actualizar el archivo.`);
+    }
+
     try {
+      console.log(`🔄 [GoogleDriveService] Actualizando archivo con ID: ${fileId}`);
+
       const response = await fetch(
         `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
         {
@@ -376,19 +394,26 @@ export class GoogleDriveService {
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('❌ [GoogleDriveService] Error en PATCH:', errorText);
         throw new Error(`Fallo al actualizar archivo: ${response.statusText} - ${errorText}`);
       }
 
       const result = await response.json();
+      console.log('✅ [GoogleDriveService] Archivo actualizado (PATCH exitoso)');
 
       // Obtener webViewLink del archivo actualizado
-      const fileInfo = await gapi.client.drive.files.get({
-        fileId: fileId,
-        fields: 'id,name,webViewLink'
-      });
+      try {
+        const fileInfo = await gapi.client.drive.files.get({
+          fileId: fileId,
+          fields: 'id,name,webViewLink'
+        });
 
-      console.log('✅ [GoogleDriveService] Archivo actualizado en Google Drive:', fileInfo.result);
-      return fileInfo.result;
+        console.log('✅ [GoogleDriveService] Archivo actualizado en Google Drive:', fileInfo.result);
+        return fileInfo.result;
+      } catch (getError) {
+        console.warn('⚠️ [GoogleDriveService] No se pudo obtener info del archivo, pero actualización fue exitosa');
+        return result;
+      }
     } catch (error) {
       console.error('❌ [GoogleDriveService] Error al actualizar archivo:', error);
       throw error;
@@ -410,16 +435,20 @@ export class GoogleDriveService {
     }
 
     try {
+      console.log(`📂 [GoogleDriveService] uploadOrUpdateFile iniciado para: ${fileName}`);
+
       // Buscar si ya existe el archivo
       const existingFileId = await this.findFileByName(fileName);
 
+      console.log(`📋 [GoogleDriveService] Resultado de búsqueda - fileId:`, existingFileId);
+
       if (existingFileId) {
         // Actualizar archivo existente
-        console.log(`🔄 [GoogleDriveService] Actualizando archivo existente: ${fileName}`);
+        console.log(`🔄 [GoogleDriveService] Archivo existe, actualizando: ${fileName} (ID: ${existingFileId})`);
         return await this.updateFile(existingFileId, fileContent, mimeType);
       } else {
         // Crear archivo nuevo en root (sin folderId)
-        console.log(`📝 [GoogleDriveService] Creando archivo nuevo: ${fileName}`);
+        console.log(`📝 [GoogleDriveService] Archivo no existe, creando nuevo: ${fileName}`);
         return await this.uploadFile(fileName, fileContent, mimeType);
       }
     } catch (error) {
