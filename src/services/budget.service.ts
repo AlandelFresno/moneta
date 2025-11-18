@@ -3,7 +3,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { Budget } from '../models/budget.model';
 import { Transaction } from '../models/transaction.model';
 import { TransactionService } from './transaction.service';
-import { CurrencyDisplayService } from './currency-display.service';
+import { ExchangeRateService } from './exchange-rate.service';
 
 @Injectable({
   providedIn: 'root'
@@ -15,7 +15,7 @@ export class BudgetService {
 
   constructor(
     private transactionService: TransactionService,
-    private currencyDisplayService: CurrencyDisplayService
+    private exchangeRateService: ExchangeRateService
   ) {
     this.loadBudgets();
   }
@@ -113,12 +113,11 @@ export class BudgetService {
         // Misma moneda, sumar directamente
         total += transaction.amount;
       } else {
-        // Convertir usando el servicio de conversión
-        const converted = this.currencyDisplayService.convertAmount(
+        // Convertir usando el servicio de conversión (usa las tasas actuales en caché)
+        const converted = this.exchangeRateService.convertToPreferredCurrency(
           transaction.amount,
           transaction.currency,
-          budget.currency,
-          transaction.exchangeRates
+          budget.currency
         );
         total += converted;
       }

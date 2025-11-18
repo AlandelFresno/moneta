@@ -6,6 +6,7 @@ import { BudgetService } from '../../services/budget.service';
 import { CategoryService } from '../../services/category.service';
 import { ToastService } from '../../services/toast.service';
 import { CurrencyDisplayService } from '../../services/currency-display.service';
+import { PreferencesService } from '../../services/preferences.service';
 
 interface BudgetWithStats extends Budget {
   categoryName: string;
@@ -26,7 +27,12 @@ interface BudgetWithStats extends Budget {
 export class BudgetsPage implements OnInit, OnDestroy {
   budgets: BudgetWithStats[] = [];
   categories: Category[] = [];
-  currencies: any[] = [];
+  currencies = [
+    { code: 'ARS', symbol: '$', name: 'Peso Argentino' },
+    { code: 'USD', symbol: 'US$', name: 'Dólar Estadounidense' },
+    { code: 'EUR', symbol: '€', name: 'Euro' },
+    { code: 'BRL', symbol: 'R$', name: 'Real Brasileño' }
+  ];
 
   showBudgetDialog = false;
   isEditing = false;
@@ -64,8 +70,13 @@ export class BudgetsPage implements OnInit, OnDestroy {
     private budgetService: BudgetService,
     private categoryService: CategoryService,
     private toastService: ToastService,
-    public currencyDisplayService: CurrencyDisplayService
+    private currencyDisplayService: CurrencyDisplayService,
+    private preferencesService: PreferencesService
   ) {}
+
+  get preferredCurrency(): string {
+    return this.preferencesService.getPreferredCurrency();
+  }
 
   ngOnInit(): void {
     this.loadData();
@@ -82,8 +93,6 @@ export class BudgetsPage implements OnInit, OnDestroy {
     });
     this.subscriptions.push(categorySub);
 
-    // Cargar monedas disponibles
-    this.currencies = this.currencyDisplayService.getSupportedCurrencies();
   }
 
   ngOnDestroy(): void {
@@ -152,7 +161,7 @@ export class BudgetsPage implements OnInit, OnDestroy {
       name: '',
       categoryId: '',
       limit: 0,
-      currency: this.currencyDisplayService.getPreferredCurrency(),
+      currency: this.preferencesService.getPreferredCurrency(),
       period: 'monthly',
       alertThreshold: 80
     };
@@ -273,6 +282,6 @@ export class BudgetsPage implements OnInit, OnDestroy {
   }
 
   formatCurrency(amount: number, currency: string): string {
-    return this.currencyDisplayService.formatCurrency(amount, currency);
+    return this.currencyDisplayService.formatAmount(amount, currency);
   }
 }

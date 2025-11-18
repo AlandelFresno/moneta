@@ -21,7 +21,7 @@
       </div>
       <div class="card-content">
         <span class="card-label">Total Presupuestado</span>
-        <span class="card-value">{{ formatCurrency(summary.total, currencyDisplayService.getPreferredCurrency()) }}</span>
+        <span class="card-value">{{ formatCurrency(summary.total, preferredCurrency) }}</span>
       </div>
     </div>
 
@@ -31,7 +31,7 @@
       </div>
       <div class="card-content">
         <span class="card-label">Total Gastado</span>
-        <span class="card-value">{{ formatCurrency(summary.spent, currencyDisplayService.getPreferredCurrency()) }}</span>
+        <span class="card-value">{{ formatCurrency(summary.spent, preferredCurrency) }}</span>
       </div>
     </div>
 
@@ -41,7 +41,7 @@
       </div>
       <div class="card-content">
         <span class="card-label">Disponible</span>
-        <span class="card-value">{{ formatCurrency(summary.remaining, currencyDisplayService.getPreferredCurrency()) }}</span>
+        <span class="card-value">{{ formatCurrency(summary.remaining, preferredCurrency) }}</span>
       </div>
     </div>
 
