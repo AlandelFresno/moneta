@@ -8,9 +8,11 @@ import { CategoryService } from './category.service';
 import { AccountService } from './account.service';
 import { PreferencesService, UserPreferences } from './preferences.service';
 import { BillingService } from './billing.service';
+import { BudgetService } from './budget.service';
 import { Transaction, Category, Account, MonthlyBilling } from '../models';
 import { Vehicle } from '../models/vehicle.model';
 import { FuelLog } from '../models/fuel-log.model';
+import { Budget } from '../models/budget.model';
 
 interface SyncMetadata {
   lastSyncTimestamp: number;
@@ -28,6 +30,7 @@ interface SyncData {
   accounts: Account[];
   preferences: UserPreferences;
   billings: MonthlyBilling[];
+  budgets: Budget[];
 }
 
 interface SyncResult {
@@ -47,6 +50,8 @@ interface SyncResult {
     accountsUpdated: number;
     billingsAdded: number;
     billingsUpdated: number;
+    budgetsAdded: number;
+    budgetsUpdated: number;
   };
 }
 
@@ -66,7 +71,8 @@ export class SyncService {
     private categoryService: CategoryService,
     private accountService: AccountService,
     private preferencesService: PreferencesService,
-    private billingService: BillingService
+    private billingService: BillingService,
+    private budgetService: BudgetService
   ) {}
 
   /**
@@ -124,7 +130,8 @@ export class SyncService {
       categories: this.categoryService.getCategories(),
       accounts: this.accountService.getAccounts(),
       preferences: this.preferencesService.getPreferences(),
-      billings: this.billingService.getBillings()
+      billings: this.billingService.getBillings(),
+      budgets: this.budgetService.getBudgets()
     };
   }
 
@@ -276,6 +283,20 @@ export class SyncService {
         updatedAt: new Date(row['Actualizado'] || Date.now())
       })) : [];
 
+      // Leer presupuestos
+      const budgetsSheet = workbook.Sheets['Presupuestos'];
+      const budgets: Budget[] = budgetsSheet ? XLSX.utils.sheet_to_json(budgetsSheet).map((row: any) => ({
+        id: row['ID'],
+        name: row['Nombre'],
+        categoryId: row['Categoría ID'],
+        limit: row['Límite'],
+        currency: row['Moneda'],
+        period: row['Período'] as 'monthly' | 'weekly' | 'yearly',
+        alertThreshold: row['Umbral Alerta'] || 80,
+        createdAt: new Date(row['Creado'] || Date.now()),
+        updatedAt: new Date(row['Actualizado'] || Date.now())
+      })) : [];
+
       console.log('✅ [SyncService] Datos descargados desde Drive (XLSX)');
       return {
         metadata,
@@ -285,7 +306,8 @@ export class SyncService {
         categories,
         accounts,
         preferences,
-        billings
+        billings,
+        budgets
       };
     } catch (error) {
       console.error('❌ [SyncService] Error descargando desde Drive:', error);
@@ -419,6 +441,21 @@ export class SyncService {
       const billingsSheet = XLSX.utils.json_to_sheet(billingsData);
       XLSX.utils.book_append_sheet(workbook, billingsSheet, 'Facturaciones');
 
+      // Presupuestos
+      const budgetsData = data.budgets.map(b => ({
+        'ID': b.id,
+        'Nombre': b.name,
+        'Categoría ID': b.categoryId,
+        'Límite': b.limit,
+        'Moneda': b.currency,
+        'Período': b.period,
+        'Umbral Alerta': b.alertThreshold || '',
+        'Creado': b.createdAt.toISOString(),
+        'Actualizado': b.updatedAt.toISOString()
+      }));
+      const budgetsSheet = XLSX.utils.json_to_sheet(budgetsData);
+      XLSX.utils.book_append_sheet(workbook, budgetsSheet, 'Presupuestos');
+
       // Convertir a blob
       const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
       const blob = new Blob([excelBuffer], {
@@ -515,7 +552,9 @@ export class SyncService {
       accountsAdded: 0,
       accountsUpdated: 0,
       billingsAdded: 0,
-      billingsUpdated: 0
+      billingsUpdated: 0,
+      budgetsAdded: 0,
+      budgetsUpdated: 0
     };
 
     try {
@@ -532,7 +571,8 @@ export class SyncService {
         fuelLogs: localData.fuelLogs.length,
         categories: localData.categories.length,
         accounts: localData.accounts.length,
-        billings: localData.billings.length
+        billings: localData.billings.length,
+        budgets: localData.budgets.length
       });
 
       // 3. Descargar datos de Drive
@@ -570,6 +610,7 @@ export class SyncService {
         categories: driveData.categories.length,
         accounts: driveData.accounts.length,
         billings: driveData.billings.length,
+        budgets: driveData.budgets.length,
         lastSync: driveData.metadata.lastSyncDate
       });
 
@@ -624,6 +665,14 @@ export class SyncService {
       stats.billingsAdded = billingsResult.added;
       stats.billingsUpdated = billingsResult.updated;
 
+      const budgetsResult = this.mergeArrays(
+        localData.budgets,
+        driveData.budgets,
+        'Budget'
+      );
+      stats.budgetsAdded = budgetsResult.added;
+      stats.budgetsUpdated = budgetsResult.updated;
+
       // 5. Aplicar datos mergeados localmente
       console.log('💾 [SyncService] Aplicando datos mergeados localmente...');
 
@@ -634,6 +683,7 @@ export class SyncService {
       localStorage.setItem('budget_categories', JSON.stringify(categoriesResult.merged));
       localStorage.setItem('budget_accounts', JSON.stringify(accountsResult.merged));
       localStorage.setItem('budget_monthly_billing', JSON.stringify(billingsResult.merged));
+      localStorage.setItem('budgets', JSON.stringify(budgetsResult.merged));
 
       // 6. Subir datos mergeados a Drive
       const newMetadata: SyncMetadata = {
@@ -651,7 +701,8 @@ export class SyncService {
         categories: categoriesResult.merged,
         accounts: accountsResult.merged,
         preferences: localData.preferences, // Siempre usar preferencias locales
-        billings: billingsResult.merged
+        billings: billingsResult.merged,
+        budgets: budgetsResult.merged
       };
 
       await this.uploadToDrive(mergedData);
