@@ -3,6 +3,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { Category } from '../../models';
 import { CategoryService } from '../../services/category.service';
 import { CsvService } from '../../services/csv.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-categories',
@@ -41,7 +42,8 @@ export class CategoriesPage implements OnInit, OnDestroy {
 
   constructor(
     private categoryService: CategoryService,
-    private csvService: CsvService
+    private csvService: CsvService,
+    private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -98,9 +100,15 @@ export class CategoriesPage implements OnInit, OnDestroy {
     this.closeDialog();
   }
 
-  deleteCategory(category: Category): void {
-    if (confirm(`Are you sure you want to delete "${category.name}"?`)) {
+  async deleteCategory(category: Category): Promise<void> {
+    const shouldDelete = await this.toastService.confirm(
+      `Esta acción eliminará la categoría "${category.name}" y no se puede deshacer`,
+      '¿Eliminar categoría?'
+    );
+
+    if (shouldDelete) {
       this.categoryService.deleteCategory(category.id);
+      this.toastService.success('Categoría eliminada', 'La categoría ha sido eliminada exitosamente');
     }
   }
 

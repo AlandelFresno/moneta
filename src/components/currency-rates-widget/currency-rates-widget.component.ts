@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ExchangeRateService, CacheInfo } from '../../services/exchange-rate.service';
 import { PreferencesService } from '../../services/preferences.service';
+import { ToastService } from '../../services/toast.service';
 import { Router } from '@angular/router';
 
 interface CurrencyRate {
@@ -41,7 +42,8 @@ export class CurrencyRatesWidgetComponent implements OnInit {
   constructor(
     private exchangeRateService: ExchangeRateService,
     private preferencesService: PreferencesService,
-    private router: Router
+    private router: Router,
+    private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -156,7 +158,7 @@ export class CurrencyRatesWidgetComponent implements OnInit {
 
     if (rate.editValue <= 0 || isNaN(rate.editValue)) {
       console.warn('⚠️ [CurrencyRatesWidget] Valor inválido');
-      alert('Por favor ingrese un valor válido mayor a 0');
+      this.toastService.warn('Valor inválido', 'Por favor ingrese un número válido mayor a 0');
       return;
     }
 

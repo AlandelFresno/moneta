@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ExchangeRateService, CacheInfo, ExchangeRates } from '../../services/exchange-rate.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { GoogleDriveService } from '../../services/google-drive.service';
+import { ToastService } from '../../services/toast.service';
 
 interface CurrencyDisplay {
   code: string;
@@ -53,7 +54,8 @@ export class SettingsPage implements OnInit {
   constructor(
     public exchangeRateService: ExchangeRateService,
     private preferencesService: PreferencesService,
-    private googleDriveService: GoogleDriveService
+    private googleDriveService: GoogleDriveService,
+    private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -149,7 +151,7 @@ export class SettingsPage implements OnInit {
 
     if (isNaN(newRate) || newRate <= 0) {
       console.warn('⚠️ [Settings] Valor inválido');
-      alert('Por favor ingrese un número válido mayor a 0');
+      this.toastService.warn('Valor inválido', 'Por favor ingrese un número válido mayor a 0');
       return;
     }
 

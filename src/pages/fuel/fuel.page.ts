@@ -4,6 +4,7 @@ import { FuelLog } from '../../models/fuel-log.model';
 import { VehicleService } from '../../services/vehicle.service';
 import { FuelLogService } from '../../services/fuel-log.service';
 import { ExportService } from '../../services/export.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-fuel',
@@ -70,7 +71,8 @@ export class FuelPage implements OnInit {
   constructor(
     public vehicleService: VehicleService,
     public fuelLogService: FuelLogService,
-    private exportService: ExportService
+    private exportService: ExportService,
+    private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -116,7 +118,7 @@ export class FuelPage implements OnInit {
 
   saveVehicle(): void {
     if (!this.vehicleForm.name || !this.vehicleForm.brand || !this.vehicleForm.model) {
-      alert('Por favor completa los campos obligatorios');
+      this.toastService.warn('Campos obligatorios', 'Por favor completa todos los campos requeridos');
       return;
     }
 
@@ -131,10 +133,16 @@ export class FuelPage implements OnInit {
     this.showVehicleDialog = false;
   }
 
-  deleteVehicle(vehicle: Vehicle): void {
-    if (confirm(`¿Eliminar el vehículo "${vehicle.name}"? Esto también eliminará todos sus registros de combustible.`)) {
+  async deleteVehicle(vehicle: Vehicle): Promise<void> {
+    const shouldDelete = await this.toastService.confirm(
+      `¿Eliminar el vehículo "${vehicle.name}"? Esto también eliminará todos sus registros de combustible.`,
+      'Confirmar eliminación'
+    );
+
+    if (shouldDelete) {
       this.fuelLogService.deleteLogsByVehicle(vehicle.id);
       this.vehicleService.deleteVehicle(vehicle.id);
+      this.toastService.success('Vehículo eliminado', `El vehículo "${vehicle.name}" ha sido eliminado`);
       this.loadData();
       if (this.selectedVehicle?.id === vehicle.id) {
         this.selectedVehicle = this.vehicles.length > 0 ? this.vehicles[0] : null;
@@ -163,7 +171,7 @@ export class FuelPage implements OnInit {
   // Fuel Log Management
   openFuelLogDialog(): void {
     if (!this.selectedVehicle) {
-      alert('Por favor selecciona un vehículo primero');
+      this.toastService.warn('Vehículo requerido', 'Por favor selecciona un vehículo primero');
       return;
     }
 
@@ -190,12 +198,12 @@ export class FuelPage implements OnInit {
     if (!this.selectedVehicle) return;
 
     if (this.fuelLogForm.liters <= 0) {
-      alert('Por favor ingresa la cantidad de litros cargados');
+      this.toastService.warn('Litros requeridos', 'Por favor ingresa la cantidad de litros cargados');
       return;
     }
 
     if (this.fuelLogForm.kmTraveled <= 0) {
-      alert('Por favor ingresa los kilómetros recorridos con este tanque');
+      this.toastService.warn('Kilómetros requeridos', 'Por favor ingresa los kilómetros recorridos con este tanque');
       return;
     }
 
@@ -251,9 +259,15 @@ export class FuelPage implements OnInit {
     this.showFuelLogDialog = false;
   }
 
-  deleteFuelLog(log: FuelLog): void {
-    if (confirm('¿Eliminar este registro de combustible?')) {
+  async deleteFuelLog(log: FuelLog): Promise<void> {
+    const shouldDelete = await this.toastService.confirm(
+      'Esta acción no se puede deshacer',
+      '¿Eliminar registro de combustible?'
+    );
+
+    if (shouldDelete) {
       this.fuelLogService.deleteLog(log.id);
+      this.toastService.success('Registro eliminado', 'El registro de combustible ha sido eliminado');
       if (this.selectedVehicle) {
         this.fuelLogs = this.fuelLogService.getLogsByVehicle(this.selectedVehicle.id);
       }
@@ -348,7 +362,7 @@ export class FuelPage implements OnInit {
 
   exportVehicleData(): void {
     if (!this.selectedVehicle) {
-      alert('Por favor selecciona un vehículo primero');
+      this.toastService.warn('Vehículo requerido', 'Por favor selecciona un vehículo primero');
       return;
     }
     console.log('📤 [Fuel] Exportando datos del vehículo:', this.selectedVehicle.name);
@@ -377,7 +391,7 @@ export class FuelPage implements OnInit {
       const importedLogs = await this.exportService.importFuelLogsFromExcel(file);
 
       if (!this.selectedVehicle) {
-        alert('Por favor selecciona un vehículo primero para importar los registros');
+        this.toastService.warn('Vehículo requerido', 'Por favor selecciona un vehículo primero para importar los registros');
         return;
       }
 
@@ -405,12 +419,12 @@ export class FuelPage implements OnInit {
         importedCount++;
       }
 
-      alert(`Se importaron ${importedCount} registros exitosamente`);
+      this.toastService.success('Importación exitosa', `Se importaron ${importedCount} registros correctamente`);
       this.loadData();
       this.selectVehicle(this.selectedVehicle);
     } catch (error) {
       console.error('❌ [Fuel] Error al importar:', error);
-      alert('Error al importar el archivo. Por favor verifica que el formato sea correcto.');
+      this.toastService.error('Error al importar', 'Error al importar el archivo. Por favor verifica que el formato sea correcto.');
     }
   }
 

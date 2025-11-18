@@ -9,6 +9,7 @@ import { PreferencesService } from '../../services/preferences.service';
 import { BillingService } from '../../services/billing.service';
 import { GoogleDriveService } from '../../services/google-drive.service';
 import { SyncService } from '../../services/sync.service';
+import { ToastService } from '../../services/toast.service';
 import { SUPPORTED_CURRENCIES } from '../../constants/currencies';
 
 export interface MenuItem {
@@ -41,7 +42,8 @@ export class SidebarComponent {
     private preferencesService: PreferencesService,
     private billingService: BillingService,
     private googleDriveService: GoogleDriveService,
-    private syncService: SyncService
+    private syncService: SyncService,
+    private toastService: ToastService
   ) {
     // Cargar las monedas preferidas
     this.primaryCurrency = this.preferencesService.getPreferredCurrency();
@@ -137,14 +139,14 @@ export class SidebarComponent {
 
       if (result.success) {
         console.log('✅ [Sidebar] Exportación completada exitosamente');
-        alert(result.message);
+        this.toastService.success('Exportación exitosa', result.message);
       } else {
         console.warn('⚠️ [Sidebar] No se pudo exportar:', result.message);
-        alert(result.message);
+        this.toastService.error('Error al exportar', result.message);
       }
     } catch (error) {
       console.error('❌ [Sidebar] Error en exportación:', error);
-      alert('Error al exportar los datos. Por favor, revisa la consola para más detalles.');
+      this.toastService.error('Error al exportar', 'Por favor, revisa la consola para más detalles.');
     }
   }
 
@@ -153,7 +155,7 @@ export class SidebarComponent {
 
     try {
       if (!this.googleDriveService.hasCredentials()) {
-        alert('Por favor, configura las credenciales de Google Drive en Configuración primero.');
+        this.toastService.warn('Credenciales requeridas', 'Por favor, configura las credenciales de Google Drive en google-drive.service.ts');
         return;
       }
 
@@ -177,22 +179,21 @@ export class SidebarComponent {
 
       if (result.success) {
         console.log('✅ [Sidebar] Backup a Google Drive completado');
-        const message = result.webViewLink
-          ? `${result.message}\n\n¿Quieres abrir el archivo en Drive?`
-          : result.message;
 
-        if (result.webViewLink && confirm(message)) {
+        if (result.webViewLink) {
+          this.toastService.success('Backup completado', result.message);
+          // Abrir el archivo automáticamente
           window.open(result.webViewLink, '_blank');
         } else {
-          alert(result.message);
+          this.toastService.success('Backup completado', result.message);
         }
       } else {
         console.warn('⚠️ [Sidebar] No se pudo hacer backup a Google Drive:', result.message);
-        alert(result.message);
+        this.toastService.error('Error en backup', result.message);
       }
     } catch (error: any) {
       console.error('❌ [Sidebar] Error en backup a Google Drive:', error);
-      alert(`Error: ${error.message || 'Error desconocido. Por favor, revisa la consola.'}`);
+      this.toastService.error('Error en backup', error.message || 'Error desconocido. Por favor, revisa la consola.');
     }
   }
 
@@ -201,11 +202,16 @@ export class SidebarComponent {
 
     try {
       if (!this.googleDriveService.hasCredentials()) {
-        alert('Por favor, configura las credenciales de Google Drive en Configuración primero.');
+        this.toastService.warn('Credenciales requeridas', 'Por favor, configura las credenciales de Google Drive en google-drive.service.ts');
         return;
       }
 
-      if (!confirm('La sincronización combinará los datos locales con los de Drive. El más reciente prevalecerá. ¿Continuar?')) {
+      const shouldContinue = await this.toastService.confirm(
+        'La sincronización combinará los datos locales con los de Drive. El más reciente prevalecerá. ¿Continuar?',
+        'Confirmar sincronización'
+      );
+
+      if (!shouldContinue) {
         return;
       }
 
@@ -214,26 +220,27 @@ export class SidebarComponent {
       if (result.success) {
         console.log('✅ [Sidebar] Sincronización completada');
 
-        let message = result.message + '\n\n';
-        message += `📊 Cambios aplicados:\n`;
-        message += `• Transacciones: +${result.stats.transactionsAdded} nuevas, ~${result.stats.transactionsUpdated} actualizadas\n`;
-        message += `• Vehículos: +${result.stats.vehiclesAdded} nuevos, ~${result.stats.vehiclesUpdated} actualizados\n`;
-        message += `• Combustible: +${result.stats.fuelLogsAdded} nuevos, ~${result.stats.fuelLogsUpdated} actualizados\n`;
-        message += `• Categorías: +${result.stats.categoriesAdded} nuevas, ~${result.stats.categoriesUpdated} actualizadas\n`;
-        message += `• Cuentas: +${result.stats.accountsAdded} nuevas, ~${result.stats.accountsUpdated} actualizadas\n`;
-        message += `• Facturaciones: +${result.stats.billingsAdded} nuevas, ~${result.stats.billingsUpdated} actualizadas\n\n`;
-        message += '¿Deseas recargar la página para ver los cambios?';
+        let details = `📊 Cambios aplicados:\n`;
+        details += `• Transacciones: +${result.stats.transactionsAdded} nuevas, ~${result.stats.transactionsUpdated} actualizadas\n`;
+        details += `• Vehículos: +${result.stats.vehiclesAdded} nuevos, ~${result.stats.vehiclesUpdated} actualizados\n`;
+        details += `• Combustible: +${result.stats.fuelLogsAdded} nuevos, ~${result.stats.fuelLogsUpdated} actualizados\n`;
+        details += `• Categorías: +${result.stats.categoriesAdded} nuevas, ~${result.stats.categoriesUpdated} actualizadas\n`;
+        details += `• Cuentas: +${result.stats.accountsAdded} nuevas, ~${result.stats.accountsUpdated} actualizadas\n`;
+        details += `• Facturaciones: +${result.stats.billingsAdded} nuevas, ~${result.stats.billingsUpdated} actualizadas`;
 
-        if (confirm(message)) {
+        this.toastService.success('Sincronización completada', details, 8000);
+
+        // Recargar automáticamente después de 2 segundos
+        setTimeout(() => {
           window.location.reload();
-        }
+        }, 2000);
       } else {
         console.warn('⚠️ [Sidebar] Error en sincronización:', result.message);
-        alert(result.message);
+        this.toastService.error('Error en sincronización', result.message);
       }
     } catch (error: any) {
       console.error('❌ [Sidebar] Error en sincronización:', error);
-      alert(`Error: ${error.message || 'Error desconocido. Por favor, revisa la consola.'}`);
+      this.toastService.error('Error en sincronización', error.message || 'Error desconocido. Por favor, revisa la consola.');
     }
   }
 

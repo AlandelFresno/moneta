@@ -10,6 +10,7 @@ import { TransactionService } from '../../services/transaction.service';
 import { ExchangeRateService } from '../../services/exchange-rate.service';
 import { CurrencyDisplayService, FormattedCurrency } from '../../services/currency-display.service';
 import { PreferencesService } from '../../services/preferences.service';
+import { ToastService } from '../../services/toast.service';
 
 interface ExtendedTransaction extends Transaction {
   accountName: string;
@@ -103,7 +104,8 @@ export class DashboardPage implements OnInit, OnDestroy {
     private exchangeRateService: ExchangeRateService,
     private currencyDisplayService: CurrencyDisplayService,
     private preferencesService: PreferencesService,
-    private router: Router
+    private router: Router,
+    private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -278,9 +280,15 @@ export class DashboardPage implements OnInit, OnDestroy {
     this.showAccountDialog = true;
   }
 
-  deleteAccount(account: Account): void {
-    if (confirm(`¿Estás seguro de que quieres eliminar la cuenta "${account.name}"?`)) {
+  async deleteAccount(account: Account): Promise<void> {
+    const shouldDelete = await this.toastService.confirm(
+      `Esta acción eliminará la cuenta "${account.name}" y no se puede deshacer`,
+      '¿Eliminar cuenta?'
+    );
+
+    if (shouldDelete) {
       this.accountService.deleteAccount(account.id);
+      this.toastService.success('Cuenta eliminada', 'La cuenta ha sido eliminada exitosamente');
     }
   }
 

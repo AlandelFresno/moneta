@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { BillingService } from '../../services/billing.service';
+import { ToastService } from '../../services/toast.service';
 import { MonthlyBilling, MONOTRIBUTO_CATEGORIES, RECATEGORIZATION_PERIODS } from '../../models/billing.model';
 
 @Component({
@@ -47,7 +48,10 @@ export class BillingPage implements OnInit {
 
   years: number[] = [];
 
-  constructor(private billingService: BillingService) {
+  constructor(
+    private billingService: BillingService,
+    private toastService: ToastService
+  ) {
     // Generar últimos 5 años y próximos 2
     const currentYear = new Date().getFullYear();
     for (let i = -5; i <= 2; i++) {
@@ -103,7 +107,7 @@ export class BillingPage implements OnInit {
 
   saveBilling(): void {
     if (this.billingForm.amount <= 0) {
-      alert('El monto debe ser mayor a 0');
+      this.toastService.warn('Monto inválido', 'El monto debe ser mayor a 0');
       return;
     }
 
@@ -126,9 +130,15 @@ export class BillingPage implements OnInit {
     this.showBillingDialog = false;
   }
 
-  deleteBilling(id: string): void {
-    if (confirm('¿Estás seguro de eliminar esta facturación?')) {
+  async deleteBilling(id: string): Promise<void> {
+    const shouldDelete = await this.toastService.confirm(
+      'Esta acción no se puede deshacer',
+      '¿Eliminar facturación?'
+    );
+
+    if (shouldDelete) {
       this.billingService.deleteBilling(id);
+      this.toastService.success('Facturación eliminada', 'La facturación ha sido eliminada exitosamente');
     }
   }
 
