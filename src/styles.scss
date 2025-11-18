@@ -148,7 +148,7 @@
 
 /* BACKDROP - Aplicar primero para máxima especificidad */
 ::ng-deep .p-dialog-mask {
-  background: rgba(0, 0, 0, 0.65) !important;
+  background: rgba(0, 0, 0, 0.8) !important;
 }
 
 /* Estilos del modal - aplicar al contenedor principal */
@@ -157,8 +157,8 @@
 ::ng-deep .p-confirm-dialog .p-dialog {
   border-radius: 20px !important;
   overflow: hidden !important;
-  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35), 0 0 2px rgba(0, 0, 0, 0.15) !important;
-  border: 3px solid #000000 !important;
+  box-shadow: none !important;
+  border: 1px solid #000000 !important;
   background: #ffffff !important;
   opacity: 1 !important;
 }
@@ -167,7 +167,7 @@
 ::ng-deep .p-dialog-content-container.macos-dialog,
 ::ng-deep app-sidebar .p-dialog,
 ::ng-deep .macos-dialog {
-  border: 3px solid #000000 !important;
+  border: 1px solid #000000 !important;
   border-radius: 20px !important;
 }
 
