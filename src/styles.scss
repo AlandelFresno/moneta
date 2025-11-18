@@ -144,114 +144,122 @@
 
 /* ============================================
    PrimeNG Confirm Dialog Styles - Modales
+   Copiado exactamente del estilo .macos-dialog
    ============================================ */
-.p-dialog-mask {
-  backdrop-filter: blur(8px) !important;
-  background: rgba(0, 0, 0, 0.5) !important;
-  animation: fadeIn 0.2s ease-in-out;
-}
-
 .p-confirm-dialog {
-  background: #ffffff !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  border-radius: 20px !important;
-  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35), 0 0 2px rgba(0, 0, 0, 0.15) !important;
-  overflow: hidden !important;
-  animation: slideDown 0.3s ease-out;
-  max-width: 90%;
-  width: 440px;
+  .p-dialog {
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35), 0 0 2px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
 
   .p-dialog-header {
-    background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%) !important;
-    border-bottom: 1px solid #e5e7eb !important;
-    padding: 1.5rem 2rem !important;
+    background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+    border-bottom: 1px solid #e5e7eb;
+    padding: 1.5rem 2rem;
 
     .p-dialog-title {
-      color: #111827 !important;
-      font-weight: 700 !important;
-      font-size: 1.25rem !important;
-      letter-spacing: -0.02em !important;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #111827;
+      margin: 0;
+      letter-spacing: -0.02em;
     }
 
     .p-dialog-header-icon {
-      color: #6b7280 !important;
-      width: 2.25rem !important;
-      height: 2.25rem !important;
-      border-radius: 8px !important;
-      transition: all 0.2s ease !important;
+      width: 2.25rem;
+      height: 2.25rem;
+      color: #6b7280;
+      border-radius: 8px;
+      transition: all 0.2s ease;
 
       &:hover {
-        background: #e5e7eb !important;
-        color: #111827 !important;
+        background: #e5e7eb;
+        color: #111827;
         transform: scale(1.05);
       }
     }
   }
 
   .p-dialog-content {
-    background: #ffffff !important;
-    color: #374151 !important;
-    padding: 2rem !important;
-    font-size: 0.95rem !important;
-    line-height: 1.6 !important;
+    background: white;
+    padding: 2rem;
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
 
     .p-confirm-dialog-icon {
-      font-size: 2.5rem !important;
-      color: #f59e0b !important;
-      margin-right: 1rem !important;
+      font-size: 2.5rem;
+      color: #f59e0b;
+      margin-right: 1rem;
       flex-shrink: 0;
     }
 
     .p-confirm-dialog-message {
-      color: #1f2937 !important;
-      font-size: 0.95rem !important;
-      line-height: 1.6 !important;
+      color: #1f2937;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f9fafb;
+      border-radius: 10px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #d1d5db;
+      border-radius: 10px;
+
+      &:hover {
+        background: #9ca3af;
+      }
     }
   }
 
   .p-dialog-footer {
-    background: #f9fafb !important;
-    border-top: 1px solid #e5e7eb !important;
-    padding: 1.25rem 2rem !important;
+    background: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    padding: 1.25rem 2rem;
     display: flex;
     gap: 0.75rem;
     justify-content: flex-end;
 
     button {
-      padding: 0.625rem 1.5rem !important;
-      border-radius: 8px !important;
-      font-weight: 500 !important;
-      font-size: 0.9375rem !important;
-      transition: all 0.2s ease !important;
-      border: none !important;
+      padding: 0.625rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 0.9375rem;
+      transition: all 0.2s ease;
+      border: none;
       cursor: pointer;
       min-width: 90px;
 
       &.p-button-text {
-        background: transparent !important;
-        color: #6b7280 !important;
+        background: transparent;
+        color: #6b7280;
 
         &:hover {
-          background: #e5e7eb !important;
-          color: #374151 !important;
+          background: #e5e7eb;
+          color: #374151;
         }
 
         &:active {
-          background: #d1d5db !important;
+          background: #d1d5db;
         }
       }
 
       &.p-confirm-dialog-accept {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
-        color: white !important;
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 
         &:hover {
-          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
-          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
           transform: translateY(-1px);
         }
 
@@ -261,21 +269,25 @@
       }
 
       &.p-confirm-dialog-reject {
-        background: #ffffff !important;
-        color: #6b7280 !important;
-        border: 1.5px solid #d1d5db !important;
+        background: #ffffff;
+        color: #6b7280;
+        border: 1.5px solid #d1d5db;
 
         &:hover {
-          background: #f9fafb !important;
-          color: #374151 !important;
-          border-color: #9ca3af !important;
+          background: #f9fafb;
+          color: #374151;
+          border-color: #9ca3af;
         }
 
         &:active {
-          background: #f3f4f6 !important;
+          background: #f3f4f6;
         }
       }
     }
+  }
+
+  .p-dialog-mask {
+    background: rgba(0, 0, 0, 0.5);
   }
 }
 
