@@ -8,6 +8,7 @@ import { AccountService } from '../../services/account.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { BillingService } from '../../services/billing.service';
 import { GoogleDriveService } from '../../services/google-drive.service';
+import { SyncService } from '../../services/sync.service';
 import { SUPPORTED_CURRENCIES } from '../../constants/currencies';
 
 export interface MenuItem {
@@ -39,7 +40,8 @@ export class SidebarComponent {
     private accountService: AccountService,
     private preferencesService: PreferencesService,
     private billingService: BillingService,
-    private googleDriveService: GoogleDriveService
+    private googleDriveService: GoogleDriveService,
+    private syncService: SyncService
   ) {
     // Cargar las monedas preferidas
     this.primaryCurrency = this.preferencesService.getPreferredCurrency();
@@ -147,7 +149,7 @@ export class SidebarComponent {
   }
 
   async exportToGoogleDrive() {
-    console.log('☁️ [Sidebar] Iniciando exportación a Google Drive...');
+    console.log('☁️ [Sidebar] Iniciando backup a Google Drive...');
 
     try {
       if (!this.googleDriveService.hasCredentials()) {
@@ -174,7 +176,7 @@ export class SidebarComponent {
       );
 
       if (result.success) {
-        console.log('✅ [Sidebar] Exportación a Google Drive completada');
+        console.log('✅ [Sidebar] Backup a Google Drive completado');
         const message = result.webViewLink
           ? `${result.message}\n\n¿Quieres abrir el archivo en Drive?`
           : result.message;
@@ -185,11 +187,52 @@ export class SidebarComponent {
           alert(result.message);
         }
       } else {
-        console.warn('⚠️ [Sidebar] No se pudo exportar a Google Drive:', result.message);
+        console.warn('⚠️ [Sidebar] No se pudo hacer backup a Google Drive:', result.message);
         alert(result.message);
       }
     } catch (error: any) {
-      console.error('❌ [Sidebar] Error en exportación a Google Drive:', error);
+      console.error('❌ [Sidebar] Error en backup a Google Drive:', error);
+      alert(`Error: ${error.message || 'Error desconocido. Por favor, revisa la consola.'}`);
+    }
+  }
+
+  async syncWithDrive() {
+    console.log('🔄 [Sidebar] Iniciando sincronización con Google Drive...');
+
+    try {
+      if (!this.googleDriveService.hasCredentials()) {
+        alert('Por favor, configura las credenciales de Google Drive en Configuración primero.');
+        return;
+      }
+
+      if (!confirm('La sincronización combinará los datos locales con los de Drive. El más reciente prevalecerá. ¿Continuar?')) {
+        return;
+      }
+
+      const result = await this.syncService.sync();
+
+      if (result.success) {
+        console.log('✅ [Sidebar] Sincronización completada');
+
+        let message = result.message + '\n\n';
+        message += `📊 Cambios aplicados:\n`;
+        message += `• Transacciones: +${result.stats.transactionsAdded} nuevas, ~${result.stats.transactionsUpdated} actualizadas\n`;
+        message += `• Vehículos: +${result.stats.vehiclesAdded} nuevos, ~${result.stats.vehiclesUpdated} actualizados\n`;
+        message += `• Combustible: +${result.stats.fuelLogsAdded} nuevos, ~${result.stats.fuelLogsUpdated} actualizados\n`;
+        message += `• Categorías: +${result.stats.categoriesAdded} nuevas, ~${result.stats.categoriesUpdated} actualizadas\n`;
+        message += `• Cuentas: +${result.stats.accountsAdded} nuevas, ~${result.stats.accountsUpdated} actualizadas\n`;
+        message += `• Facturaciones: +${result.stats.billingsAdded} nuevas, ~${result.stats.billingsUpdated} actualizadas\n\n`;
+        message += '¿Deseas recargar la página para ver los cambios?';
+
+        if (confirm(message)) {
+          window.location.reload();
+        }
+      } else {
+        console.warn('⚠️ [Sidebar] Error en sincronización:', result.message);
+        alert(result.message);
+      }
+    } catch (error: any) {
+      console.error('❌ [Sidebar] Error en sincronización:', error);
       alert(`Error: ${error.message || 'Error desconocido. Por favor, revisa la consola.'}`);
     }
   }

@@ -84,7 +84,17 @@
       pButton
       [text]="true">
       <i class="pi pi-google"></i>
-      <span class="nav-text" *ngIf="!isCollapsed() || isMobileMenuOpen()">Guardar en Drive</span>
+      <span class="nav-text" *ngIf="!isCollapsed() || isMobileMenuOpen()">Backup a Drive</span>
+    </button>
+
+    <button
+      class="nav-item export-button sync-drive"
+      [class.collapsed]="isCollapsed()"
+      (click)="syncWithDrive()"
+      pButton
+      [text]="true">
+      <i class="pi pi-sync"></i>
+      <span class="nav-text" *ngIf="!isCollapsed() || isMobileMenuOpen()">Sincronizar Drive</span>
     </button>
   </nav>
 </div>
