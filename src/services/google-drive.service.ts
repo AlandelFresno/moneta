@@ -14,8 +14,8 @@ export class GoogleDriveService {
   // Credenciales de Google OAuth
   // IMPORTANTE: Estas credenciales están restringidas por dominio en Google Cloud Console
   // Solo funcionarán desde los dominios autorizados (localhost:4200, tu-dominio.com, etc.)
-  private CLIENT_ID = '';  // Tu Client ID aquí
-  private API_KEY = '';    // Tu API Key aquí
+  private CLIENT_ID = '615072104513-iev6ja33i73h7goeoqdadur7aefjn8cc.apps.googleusercontent.com';
+  private API_KEY = 'AIzaSyDHEO5Vv-_pZxs5DGpO0kCieIe3XMHA5Bk';
 
   private isSignedInSubject = new BehaviorSubject<boolean>(false);
   public isSignedIn$ = this.isSignedInSubject.asObservable();
