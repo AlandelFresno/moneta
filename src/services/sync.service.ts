@@ -174,13 +174,13 @@ export class SyncService {
 
       // Leer transacciones
       const transactionsSheet = workbook.Sheets['Transacciones'];
-      const transactions = transactionsSheet ? XLSX.utils.sheet_to_json(transactionsSheet).map((row: any) => ({
+      const transactions: Transaction[] = transactionsSheet ? XLSX.utils.sheet_to_json(transactionsSheet).map((row: any) => ({
         id: row['ID'],
         date: new Date(row['Fecha']),
         description: row['Descripción'],
         amount: row['Monto'],
         currency: row['Moneda'],
-        type: row['Tipo'] === 'Ingreso' ? 'income' : 'expense',
+        type: (row['Tipo'] === 'Ingreso' ? 'income' : 'expense') as 'income' | 'expense',
         categoryId: row['Categoría ID'],
         accountId: row['Cuenta ID'],
         exchangeRates: {
@@ -195,28 +195,34 @@ export class SyncService {
 
       // Leer vehículos
       const vehiclesSheet = workbook.Sheets['Vehículos'];
-      const vehicles = vehiclesSheet ? XLSX.utils.sheet_to_json(vehiclesSheet).map((row: any) => ({
+      const vehicles: Vehicle[] = vehiclesSheet ? XLSX.utils.sheet_to_json(vehiclesSheet).map((row: any) => ({
         id: row['ID'],
+        name: row['Nombre'] || '',
         brand: row['Marca'],
         model: row['Modelo'],
         year: row['Año'],
-        plate: row['Patente'],
+        plateNumber: row['Patente'],
+        currentKm: row['Km Actual'] || 0,
+        fuelType: (row['Tipo Combustible'] || 'gasoline') as 'gasoline' | 'diesel' | 'premium' | 'electric',
         createdAt: new Date(row['Creado'] || Date.now()),
         updatedAt: new Date(row['Actualizado'] || Date.now())
       })) : [];
 
       // Leer combustible
       const fuelLogsSheet = workbook.Sheets['Combustible'];
-      const fuelLogs = fuelLogsSheet ? XLSX.utils.sheet_to_json(fuelLogsSheet).map((row: any) => ({
+      const fuelLogs: FuelLog[] = fuelLogsSheet ? XLSX.utils.sheet_to_json(fuelLogsSheet).map((row: any) => ({
         id: row['ID'],
         vehicleId: row['Vehículo ID'],
         date: new Date(row['Fecha']),
         liters: row['Litros'],
         pricePerLiter: row['Precio por Litro'],
-        totalAmount: row['Total'],
+        totalPrice: row['Total'],
         currency: row['Moneda'] || 'ARS',
-        odometer: row['Km actual'] || 0,
-        previousOdometer: row['Km anterior'] || 0,
+        kmTraveled: row['Km Recorridos'] || 0,
+        totalKm: row['Km Totales'] || 0,
+        efficiency: row['Rendimiento'] || 0,
+        costPerKm: row['Costo por Km'] || 0,
+        fullTank: row['Tanque Lleno'] === 'Sí' || false,
         notes: row['Notas'] || '',
         createdAt: new Date(row['Creado'] || row['Fecha']),
         updatedAt: new Date(row['Actualizado'] || row['Fecha'])
@@ -224,24 +230,28 @@ export class SyncService {
 
       // Leer categorías
       const categoriesSheet = workbook.Sheets['Categorías'];
-      const categories = categoriesSheet ? XLSX.utils.sheet_to_json(categoriesSheet).map((row: any) => ({
+      const categories: Category[] = categoriesSheet ? XLSX.utils.sheet_to_json(categoriesSheet).map((row: any) => ({
         id: row['ID'],
         name: row['Nombre'],
-        type: row['Tipo'] === 'Ingreso' ? 'income' : 'expense',
+        type: (row['Tipo'] === 'Ingreso' ? 'income' : 'expense') as 'income' | 'expense',
         color: row['Color'],
-        icon: row['Icono']
+        icon: row['Icono'],
+        createdAt: new Date(row['Creado'] || Date.now()),
+        updatedAt: new Date(row['Actualizado'] || Date.now())
       })) : [];
 
       // Leer cuentas
       const accountsSheet = workbook.Sheets['Cuentas'];
-      const accounts = accountsSheet ? XLSX.utils.sheet_to_json(accountsSheet).map((row: any) => ({
+      const accounts: Account[] = accountsSheet ? XLSX.utils.sheet_to_json(accountsSheet).map((row: any) => ({
         id: row['ID'],
         name: row['Nombre'],
         type: row['Tipo'],
         balance: row['Balance'],
         currency: row['Moneda'],
         color: row['Color'],
-        icon: row['Icono']
+        icon: row['Icono'],
+        createdAt: new Date(row['Creado'] || Date.now()),
+        updatedAt: new Date(row['Actualizado'] || Date.now())
       })) : [];
 
       // Leer preferencias
@@ -256,16 +266,12 @@ export class SyncService {
 
       // Leer facturaciones
       const billingsSheet = workbook.Sheets['Facturaciones'];
-      const billings = billingsSheet ? XLSX.utils.sheet_to_json(billingsSheet).map((row: any) => ({
+      const billings: MonthlyBilling[] = billingsSheet ? XLSX.utils.sheet_to_json(billingsSheet).map((row: any) => ({
         id: row['ID'],
         month: row['Mes'],
         year: row['Año'],
-        category: row['Categoría'],
-        totalIncome: row['Ingresos Totales'],
-        deductions: row['Deducciones'],
-        taxableIncome: row['Ingresos Imponibles'],
-        tax: row['Impuesto'],
-        notes: row['Notas'] || '',
+        amount: row['Monto'],
+        description: row['Descripción'] || '',
         createdAt: new Date(row['Creado'] || Date.now()),
         updatedAt: new Date(row['Actualizado'] || Date.now())
       })) : [];
@@ -329,10 +335,13 @@ export class SyncService {
       // Vehículos
       const vehiclesData = data.vehicles.map(v => ({
         'ID': v.id,
+        'Nombre': v.name,
         'Marca': v.brand,
         'Modelo': v.model,
         'Año': v.year,
-        'Patente': v.plate,
+        'Patente': v.plateNumber || '',
+        'Km Actual': v.currentKm,
+        'Tipo Combustible': v.fuelType,
         'Creado': v.createdAt.toISOString(),
         'Actualizado': v.updatedAt.toISOString()
       }));
@@ -346,10 +355,13 @@ export class SyncService {
         'Fecha': f.date.toISOString(),
         'Litros': f.liters,
         'Precio por Litro': f.pricePerLiter,
-        'Total': f.totalAmount,
+        'Total': f.totalPrice,
         'Moneda': f.currency,
-        'Km actual': f.odometer,
-        'Km anterior': f.previousOdometer,
+        'Km Recorridos': f.kmTraveled,
+        'Km Totales': f.totalKm,
+        'Rendimiento': f.efficiency,
+        'Costo por Km': f.costPerKm,
+        'Tanque Lleno': f.fullTank ? 'Sí' : 'No',
         'Notas': f.notes || '',
         'Creado': f.createdAt.toISOString(),
         'Actualizado': f.updatedAt.toISOString()
@@ -363,7 +375,9 @@ export class SyncService {
         'Nombre': c.name,
         'Tipo': c.type === 'income' ? 'Ingreso' : 'Gasto',
         'Color': c.color,
-        'Icono': c.icon
+        'Icono': c.icon,
+        'Creado': c.createdAt.toISOString(),
+        'Actualizado': c.updatedAt.toISOString()
       }));
       const categoriesSheet = XLSX.utils.json_to_sheet(categoriesData);
       XLSX.utils.book_append_sheet(workbook, categoriesSheet, 'Categorías');
@@ -376,7 +390,9 @@ export class SyncService {
         'Balance': a.balance,
         'Moneda': a.currency,
         'Color': a.color,
-        'Icono': a.icon
+        'Icono': a.icon,
+        'Creado': a.createdAt.toISOString(),
+        'Actualizado': a.updatedAt.toISOString()
       }));
       const accountsSheet = XLSX.utils.json_to_sheet(accountsData);
       XLSX.utils.book_append_sheet(workbook, accountsSheet, 'Cuentas');
@@ -395,12 +411,8 @@ export class SyncService {
         'ID': b.id,
         'Mes': b.month,
         'Año': b.year,
-        'Categoría': b.category,
-        'Ingresos Totales': b.totalIncome,
-        'Deducciones': b.deductions,
-        'Ingresos Imponibles': b.taxableIncome,
-        'Impuesto': b.tax,
-        'Notas': b.notes || '',
+        'Monto': b.amount,
+        'Descripción': b.description || '',
         'Creado': b.createdAt.toISOString(),
         'Actualizado': b.updatedAt.toISOString()
       }));
