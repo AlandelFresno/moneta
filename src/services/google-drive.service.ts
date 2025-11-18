@@ -336,12 +336,31 @@ export class GoogleDriveService {
         spaces: 'drive'
       });
 
+      console.log('📋 [GoogleDriveService] Respuesta de API:', {
+        filesEncontrados: response.result.files?.length || 0,
+        files: response.result.files
+      });
+
       if (response.result.files && response.result.files.length > 0) {
-        const fileId = response.result.files[0].id;
+        const file = response.result.files[0];
+        const fileId = file.id;
+
+        console.log('📄 [GoogleDriveService] Archivo encontrado:', {
+          id: fileId,
+          name: file.name,
+          idTipo: typeof fileId,
+          idLength: fileId?.length,
+          idCharCodes: fileId ? Array.from(String(fileId)).map(c => c.charCodeAt(0)) : []
+        });
 
         // Validar que el fileId sea válido
         if (!fileId || fileId.trim() === '' || fileId === '.' || fileId === 'null' || fileId === 'undefined') {
-          console.error('❌ [GoogleDriveService] Google Drive retornó un fileId inválido:', fileId);
+          console.error('❌ [GoogleDriveService] Google Drive retornó un fileId inválido:', {
+            fileId,
+            fileIdTrim: fileId?.trim(),
+            esIgualAPunto: fileId === '.',
+            archivo: file
+          });
           return null;
         }
 

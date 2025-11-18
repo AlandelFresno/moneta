@@ -145,10 +145,20 @@ export class SyncService {
       // Buscar el archivo de sincronización
       const fileId = await this.googleDriveService.findFileByName(this.SYNC_FILE_NAME);
 
+      console.log('🔍 [SyncService] fileId obtenido de findFileByName:', fileId);
+
       if (!fileId) {
         console.log('ℹ️ [SyncService] No hay datos previos en Drive');
         return null;
       }
+
+      // VALIDACIÓN CRÍTICA: Verificar que el fileId sea válido
+      if (fileId.trim() === '' || fileId === '.' || fileId === 'null' || fileId === 'undefined') {
+        console.error('❌ [SyncService] fileId inválido recibido:', fileId);
+        throw new Error(`fileId inválido: "${fileId}". No se puede descargar el archivo. Por favor elimina el archivo corrupto de Google Drive y sincroniza nuevamente.`);
+      }
+
+      console.log(`📥 [SyncService] Descargando archivo con ID: ${fileId}`);
 
       // Descargar el contenido del archivo
       const response = await fetch(
@@ -161,7 +171,9 @@ export class SyncService {
       );
 
       if (!response.ok) {
-        throw new Error(`Error al descargar archivo: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('❌ [SyncService] Error al descargar:', errorText);
+        throw new Error(`Error al descargar archivo: ${response.statusText} - ${errorText}`);
       }
 
       const arrayBuffer = await response.arrayBuffer();
