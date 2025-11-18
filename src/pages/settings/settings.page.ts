@@ -159,6 +159,11 @@ export class SettingsPage implements OnInit {
     if (this.exchangeRates) {
       const oldRate = this.exchangeRates.rates[currency.code];
       this.exchangeRates.rates[currency.code] = newRate;
+
+      // Actualizar timestamp para marcar como modificado
+      this.exchangeRates.timestamp = Date.now();
+
+      // Guardar en localStorage
       localStorage.setItem('budget_exchange_rates', JSON.stringify(this.exchangeRates));
 
       console.log(`💾 [Settings] Tasa actualizada:`, {
@@ -167,12 +172,22 @@ export class SettingsPage implements OnInit {
         newRate: newRate,
         base: this.exchangeRates.base
       });
+
+      // CRÍTICO: Notificar al servicio para que actualice el BehaviorSubject
+      // Esto asegura que todos los componentes que están suscritos se enteren del cambio
+      (this.exchangeRateService as any).ratesSubject.next(this.exchangeRates);
     }
 
     currency.rate = newRate;
     currency.isEditing = false;
 
+    // CRÍTICO: Reconstruir toda la tabla para reflejar los cambios en todas las conversiones
+    this.buildCurrencyRatesList();
+
+    // Recalcular el ejemplo de conversión
     this.calculateExampleConversion();
+
+    this.toastService.success('Tasa actualizada', `La tasa de ${currency.code} se actualizó correctamente`);
   }
 
   getCacheStatusClass(): string {
