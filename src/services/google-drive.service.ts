@@ -23,8 +23,42 @@ export class GoogleDriveService {
   private gapiInitialized = false;
   private tokenClient: any;
   private accessToken: string | null = null;
+  private readonly TOKEN_STORAGE_KEY = 'google_drive_access_token';
 
-  constructor() {}
+  constructor() {
+    // Cargar token guardado si existe
+    this.loadStoredToken();
+  }
+
+  /**
+   * Cargar token almacenado
+   */
+  private loadStoredToken(): void {
+    const storedToken = localStorage.getItem(this.TOKEN_STORAGE_KEY);
+    if (storedToken) {
+      this.accessToken = storedToken;
+      this.isSignedInSubject.next(true);
+      console.log('✅ [GoogleDriveService] Token cargado desde localStorage');
+    }
+  }
+
+  /**
+   * Guardar token en localStorage
+   */
+  private saveToken(token: string): void {
+    this.accessToken = token;
+    localStorage.setItem(this.TOKEN_STORAGE_KEY, token);
+    this.isSignedInSubject.next(true);
+  }
+
+  /**
+   * Eliminar token guardado
+   */
+  private clearToken(): void {
+    this.accessToken = null;
+    localStorage.removeItem(this.TOKEN_STORAGE_KEY);
+    this.isSignedInSubject.next(false);
+  }
 
   /**
    * Verificar si las credenciales están configuradas
@@ -126,13 +160,12 @@ export class GoogleDriveService {
         callback: (response: any) => {
           if (response.error) {
             console.error('❌ [GoogleDriveService] Error en autenticación:', response);
-            this.isSignedInSubject.next(false);
+            this.clearToken();
             return;
           }
 
           console.log('✅ [GoogleDriveService] Token obtenido exitosamente');
-          this.accessToken = response.access_token;
-          this.isSignedInSubject.next(true);
+          this.saveToken(response.access_token);
         },
       });
 
@@ -156,10 +189,17 @@ export class GoogleDriveService {
 
   /**
    * Iniciar sesión con Google
+   * @param forceConsent Si es true, fuerza a mostrar el selector de cuenta
    */
-  async signIn(): Promise<void> {
+  async signIn(forceConsent: boolean = false): Promise<void> {
     if (!this.gapiInitialized) {
       await this.initClient();
+    }
+
+    // Si ya hay token y no se fuerza consent, usar token existente
+    if (this.accessToken && !forceConsent) {
+      console.log('✅ [GoogleDriveService] Usando token existente');
+      return Promise.resolve();
     }
 
     console.log('🔐 [GoogleDriveService] Solicitando autenticación...');
@@ -178,13 +218,15 @@ export class GoogleDriveService {
             return;
           }
 
-          this.accessToken = response.access_token;
-          this.isSignedInSubject.next(true);
+          this.saveToken(response.access_token);
           resolve();
         };
 
-        // Solicitar token
-        this.tokenClient.requestAccessToken({ prompt: 'consent' });
+        // Solicitar token - usar prompt vacío para no pedir cuenta cada vez
+        // Solo usar 'consent' si se fuerza explícitamente
+        this.tokenClient.requestAccessToken({
+          prompt: forceConsent ? 'consent' : ''
+        });
       } catch (error) {
         reject(error);
       }
@@ -199,8 +241,7 @@ export class GoogleDriveService {
       google.accounts.oauth2.revoke(this.accessToken, () => {
         console.log('✅ [GoogleDriveService] Sesión cerrada');
       });
-      this.accessToken = null;
-      this.isSignedInSubject.next(false);
+      this.clearToken();
     }
   }
 
