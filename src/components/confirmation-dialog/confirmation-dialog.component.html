@@ -1,0 +1,22 @@
+<p-dialog
+  [(visible)]="visible"
+  [modal]="true"
+  [closable]="true"
+  styleClass="macos-dialog"
+  [style]="{ width: '450px' }"
+  (onHide)="onHide()">
+
+  <ng-template pTemplate="header">
+    <h3>{{ header }}</h3>
+  </ng-template>
+
+  <div class="confirmation-content">
+    <i [class]="icon" class="confirmation-icon"></i>
+    <p class="confirmation-message">{{ message }}</p>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button pButton [label]="rejectLabel" class="btn-secondary" (click)="reject()"></button>
+    <button pButton [label]="acceptLabel" class="btn-primary" (click)="accept()"></button>
+  </ng-template>
+</p-dialog>

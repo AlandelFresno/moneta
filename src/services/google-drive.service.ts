@@ -370,39 +370,71 @@ export class GoogleDriveService {
   }
 
   /**
-   * Crear o obtener carpeta "Budget Tracker" en Drive
-   * @deprecated Usar uploadOrUpdateFile en lugar de carpetas
+   * Buscar o crear una carpeta en Google Drive
+   * @param folderName - Nombre de la carpeta a buscar/crear
+   * @param parentId - ID de la carpeta padre (opcional, si no se especifica se crea en root)
+   * @returns ID de la carpeta
    */
-  async getOrCreateBudgetFolder(): Promise<string> {
+  async findOrCreateFolder(folderName: string, parentId?: string): Promise<string> {
+    if (!this.gapiInitialized) {
+      await this.initClient();
+    }
+
+    if (!this.isSignedIn()) {
+      throw new Error('Usuario no autenticado. Por favor inicia sesión en Google Drive primero.');
+    }
+
     try {
+      // Construir query de búsqueda
+      let query = `mimeType='application/vnd.google-apps.folder' and name='${folderName}' and trashed=false`;
+
+      if (parentId) {
+        query += ` and '${parentId}' in parents`;
+      } else {
+        query += ` and 'root' in parents`;
+      }
+
       // Buscar si ya existe la carpeta
       const response = await gapi.client.drive.files.list({
-        q: "mimeType='application/vnd.google-apps.folder' and name='Budget Tracker' and trashed=false",
+        q: query,
         fields: 'files(id, name)',
         spaces: 'drive'
       });
 
       if (response.result.files && response.result.files.length > 0) {
+        console.log(`✅ [GoogleDriveService] Carpeta encontrada: ${folderName} (ID: ${response.result.files[0].id})`);
         return response.result.files[0].id;
       }
 
       // Crear la carpeta si no existe
-      const folderMetadata = {
-        name: 'Budget Tracker',
+      const folderMetadata: any = {
+        name: folderName,
         mimeType: 'application/vnd.google-apps.folder'
       };
+
+      if (parentId) {
+        folderMetadata.parents = [parentId];
+      }
 
       const folder = await gapi.client.drive.files.create({
         resource: folderMetadata,
         fields: 'id'
       });
 
-      console.log('✅ Created Budget Tracker folder:', folder.result.id);
+      console.log(`✅ [GoogleDriveService] Carpeta creada: ${folderName} (ID: ${folder.result.id})`);
       return folder.result.id;
     } catch (error) {
-      console.error('❌ Error creating/getting folder:', error);
+      console.error(`❌ [GoogleDriveService] Error al buscar/crear carpeta ${folderName}:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Crear o obtener carpeta "Budget Tracker" en Drive
+   * @deprecated Usar findOrCreateFolder('Budget Tracker') en su lugar
+   */
+  async getOrCreateBudgetFolder(): Promise<string> {
+    return this.findOrCreateFolder('Budget Tracker');
   }
 
   /**

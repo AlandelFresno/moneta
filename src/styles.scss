@@ -143,155 +143,168 @@
 }
 
 /* ============================================
-   PrimeNG Confirm Dialog Styles - Modales
-   Copiado EXACTAMENTE del estilo .macos-dialog de transactions.page.scss
+   PrimeNG Dialog Styles - Aplicar estilo macOS a TODOS los modales
    ============================================ */
-::ng-deep {
-  .p-confirm-dialog {
-    .p-dialog {
-      border-radius: 20px !important;
-      overflow: hidden !important;
-      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35), 0 0 2px rgba(0, 0, 0, 0.15) !important;
-      border: 1px solid rgba(0, 0, 0, 0.08) !important;
-      background: white !important;
-    }
 
-    .p-dialog-header {
-      background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%) !important;
-      border-bottom: 1px solid #e5e7eb !important;
-      padding: 1.5rem 2rem !important;
+/* BACKDROP - Aplicar primero para máxima especificidad */
+::ng-deep .p-dialog-mask {
+  background: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
 
-      .p-dialog-title {
-        font-size: 1.25rem !important;
-        font-weight: 700 !important;
-        color: #111827 !important;
-        margin: 0 !important;
-        letter-spacing: -0.02em !important;
-      }
+/* Estilos del modal */
+::ng-deep .macos-dialog .p-dialog,
+::ng-deep .p-confirm-dialog .p-dialog {
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35), 0 0 2px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  background: #ffffff !important;
+}
 
-      .p-dialog-header-icon {
-        width: 2.25rem !important;
-        height: 2.25rem !important;
-        color: #6b7280 !important;
-        border-radius: 8px !important;
-        transition: all 0.2s ease !important;
+::ng-deep .macos-dialog .p-dialog-header,
+::ng-deep .p-confirm-dialog .p-dialog-header {
+  background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%) !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  padding: 1.5rem 2rem !important;
+}
 
-        &:hover {
-          background: #e5e7eb !important;
-          color: #111827 !important;
-          transform: scale(1.05);
-        }
-      }
-    }
+::ng-deep .macos-dialog .p-dialog-header h3,
+::ng-deep .macos-dialog .p-dialog-header .p-dialog-title,
+::ng-deep .p-confirm-dialog .p-dialog-header .p-dialog-title {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  margin: 0 !important;
+  letter-spacing: -0.02em !important;
+}
 
-    .p-dialog-content {
-      background: white !important;
-      padding: 2rem !important;
-      max-height: calc(100vh - 250px) !important;
-      overflow-y: auto !important;
+::ng-deep .macos-dialog .p-dialog-header-icon,
+::ng-deep .p-confirm-dialog .p-dialog-header-icon {
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  color: #6b7280 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
 
-      .p-confirm-dialog-icon {
-        font-size: 2.5rem !important;
-        color: #f59e0b !important;
-        margin-right: 1rem !important;
-        flex-shrink: 0;
-      }
+::ng-deep .macos-dialog .p-dialog-header-icon:hover,
+::ng-deep .p-confirm-dialog .p-dialog-header-icon:hover {
+  background: #e5e7eb !important;
+  color: #111827 !important;
+  transform: scale(1.05);
+}
 
-      .p-confirm-dialog-message {
-        color: #1f2937 !important;
-        font-size: 0.95rem !important;
-        line-height: 1.6 !important;
-      }
+::ng-deep .macos-dialog .p-dialog-content,
+::ng-deep .p-confirm-dialog .p-dialog-content {
+  background: #ffffff !important;
+  padding: 2rem !important;
+  max-height: calc(100vh - 250px) !important;
+  overflow-y: auto !important;
+}
 
-      &::-webkit-scrollbar {
-        width: 8px;
-      }
+::ng-deep .p-confirm-dialog .p-confirm-dialog-icon {
+  font-size: 2.5rem !important;
+  color: #f59e0b !important;
+  margin-right: 1rem !important;
+  flex-shrink: 0;
+}
 
-      &::-webkit-scrollbar-track {
-        background: #f9fafb;
-        border-radius: 10px;
-      }
+::ng-deep .p-confirm-dialog .p-confirm-dialog-message {
+  color: #1f2937 !important;
+  font-size: 0.95rem !important;
+  line-height: 1.6 !important;
+}
 
-      &::-webkit-scrollbar-thumb {
-        background: #d1d5db;
-        border-radius: 10px;
+::ng-deep .macos-dialog .p-dialog-content::-webkit-scrollbar,
+::ng-deep .p-confirm-dialog .p-dialog-content::-webkit-scrollbar {
+  width: 8px;
+}
 
-        &:hover {
-          background: #9ca3af;
-        }
-      }
-    }
+::ng-deep .macos-dialog .p-dialog-content::-webkit-scrollbar-track,
+::ng-deep .p-confirm-dialog .p-dialog-content::-webkit-scrollbar-track {
+  background: #f9fafb;
+  border-radius: 10px;
+}
 
-    .p-dialog-footer {
-      background: #f9fafb !important;
-      border-top: 1px solid #e5e7eb !important;
-      padding: 1.25rem 2rem !important;
-      display: flex !important;
-      gap: 0.75rem !important;
-      justify-content: flex-end !important;
+::ng-deep .macos-dialog .p-dialog-content::-webkit-scrollbar-thumb,
+::ng-deep .p-confirm-dialog .p-dialog-content::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 10px;
+}
 
-      button {
-        padding: 0.625rem 1.5rem !important;
-        border-radius: 8px !important;
-        font-weight: 500 !important;
-        font-size: 0.9375rem !important;
-        transition: all 0.2s ease !important;
-        border: none !important;
-        cursor: pointer;
-        min-width: 90px;
+::ng-deep .macos-dialog .p-dialog-content::-webkit-scrollbar-thumb:hover,
+::ng-deep .p-confirm-dialog .p-dialog-content::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
 
-        &.p-button-text {
-          background: transparent !important;
-          color: #6b7280 !important;
+::ng-deep .macos-dialog .p-dialog-footer,
+::ng-deep .p-confirm-dialog .p-dialog-footer {
+  background: #f9fafb !important;
+  border-top: 1px solid #e5e7eb !important;
+  padding: 1.25rem 2rem !important;
+  display: flex !important;
+  gap: 0.75rem !important;
+  justify-content: flex-end !important;
+}
 
-          &:hover {
-            background: #e5e7eb !important;
-            color: #374151 !important;
-          }
+::ng-deep .macos-dialog .p-dialog-footer button,
+::ng-deep .p-confirm-dialog .p-dialog-footer button {
+  padding: 0.625rem 1.5rem !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  font-size: 0.9375rem !important;
+  transition: all 0.2s ease !important;
+  border: none !important;
+  cursor: pointer;
+  min-width: 90px;
+}
 
-          &:active {
-            background: #d1d5db !important;
-          }
-        }
+::ng-deep .p-confirm-dialog .p-dialog-footer button.p-button-text {
+  background: transparent !important;
+  color: #6b7280 !important;
+}
 
-        &.p-confirm-dialog-accept {
-          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
-          color: white !important;
-          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+::ng-deep .p-confirm-dialog .p-dialog-footer button.p-button-text:hover {
+  background: #e5e7eb !important;
+  color: #374151 !important;
+}
 
-          &:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
-            transform: translateY(-1px);
-          }
+::ng-deep .p-confirm-dialog .p-dialog-footer button.p-button-text:active {
+  background: #d1d5db !important;
+}
 
-          &:active {
-            transform: translateY(0);
-          }
-        }
+::ng-deep .p-confirm-dialog .p-dialog-footer button.p-confirm-dialog-accept {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+}
 
-        &.p-confirm-dialog-reject {
-          background: #ffffff !important;
-          color: #6b7280 !important;
-          border: 1.5px solid #d1d5db !important;
+::ng-deep .p-confirm-dialog .p-dialog-footer button.p-confirm-dialog-accept:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+  transform: translateY(-1px);
+}
 
-          &:hover {
-            background: #f9fafb !important;
-            color: #374151 !important;
-            border-color: #9ca3af !important;
-          }
+::ng-deep .p-confirm-dialog .p-dialog-footer button.p-confirm-dialog-accept:active {
+  transform: translateY(0);
+}
 
-          &:active {
-            background: #f3f4f6 !important;
-          }
-        }
-      }
-    }
+::ng-deep .p-confirm-dialog .p-dialog-footer button.p-confirm-dialog-reject {
+  background: #ffffff !important;
+  color: #6b7280 !important;
+  border: 1.5px solid #d1d5db !important;
+}
 
-    .p-dialog-mask {
-      background: rgba(0, 0, 0, 0.5) !important;
-    }
-  }
+::ng-deep .p-confirm-dialog .p-dialog-footer button.p-confirm-dialog-reject:hover {
+  background: #f9fafb !important;
+  color: #374151 !important;
+  border-color: #9ca3af !important;
+}
+
+::ng-deep .p-confirm-dialog .p-dialog-footer button.p-confirm-dialog-reject:active {
+  background: #f3f4f6 !important;
 }
 
 /* Animaciones */

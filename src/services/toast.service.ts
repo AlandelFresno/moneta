@@ -1,14 +1,30 @@
-import { Injectable } from '@angular/core';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { Injectable, ComponentRef, ApplicationRef, createComponent, EnvironmentInjector } from '@angular/core';
+import { MessageService } from 'primeng/api';
+import { ConfirmationDialogComponent } from '../components/confirmation-dialog/confirmation-dialog.component';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ToastService {
+  private confirmationDialogRef: ConfirmationDialogComponent | null = null;
+
   constructor(
     private messageService: MessageService,
-    private confirmationService: ConfirmationService
-  ) {}
+    private appRef: ApplicationRef,
+    private injector: EnvironmentInjector
+  ) {
+    // Buscar el componente de confirmación en el DOM
+    setTimeout(() => {
+      const app = this.appRef.components[0];
+      if (app && app.instance) {
+        // El componente ya está en el template, solo necesitamos acceder a él
+      }
+    });
+  }
+
+  setConfirmationDialog(dialog: ConfirmationDialogComponent): void {
+    this.confirmationDialogRef = dialog;
+  }
 
   /**
    * Mostrar mensaje de éxito
@@ -63,16 +79,17 @@ export class ToastService {
    * Retorna una promesa que se resuelve con true/false según la acción del usuario
    */
   confirm(message: string, header: string = '¿Confirmar?'): Promise<boolean> {
-    return new Promise((resolve) => {
-      this.confirmationService.confirm({
-        message: message,
-        header: header,
-        icon: 'pi pi-exclamation-triangle',
-        acceptLabel: 'Sí',
-        rejectLabel: 'No',
-        accept: () => resolve(true),
-        reject: () => resolve(false)
-      });
+    if (!this.confirmationDialogRef) {
+      console.error('ConfirmationDialog no está disponible');
+      return Promise.resolve(false);
+    }
+
+    return this.confirmationDialogRef.show({
+      message: message,
+      header: header,
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí',
+      rejectLabel: 'No'
     });
   }
 
