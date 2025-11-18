@@ -315,7 +315,7 @@ export class ExchangeRateService {
    * usando las tasas en caché
    */
   convertToPreferredCurrency(amount: number, fromCurrency: string, preferredCurrency: string = 'ARS'): number {
-    console.log(`💱 [ExchangeRateService] Convirtiendo ${amount} ${fromCurrency} → ${preferredCurrency}`);
+    // console.log(`💱 [ExchangeRateService] Convirtiendo ${amount} ${fromCurrency} → ${preferredCurrency}`);
 
     // Validar que amount sea un número válido
     if (!amount || isNaN(amount)) {
@@ -381,12 +381,12 @@ export class ExchangeRateService {
           ? 1 / rates.rates[fromCurrency]
           : (1 / rates.rates[fromCurrency]) * rates.rates[preferredCurrency]);
 
-      console.log(`✅ [ExchangeRateService] Conversión exitosa:`, {
-        from: `${amount} ${fromCurrency}`,
-        to: `${convertedAmount.toFixed(2)} ${preferredCurrency}`,
-        rate: `1 ${fromCurrency} = ${rate.toFixed(4)} ${preferredCurrency}`,
-        base: rates.base
-      });
+      // console.log(`✅ [ExchangeRateService] Conversión exitosa:`, {
+      //   from: `${amount} ${fromCurrency}`,
+      //   to: `${convertedAmount.toFixed(2)} ${preferredCurrency}`,
+      //   rate: `1 ${fromCurrency} = ${rate.toFixed(4)} ${preferredCurrency}`,
+      //   base: rates.base
+      // });
 
       return convertedAmount;
     } catch (error) {
