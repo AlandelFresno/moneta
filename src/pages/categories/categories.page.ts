@@ -35,33 +35,33 @@ export class CategoriesPage implements OnInit, OnDestroy {
 
   availableIcons = [
     // General
-    'tag', 'tags', 'star', 'flag', 'bookmark',
+    'tag', 'tags', 'star', 'flag', 'bookmark', 'check', 'times',
     // Trabajo e ingresos
-    'briefcase', 'desktop', 'chart-line', 'building', 'users',
+    'briefcase', 'desktop', 'chart-line', 'building', 'users', 'user',
     // Compras y consumo
     'shopping-cart', 'shopping-bag', 'gift', 'ticket', 'box',
     // Transporte
-    'car', 'plane', 'map', 'compass', 'send',
+    'car', 'map', 'compass', 'send', 'map-marker',
     // Hogar
-    'home', 'key', 'wrench', 'bolt', 'lightbulb',
+    'home', 'key', 'wrench', 'bolt', 'lightbulb', 'power-off',
     // Comida y bebida
-    'coffee', 'pizza', 'apple', 'glass',
+    'coffee', 'glass-martini',
     // Entretenimiento
-    'video', 'camera', 'music', 'gamepad', 'tv', 'palette',
+    'video', 'camera', 'music', 'tv', 'palette', 'images', 'image',
     // Salud y bienestar
-    'heart', 'medkit', 'moon', 'sun',
+    'heart', 'moon', 'sun', 'heart-fill',
     // Educación y cultura
-    'book', 'graduation-cap', 'pencil',
+    'book', 'pencil', 'pen',
     // Tecnología y servicios
-    'mobile', 'tablet', 'phone', 'wifi', 'cloud', 'database',
+    'mobile', 'tablet', 'phone', 'wifi', 'cloud', 'database', 'server',
     // Finanzas
-    'credit-card', 'dollar', 'wallet', 'money-bill', 'percentage',
+    'credit-card', 'dollar', 'wallet', 'percentage', 'chart-bar', 'chart-pie',
     // Utilidades y documentos
-    'file', 'folder', 'calendar', 'clock', 'bell',
+    'file', 'folder', 'calendar', 'clock', 'bell', 'inbox', 'envelope',
     // Seguros y protección
-    'shield', 'umbrella', 'lock',
-    // Mascotas y otros
-    'paw', 'leaf', 'globe', 'truck', 'cog'
+    'shield', 'lock', 'unlock', 'eye', 'eye-slash',
+    // Otros
+    'globe', 'truck', 'cog', 'sliders', 'sitemap', 'th', 'bars'
   ];
 
   constructor(
