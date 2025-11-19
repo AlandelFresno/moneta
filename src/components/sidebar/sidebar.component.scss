@@ -40,6 +40,24 @@
 
 .collapse-btn {
   flex-shrink: 0;
+  width: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+  border-radius: 8px !important; // No redondeado, solo bordes suaves
+  background: #f3f4f6 !important;
+  border: 1px solid #e5e7eb !important;
+  color: #6b7280 !important;
+  transition: all 0.2s ease !important;
+
+  &:hover {
+    background: #e5e7eb !important;
+    color: #374151 !important;
+    border-color: #d1d5db !important;
+  }
+
+  i {
+    font-size: 1.25rem !important;
+  }
 }
 
 .mobile-only {

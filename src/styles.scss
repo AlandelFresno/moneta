@@ -383,3 +383,21 @@
     top: 1rem !important;
   }
 }
+
+/* ============================================
+   Espaciado entre iconos y texto en botones
+   ============================================ */
+::ng-deep .p-button {
+  .p-button-icon {
+    margin-right: 0.5rem !important;
+
+    &.p-button-icon-right {
+      margin-right: 0 !important;
+      margin-left: 0.5rem !important;
+    }
+  }
+
+  &.p-button-icon-only .p-button-icon {
+    margin: 0 !important;
+  }
+}

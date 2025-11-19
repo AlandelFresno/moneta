@@ -271,11 +271,35 @@ export class SidebarComponent {
   onPrimaryCurrencyChange(): void {
     console.log('💱 [Sidebar] Cambiando moneda principal a:', this.primaryCurrency);
     this.preferencesService.setPreferredCurrency(this.primaryCurrency);
+
+    // Mostrar toast de confirmación
+    this.toastService.success(
+      'Moneda principal actualizada',
+      `Los montos ahora se mostrarán en ${this.primaryCurrency}. Recargando...`,
+      2000
+    );
+
+    // Recargar la página para que se actualicen todos los componentes
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
   }
 
   onSecondaryCurrencyChange(): void {
     console.log('💱 [Sidebar] Cambiando moneda secundaria a:', this.secondaryCurrency);
     this.preferencesService.setSecondaryCurrency(this.secondaryCurrency);
+
+    // Mostrar toast de confirmación
+    this.toastService.success(
+      'Moneda de detalle actualizada',
+      `Los montos ahora se mostrarán con detalle en ${this.secondaryCurrency}. Recargando...`,
+      2000
+    );
+
+    // Recargar la página para que se actualicen todos los componentes
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
   }
 
   async importFromExcel(event: any) {
