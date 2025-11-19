@@ -3,11 +3,11 @@
   left: 0;
   top: 0;
   height: 100vh;
-  background: white;
-  border-right: 1px solid #e5e7eb;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease;
+  transition: all 0.3s ease;
   width: 280px;
   z-index: 1000;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
@@ -31,7 +31,7 @@
 
 .sidebar-header {
   padding: 1rem;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--border-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -43,16 +43,16 @@
   width: 40px !important;
   height: 40px !important;
   padding: 0 !important;
-  border-radius: 8px !important; // No redondeado, solo bordes suaves
-  background: #f3f4f6 !important;
-  border: 1px solid #e5e7eb !important;
-  color: #6b7280 !important;
+  border-radius: 8px !important;
+  background: var(--btn-secondary-bg) !important;
+  border: 1px solid var(--border-primary) !important;
+  color: var(--text-secondary) !important;
   transition: all 0.2s ease !important;
 
   &:hover {
-    background: #e5e7eb !important;
-    color: #374151 !important;
-    border-color: #d1d5db !important;
+    background: var(--btn-secondary-hover) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-secondary) !important;
   }
 
   i {
@@ -95,12 +95,17 @@
   padding: 0.875rem 1rem;
   margin-bottom: 0.25rem;
   border-radius: 10px;
-  color: #6b7280;
+  color: var(--sidebar-text);
   text-decoration: none;
   transition: all 0.2s ease;
   position: relative;
   font-weight: 500;
   font-size: 0.9375rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
 
   i {
     font-size: 1.25rem;
@@ -126,7 +131,7 @@
   }
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--sidebar-item-hover);
     color: #3b82f6;
   }
 
@@ -144,14 +149,29 @@
   &.collapsed {
     padding: 1rem;
   }
+
+  // Theme toggle specific styling
+  &.theme-toggle {
+    margin-top: 0.5rem;
+
+    i {
+      color: #f59e0b;
+      font-size: 1.375rem;
+    }
+
+    &:hover i {
+      color: #f97316;
+      transform: rotate(15deg);
+    }
+  }
 }
 
 .currency-section {
   margin: 1rem 0;
   padding: 1rem;
-  background: #f9fafb;
+  background: var(--bg-tertiary);
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-primary);
 }
 
 .currency-selector-container {
@@ -168,7 +188,7 @@
   gap: 0.5rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-secondary);
   margin-bottom: 0.5rem;
 
   i {
@@ -180,11 +200,11 @@
 .currency-select {
   width: 100%;
   padding: 0.5rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--input-border);
   border-radius: 6px;
-  background: white;
+  background: var(--input-bg);
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--input-text);
   cursor: pointer;
   transition: all 0.2s ease;
 

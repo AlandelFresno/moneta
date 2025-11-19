@@ -7,6 +7,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
+import { InputTextModule } from 'primeng/inputtext';
 
 import { BudgetsPage } from './budgets.page';
 
@@ -27,7 +28,8 @@ const routes: Routes = [
     RouterModule.forChild(routes),
     ButtonModule,
     DialogModule,
-    TooltipModule
+    TooltipModule,
+    InputTextModule
   ]
 })
 export class BudgetsModule { }

@@ -161,29 +161,34 @@
 <!-- Dialog para Crear/Editar Presupuesto -->
 <p-dialog
   [(visible)]="showBudgetDialog"
-  [header]="isEditing ? 'Editar Presupuesto' : 'Nuevo Presupuesto'"
   [modal]="true"
+  [closable]="true"
   styleClass="macos-dialog"
   [style]="{width: '550px'}"
   [draggable]="false"
   [resizable]="false"
   (onHide)="closeBudgetDialog()">
 
-  <div class="budget-form">
+  <ng-template pTemplate="header">
+    <h3>{{ isEditing ? 'Editar Presupuesto' : 'Nuevo Presupuesto' }}</h3>
+  </ng-template>
+
+  <div class="dialog-content">
     <div class="form-group">
       <label for="budget-name">Nombre del Presupuesto *</label>
       <input
         type="text"
         id="budget-name"
+        pInputText
         [(ngModel)]="budgetForm.name"
         placeholder="Ej: Presupuesto Comida Mensual"
-        class="form-control">
+        class="macos-input">
     </div>
 
     <div class="form-row">
       <div class="form-group">
         <label for="budget-category">Categoría *</label>
-        <select id="budget-category" [(ngModel)]="budgetForm.categoryId" class="form-control">
+        <select id="budget-category" [(ngModel)]="budgetForm.categoryId" class="macos-select">
           <option value="">Seleccionar categoría</option>
           <option *ngFor="let category of categories" [value]="category.id">
             {{ category.name }}
@@ -193,7 +198,7 @@
 
       <div class="form-group">
         <label for="budget-period">Período *</label>
-        <select id="budget-period" [(ngModel)]="budgetForm.period" class="form-control">
+        <select id="budget-period" [(ngModel)]="budgetForm.period" class="macos-select">
           <option *ngFor="let period of periods" [value]="period.value">
             {{ period.label }}
           </option>
@@ -207,16 +212,17 @@
         <input
           type="number"
           id="budget-limit"
+          pInputText
           [(ngModel)]="budgetForm.limit"
           placeholder="0"
           min="0"
           step="100"
-          class="form-control">
+          class="macos-input">
       </div>
 
       <div class="form-group">
         <label for="budget-currency">Moneda *</label>
-        <select id="budget-currency" [(ngModel)]="budgetForm.currency" class="form-control">
+        <select id="budget-currency" [(ngModel)]="budgetForm.currency" class="macos-select">
           <option *ngFor="let curr of currencies" [value]="curr.code">
             {{ curr.code }} - {{ curr.name }}
           </option>
@@ -237,21 +243,23 @@
           class="threshold-slider">
         <span class="threshold-value">{{ budgetForm.alertThreshold }}%</span>
       </div>
-      <small>Recibirás una alerta cuando alcances este porcentaje del límite</small>
+      <small class="help-text">Recibirás una alerta cuando alcances este porcentaje del límite</small>
     </div>
   </div>
 
   <ng-template pTemplate="footer">
-    <p-button
+    <button
+      pButton
       label="Cancelar"
-      (onClick)="closeBudgetDialog()"
-      [text]="true"
-      severity="secondary">
-    </p-button>
-    <p-button
+      class="btn-secondary"
+      (click)="closeBudgetDialog()">
+    </button>
+    <button
+      pButton
       [label]="isEditing ? 'Actualizar' : 'Crear'"
-      (onClick)="saveBudget()"
-      icon="pi pi-check">
-    </p-button>
+      class="btn-primary"
+      icon="pi pi-check"
+      (click)="saveBudget()">
+    </button>
   </ng-template>
 </p-dialog>

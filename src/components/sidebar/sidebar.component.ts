@@ -31,6 +31,7 @@ export class SidebarComponent {
   currencies = SUPPORTED_CURRENCIES;
   primaryCurrency: string;
   secondaryCurrency: string;
+  currentTheme: 'light' | 'dark';
 
   showSyncDialog = false;
   showImportDialog = false;
@@ -53,6 +54,7 @@ export class SidebarComponent {
     // Cargar las monedas preferidas
     this.primaryCurrency = this.preferencesService.getPreferredCurrency();
     this.secondaryCurrency = this.preferencesService.getSecondaryCurrency() || 'USD';
+    this.currentTheme = this.preferencesService.getTheme();
   }
 
   menuItems: MenuItem[] = [
@@ -300,6 +302,21 @@ export class SidebarComponent {
     setTimeout(() => {
       window.location.reload();
     }, 1500);
+  }
+
+  toggleTheme(): void {
+    const newTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+    console.log('🎨 [Sidebar] Cambiando tema a:', newTheme);
+
+    this.currentTheme = newTheme;
+    this.preferencesService.setTheme(newTheme);
+
+    // Mostrar toast de confirmación
+    this.toastService.success(
+      'Tema actualizado',
+      `Se aplicó el tema ${newTheme === 'dark' ? 'oscuro' : 'claro'}`,
+      1500
+    );
   }
 
   async importFromExcel(event: any) {

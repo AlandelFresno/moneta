@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { AvatarModule } from 'primeng/avatar';
 import { DialogModule } from 'primeng/dialog';
+import { TooltipModule } from 'primeng/tooltip';
 
 // Components
 import { SidebarComponent } from './sidebar/sidebar.component';
@@ -25,7 +26,8 @@ import { ConfirmationDialogComponent } from './confirmation-dialog/confirmation-
     FormsModule,
     ButtonModule,
     AvatarModule,
-    DialogModule
+    DialogModule,
+    TooltipModule
   ],
   exports: [
     SidebarComponent,

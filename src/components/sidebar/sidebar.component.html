@@ -44,6 +44,23 @@
       <span class="badge" *ngIf="item.badge && (!isCollapsed() || isMobileMenuOpen())">{{ item.badge }}</span>
     </a>
 
+    <!-- Theme Toggle -->
+    <button
+      class="nav-item theme-toggle"
+      [class.collapsed]="isCollapsed()"
+      (click)="toggleTheme()"
+      pButton
+      [text]="true"
+      [pTooltip]="currentTheme === 'light' ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro'"
+      tooltipPosition="right">
+      <i [class]="currentTheme === 'light' ? 'pi pi-moon' : 'pi pi-sun'"></i>
+      <span class="nav-text" *ngIf="!isCollapsed() || isMobileMenuOpen()">
+        {{ currentTheme === 'light' ? 'Tema Oscuro' : 'Tema Claro' }}
+      </span>
+    </button>
+
+    <div class="nav-divider"></div>
+
     <!-- Currency Selectors -->
     <div class="currency-section" *ngIf="!isCollapsed() || isMobileMenuOpen()">
       <div class="currency-selector-container">

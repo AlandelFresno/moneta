@@ -28,6 +28,7 @@ export class PreferencesService {
 
   constructor() {
     this.loadPreferences();
+    this.initializeTheme();
   }
 
   /**
@@ -127,5 +128,46 @@ export class PreferencesService {
   setDollarType(dollarType: 'oficial' | 'blue' | 'mep' | 'ccl' | 'mayorista'): void {
     const current = this.preferencesSubject.value;
     this.savePreferences({ ...current, dollarType });
+  }
+
+  /**
+   * Obtiene el tema actual
+   */
+  getTheme(): 'light' | 'dark' {
+    return this.preferencesSubject.value.theme || 'light';
+  }
+
+  /**
+   * Establece el tema
+   */
+  setTheme(theme: 'light' | 'dark'): void {
+    const current = this.preferencesSubject.value;
+    this.savePreferences({ ...current, theme });
+
+    // Aplicar el tema al DOM
+    this.applyTheme(theme);
+  }
+
+  /**
+   * Aplica el tema al DOM
+   */
+  private applyTheme(theme: 'light' | 'dark'): void {
+    const root = document.documentElement;
+
+    if (theme === 'dark') {
+      root.classList.add('dark-theme');
+      root.classList.remove('light-theme');
+    } else {
+      root.classList.add('light-theme');
+      root.classList.remove('dark-theme');
+    }
+  }
+
+  /**
+   * Inicializa el tema al cargar la aplicación
+   */
+  initializeTheme(): void {
+    const theme = this.getTheme();
+    this.applyTheme(theme);
   }
 }
