@@ -543,7 +543,46 @@ export class SyncService {
       }
     }
 
-    return { merged, added, updated };
+    // CRÍTICO: Deduplicar por ID para evitar duplicados
+    const deduped = this.deduplicateById(merged, itemName);
+
+    return { merged: deduped, added, updated };
+  }
+
+  /**
+   * Elimina duplicados de un array basándose en el ID, manteniendo el más reciente
+   */
+  private deduplicateById<T extends { id: string; updatedAt: Date }>(
+    items: T[],
+    itemName: string
+  ): T[] {
+    const seen = new Map<string, T>();
+
+    for (const item of items) {
+      const existing = seen.get(item.id);
+
+      if (!existing) {
+        seen.set(item.id, item);
+      } else {
+        // Si ya existe, mantener el más reciente
+        const existingTime = new Date(existing.updatedAt).getTime();
+        const itemTime = new Date(item.updatedAt).getTime();
+
+        if (itemTime > existingTime) {
+          seen.set(item.id, item);
+          console.log(`🔧 [SyncService] ${itemName} duplicado removido (manteniendo más reciente):`, item.id);
+        }
+      }
+    }
+
+    const dedupedArray = Array.from(seen.values());
+    const duplicatesRemoved = items.length - dedupedArray.length;
+
+    if (duplicatesRemoved > 0) {
+      console.warn(`⚠️ [SyncService] ${duplicatesRemoved} ${itemName}(s) duplicado(s) removido(s)`);
+    }
+
+    return dedupedArray;
   }
 
   /**
