@@ -37,6 +37,45 @@
       </div>
     </div>
 
+    <!-- Tipo de Dólar Settings Card -->
+    <div class="settings-card">
+      <div class="card-header">
+        <div class="header-icon">
+          <i class="pi pi-flag"></i>
+        </div>
+        <div>
+          <h2>Tipo de Dólar (Argentina)</h2>
+          <p class="subtitle">Selecciona qué tipo de dólar usar para las tasas de cambio</p>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="form-group">
+          <label for="dollarType">Tipo de Dólar</label>
+          <select
+            id="dollarType"
+            [(ngModel)]="dollarType"
+            (ngModelChange)="onDollarTypeChange()"
+            class="macos-select"
+          >
+            <option value="oficial">Oficial</option>
+            <option value="blue">Blue</option>
+            <option value="mep">MEP (Bolsa)</option>
+            <option value="ccl">Contado con Liquidación (CCL)</option>
+            <option value="mayorista">Mayorista</option>
+          </select>
+          <small class="help-text">
+            Este tipo de dólar se usará al obtener tasas desde la API de DolarApi.com. La tasa seleccionada afecta la conversión USD-ARS.
+          </small>
+        </div>
+
+        <div class="info-note">
+          <i class="pi pi-info-circle"></i>
+          <p><strong>Nota:</strong> Esta configuración solo afecta las tasas de Argentina (ARS). Para otras monedas se usa la API internacional. Debes actualizar las tasas desde la API para que este cambio tenga efecto.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Gestión de Tasas de Cambio - Todo en un solo card -->
     <div class="settings-card exchange-rates-card">
       <div class="card-header">
@@ -245,86 +284,84 @@
       </div>
     </div>
 
-    <!-- Google Drive Integration Card -->
+    <!-- Import/Export/Backup Card -->
     <div class="settings-card">
       <div class="card-header">
         <div class="header-icon">
-          <i class="pi pi-google"></i>
+          <i class="pi pi-cloud"></i>
         </div>
         <div>
-          <h2>Integración con Google Drive</h2>
-          <p class="subtitle">Configura las credenciales para guardar backups en Google Drive</p>
+          <h2>Importar / Exportar / Backup</h2>
+          <p class="subtitle">Gestiona tus datos: importa, exporta o haz backup en Google Drive</p>
         </div>
       </div>
 
       <div class="card-body">
-        <div class="info-box" style="margin-bottom: 20px;">
-          <i class="pi pi-info-circle"></i>
-          <div>
-            <strong>Configuración Requerida</strong>
-            <p>Necesitas obtener credenciales desde Google Cloud Console. <a href="GOOGLE_DRIVE_SETUP.md" target="_blank" style="color: #007AFF; text-decoration: underline;">Ver guía completa</a></p>
+        <div class="action-buttons-grid">
+          <!-- Importar Excel -->
+          <div class="action-card">
+            <div class="action-icon import">
+              <i class="pi pi-upload"></i>
+            </div>
+            <div class="action-info">
+              <h3>Importar desde Excel</h3>
+              <p>Importa transacciones, vehículos, combustible y más desde un archivo Excel</p>
+            </div>
+            <input
+              type="file"
+              #fileInput
+              accept=".xls,.xlsx"
+              (change)="importFromExcel($event)"
+              style="display: none" />
+            <button
+              pButton
+              label="Importar"
+              icon="pi pi-upload"
+              class="btn-primary"
+              (click)="fileInput.click()">
+            </button>
+          </div>
+
+          <!-- Exportar Excel -->
+          <div class="action-card">
+            <div class="action-icon export">
+              <i class="pi pi-download"></i>
+            </div>
+            <div class="action-info">
+              <h3>Exportar a Excel</h3>
+              <p>Descarga todos tus datos en un archivo Excel para respaldo local</p>
+            </div>
+            <button
+              pButton
+              label="Exportar"
+              icon="pi pi-download"
+              class="btn-secondary"
+              (click)="exportAllData()">
+            </button>
+          </div>
+
+          <!-- Backup a Drive -->
+          <div class="action-card">
+            <div class="action-icon backup">
+              <i class="pi pi-google"></i>
+            </div>
+            <div class="action-info">
+              <h3>Backup a Google Drive</h3>
+              <p>Guarda una copia de seguridad de todos tus datos en Google Drive</p>
+            </div>
+            <button
+              pButton
+              label="Backup a Drive"
+              icon="pi pi-google"
+              class="btn-success"
+              (click)="exportToGoogleDrive()">
+            </button>
           </div>
         </div>
 
-        <div class="form-group">
-          <label for="googleClientId">Client ID de OAuth 2.0</label>
-          <input
-            type="text"
-            id="googleClientId"
-            [(ngModel)]="googleClientId"
-            class="macos-input"
-            placeholder="xxxxx.apps.googleusercontent.com"
-          />
-          <small class="help-text">
-            ID de cliente OAuth 2.0 desde Google Cloud Console
-          </small>
-        </div>
-
-        <div class="form-group">
-          <label for="googleApiKey">API Key de Google Drive</label>
-          <input
-            type="text"
-            id="googleApiKey"
-            [(ngModel)]="googleApiKey"
-            class="macos-input"
-            placeholder="AIzaSy..."
-          />
-          <small class="help-text">
-            Clave de API con acceso a Google Drive API
-          </small>
-        </div>
-
-        <div class="action-section">
-          <button
-            pButton
-            label="Guardar Credenciales"
-            icon="pi pi-save"
-            class="btn-primary"
-            (click)="saveGoogleCredentials()"
-          ></button>
-          <button
-            pButton
-            label="Limpiar Credenciales"
-            icon="pi pi-trash"
-            class="p-button-outlined p-button-danger"
-            (click)="clearGoogleCredentials()"
-            [disabled]="!googleClientId && !googleApiKey"
-          ></button>
-        </div>
-
-        <!-- Success/Error Messages -->
-        <div class="message success" *ngIf="googleSaveSuccess">
-          <i class="pi pi-check-circle"></i>
-          <span>Credenciales guardadas exitosamente</span>
-        </div>
-        <div class="message error" *ngIf="googleSaveError">
-          <i class="pi pi-exclamation-triangle"></i>
-          <span>{{ googleSaveError }}</span>
-        </div>
-
-        <div class="info-note" style="margin-top: 20px;">
-          <i class="pi pi-shield"></i>
-          <p><strong>Privacidad:</strong> Las credenciales se guardan solo en tu navegador (localStorage). La aplicación solo tiene acceso a los archivos que ella misma crea en Drive.</p>
+        <div class="info-note">
+          <i class="pi pi-info-circle"></i>
+          <p><strong>Nota:</strong> La importación desde Excel combina los datos nuevos con los existentes. Los registros duplicados (mismo ID) se ignoran.</p>
         </div>
       </div>
     </div>
@@ -370,3 +407,34 @@
     </div>
   </div>
 </div>
+
+<!-- Import Confirmation Dialog -->
+<p-dialog
+  [(visible)]="showImportDialog"
+  [modal]="true"
+  [closable]="true"
+  styleClass="macos-dialog"
+  [style]="{ width: '500px' }"
+  (onHide)="closeImportDialog()">
+  <ng-template pTemplate="header">
+    <h3>Confirmar importación</h3>
+  </ng-template>
+
+  <div class="dialog-content">
+    <p>¿Deseas importar datos desde este archivo Excel? Esto agregará los datos al sistema actual.</p>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      label="Cancelar"
+      class="p-button-text"
+      (click)="closeImportDialog()">
+    </button>
+    <button
+      pButton
+      label="Sí, importar"
+      (click)="confirmImport()">
+    </button>
+  </ng-template>
+</p-dialog>

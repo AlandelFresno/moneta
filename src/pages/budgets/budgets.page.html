@@ -1,12 +1,265 @@
-<div class="page-container">
+<div class="budgets-page">
+  <!-- Header -->
   <div class="page-header">
-    <h1 class="page-title">Budgets</h1>
-    <p class="page-subtitle">Set and track your budget limits</p>
+    <div class="header-content">
+      <h1>Presupuestos</h1>
+      <p>Gestiona tus límites de gasto por categoría</p>
+    </div>
+    <p-button
+      label="Nuevo Presupuesto"
+      icon="pi pi-plus"
+      (onClick)="openBudgetDialog()"
+      styleClass="p-button-primary">
+    </p-button>
   </div>
 
-  <div class="coming-soon">
-    <i class="pi pi-chart-pie" style="font-size: 4rem; color: #6b7280;"></i>
-    <h2>Coming Soon</h2>
-    <p>This feature is under development</p>
+  <!-- Summary Cards -->
+  <div class="summary-cards" *ngIf="budgets.length > 0">
+    <div class="summary-card">
+      <div class="card-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);">
+        <i class="pi pi-wallet"></i>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Total Presupuestado</span>
+        <span class="card-value">{{ formatCurrency(summary.total, preferredCurrency) }}</span>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="card-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);">
+        <i class="pi pi-chart-bar"></i>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Total Gastado</span>
+        <span class="card-value">{{ formatCurrency(summary.spent, preferredCurrency) }}</span>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="card-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+        <i class="pi pi-money-bill"></i>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Disponible</span>
+        <span class="card-value">{{ formatCurrency(summary.remaining, preferredCurrency) }}</span>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="card-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+        <i class="pi pi-exclamation-triangle"></i>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Excedidos</span>
+        <span class="card-value">{{ summary.overBudget }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section" *ngIf="budgets.length > 0">
+    <div class="filter-group">
+      <label>Período</label>
+      <select [(ngModel)]="filterPeriod" (ngModelChange)="applyFilters()" class="filter-select">
+        <option value="all">Todos</option>
+        <option *ngFor="let period of periods" [value]="period.value">{{ period.label }}</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Categoría</label>
+      <select [(ngModel)]="filterCategory" (ngModelChange)="applyFilters()" class="filter-select">
+        <option value="all">Todas</option>
+        <option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Budgets List -->
+  <div class="budgets-list" *ngIf="budgets.length > 0">
+    <div class="budget-card" *ngFor="let budget of budgets" [class]="'status-' + budget.status">
+      <div class="budget-header">
+        <div class="budget-info">
+          <div class="category-badge" [style.background-color]="budget.categoryColor">
+            <i [class]="'pi pi-' + budget.categoryIcon"></i>
+            <span>{{ budget.categoryName }}</span>
+          </div>
+          <h3>{{ budget.name }}</h3>
+          <span class="period-badge">{{ getPeriodLabel(budget.period) }}</span>
+        </div>
+        <div class="budget-actions">
+          <p-button
+            icon="pi pi-pencil"
+            (onClick)="openEditDialog(budget)"
+            [text]="true"
+            [rounded]="true"
+            severity="info"
+            size="small"
+            pTooltip="Editar">
+          </p-button>
+          <p-button
+            icon="pi pi-trash"
+            (onClick)="deleteBudget(budget)"
+            [text]="true"
+            [rounded]="true"
+            severity="danger"
+            size="small"
+            pTooltip="Eliminar">
+          </p-button>
+        </div>
+      </div>
+
+      <div class="budget-body">
+        <div class="budget-amounts">
+          <div class="amount-item">
+            <span class="amount-label">Límite</span>
+            <span class="amount-value">{{ formatCurrency(budget.limit, budget.currency) }}</span>
+          </div>
+          <div class="amount-item">
+            <span class="amount-label">Gastado</span>
+            <span class="amount-value spent">{{ formatCurrency(budget.spent, budget.currency) }}</span>
+          </div>
+          <div class="amount-item">
+            <span class="amount-label">Disponible</span>
+            <span class="amount-value remaining">{{ formatCurrency(budget.remaining, budget.currency) }}</span>
+          </div>
+        </div>
+
+        <div class="budget-progress">
+          <div class="progress-header">
+            <span class="progress-percentage">{{ budget.percentage.toFixed(1) }}%</span>
+            <span class="progress-status" [style.color]="getStatusColor(budget.status)">
+              {{ getStatusLabel(budget.status) }}
+            </span>
+          </div>
+          <div class="progress-bar-container">
+            <div
+              class="progress-bar-fill"
+              [style.width.%]="budget.percentage"
+              [style.background-color]="getStatusColor(budget.status)">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="budgets.length === 0">
+    <i class="pi pi-chart-pie"></i>
+    <h2>No hay presupuestos configurados</h2>
+    <p>Crea tu primer presupuesto para comenzar a controlar tus gastos</p>
+    <p-button
+      label="Crear Presupuesto"
+      icon="pi pi-plus"
+      (onClick)="openBudgetDialog()"
+      styleClass="p-button-lg">
+    </p-button>
   </div>
 </div>
+
+<!-- Dialog para Crear/Editar Presupuesto -->
+<p-dialog
+  [(visible)]="showBudgetDialog"
+  [modal]="true"
+  [closable]="true"
+  styleClass="macos-dialog"
+  [style]="{width: '550px'}"
+  [draggable]="false"
+  [resizable]="false"
+  (onHide)="closeBudgetDialog()">
+
+  <ng-template pTemplate="header">
+    <h3>{{ isEditing ? 'Editar Presupuesto' : 'Nuevo Presupuesto' }}</h3>
+  </ng-template>
+
+  <div class="dialog-content">
+    <div class="form-group">
+      <label for="budget-name">Nombre del Presupuesto *</label>
+      <input
+        type="text"
+        id="budget-name"
+        pInputText
+        [(ngModel)]="budgetForm.name"
+        placeholder="Ej: Presupuesto Comida Mensual"
+        class="macos-input">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="budget-category">Categoría *</label>
+        <select id="budget-category" [(ngModel)]="budgetForm.categoryId" class="macos-select">
+          <option value="">Seleccionar categoría</option>
+          <option *ngFor="let category of categories" [value]="category.id">
+            {{ category.name }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="budget-period">Período *</label>
+        <select id="budget-period" [(ngModel)]="budgetForm.period" class="macos-select">
+          <option *ngFor="let period of periods" [value]="period.value">
+            {{ period.label }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="budget-limit">Límite *</label>
+        <input
+          type="number"
+          id="budget-limit"
+          pInputText
+          [(ngModel)]="budgetForm.limit"
+          placeholder="0"
+          min="0"
+          step="100"
+          class="macos-input">
+      </div>
+
+      <div class="form-group">
+        <label for="budget-currency">Moneda *</label>
+        <select id="budget-currency" [(ngModel)]="budgetForm.currency" class="macos-select">
+          <option *ngFor="let curr of currencies" [value]="curr.code">
+            {{ curr.code }} - {{ curr.name }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="budget-threshold">Alerta al alcanzar (%)</label>
+      <div class="threshold-input">
+        <input
+          type="range"
+          id="budget-threshold"
+          [(ngModel)]="budgetForm.alertThreshold"
+          min="50"
+          max="100"
+          step="5"
+          class="threshold-slider">
+        <span class="threshold-value">{{ budgetForm.alertThreshold }}%</span>
+      </div>
+      <small class="help-text">Recibirás una alerta cuando alcances este porcentaje del límite</small>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      label="Cancelar"
+      class="btn-secondary"
+      (click)="closeBudgetDialog()">
+    </button>
+    <button
+      pButton
+      [label]="isEditing ? 'Actualizar' : 'Crear'"
+      class="btn-primary"
+      icon="pi pi-check"
+      (click)="saveBudget()">
+    </button>
+  </ng-template>
+</p-dialog>

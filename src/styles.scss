@@ -1,5 +1,144 @@
 /* You can add global styles to this file, and also import other style files */
 
+/* ============================================
+   CSS Variables for Theme Support
+   ============================================ */
+:root,
+.light-theme {
+  /* Background colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  --bg-elevated: #ffffff;
+
+  /* Text colors */
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --text-inverse: #ffffff;
+
+  /* Border colors */
+  --border-primary: #e5e7eb;
+  --border-secondary: #d1d5db;
+  --border-tertiary: #f3f4f6;
+
+  /* Component backgrounds */
+  --card-bg: #ffffff;
+  --card-border: #f3f4f6;
+  --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --card-hover-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  /* Input colors */
+  --input-bg: #ffffff;
+  --input-border: #d1d5db;
+  --input-border-hover: #9ca3af;
+  --input-border-focus: #3b82f6;
+  --input-text: #374151;
+  --input-placeholder: #9ca3af;
+
+  /* Button colors */
+  --btn-primary-bg: #3b82f6;
+  --btn-primary-hover: #2563eb;
+  --btn-secondary-bg: #f3f4f6;
+  --btn-secondary-hover: #e5e7eb;
+  --btn-secondary-text: #374151;
+
+  /* Sidebar colors */
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e5e7eb;
+  --sidebar-item-hover: #f3f4f6;
+  --sidebar-item-active: #eff6ff;
+  --sidebar-text: #374151;
+
+  /* Modal/Dialog colors */
+  --dialog-bg: #ffffff;
+  --dialog-backdrop: rgba(0, 0, 0, 0.5);
+  --dialog-header-bg: #f9fafb;
+  --dialog-border: #e5e7eb;
+
+  /* Status colors (remain consistent) */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+
+  /* Misc */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}
+
+.dark-theme {
+  /* Background colors */
+  --bg-primary: #111827;
+  --bg-secondary: #1f2937;
+  --bg-tertiary: #374151;
+  --bg-elevated: #1f2937;
+
+  /* Text colors */
+  --text-primary: #f9fafb;
+  --text-secondary: #d1d5db;
+  --text-tertiary: #9ca3af;
+  --text-inverse: #111827;
+
+  /* Border colors */
+  --border-primary: #374151;
+  --border-secondary: #4b5563;
+  --border-tertiary: #374151;
+
+  /* Component backgrounds */
+  --card-bg: #1f2937;
+  --card-border: #374151;
+  --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+  --card-hover-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+
+  /* Input colors */
+  --input-bg: #374151;
+  --input-border: #4b5563;
+  --input-border-hover: #6b7280;
+  --input-border-focus: #3b82f6;
+  --input-text: #f9fafb;
+  --input-placeholder: #9ca3af;
+
+  /* Button colors */
+  --btn-primary-bg: #3b82f6;
+  --btn-primary-hover: #2563eb;
+  --btn-secondary-bg: #374151;
+  --btn-secondary-hover: #4b5563;
+  --btn-secondary-text: #f9fafb;
+
+  /* Sidebar colors */
+  --sidebar-bg: #1f2937;
+  --sidebar-border: #374151;
+  --sidebar-item-hover: #374151;
+  --sidebar-item-active: #1e3a5f;
+  --sidebar-text: #d1d5db;
+
+  /* Modal/Dialog colors */
+  --dialog-bg: #1f2937;
+  --dialog-backdrop: rgba(0, 0, 0, 0.75);
+  --dialog-header-bg: #374151;
+  --dialog-border: #4b5563;
+
+  /* Status colors (remain consistent) */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+
+  /* Misc */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+}
+
+/* Apply theme to body */
+body {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -57,38 +196,555 @@
   }
 }
 
-/* PrimeNG Dialog Styles - Estilos globales para todos los modales */
-.p-dialog {
-  background: #ffffff !important;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
-  border-radius: 8px !important;
-}
+/* ============================================
+   PrimeNG Toast Styles - Notificaciones
+   ============================================ */
+.p-toast {
+  opacity: 1;
 
-.p-dialog-header {
-  background: #f9fafb !important;
-  color: #111827 !important;
-  border-bottom: 1px solid #e5e7eb !important;
-  padding: 1.25rem 1.5rem !important;
+  .p-toast-message {
+    border-radius: 12px !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+    border: none !important;
+    margin: 0.5rem 0;
 
-  .p-dialog-title {
-    color: #111827 !important;
-    font-weight: 600 !important;
+    &.p-toast-message-success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+      color: white !important;
+
+      .p-toast-message-icon,
+      .p-toast-icon-close {
+        color: white !important;
+      }
+    }
+
+    &.p-toast-message-error {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+      color: white !important;
+
+      .p-toast-message-icon,
+      .p-toast-icon-close {
+        color: white !important;
+      }
+    }
+
+    &.p-toast-message-warn {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+      color: white !important;
+
+      .p-toast-message-icon,
+      .p-toast-icon-close {
+        color: white !important;
+      }
+    }
+
+    &.p-toast-message-info {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+      color: white !important;
+
+      .p-toast-message-icon,
+      .p-toast-icon-close {
+        color: white !important;
+      }
+    }
+
+    .p-toast-message-content {
+      padding: 1rem 1.25rem !important;
+
+      .p-toast-summary {
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+        margin-bottom: 0.25rem !important;
+      }
+
+      .p-toast-detail {
+        font-size: 0.875rem !important;
+        opacity: 0.95 !important;
+        margin-top: 0.25rem !important;
+        line-height: 1.5 !important;
+        white-space: pre-line !important;
+      }
+    }
+
+    .p-toast-icon-close {
+      width: 1.5rem !important;
+      height: 1.5rem !important;
+      opacity: 0.9 !important;
+      transition: all 0.2s ease !important;
+
+      &:hover {
+        opacity: 1 !important;
+        background: rgba(255, 255, 255, 0.2) !important;
+        border-radius: 50% !important;
+      }
+    }
   }
 }
 
-.p-dialog-content {
+/* ============================================
+   PrimeNG Dialog Styles - Aplicar estilo macOS a TODOS los modales
+   ============================================ */
+
+/* BACKDROP - Aplicar primero para máxima especificidad */
+::ng-deep .p-dialog-mask {
+  background: transparent !important;
+}
+
+/* Estilos del modal - aplicar al contenedor principal */
+::ng-deep .p-dialog.macos-dialog,
+::ng-deep .macos-dialog.p-dialog,
+::ng-deep .macos-dialog .p-dialog,
+::ng-deep .p-confirm-dialog .p-dialog,
+::ng-deep .p-dialog-mask.macos-dialog + .p-component-overlay-enter .p-dialog,
+::ng-deep app-sidebar .p-dialog {
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  box-shadow: none !important;
+  border: 1px solid #9ca3af !important;
   background: #ffffff !important;
-  color: #111827 !important;
-  padding: 1.5rem !important;
+  opacity: 1 !important;
 }
 
-.p-dialog-footer {
-  background: #f9fafb !important;
+/* Borde más visible para todos los diálogos macos */
+::ng-deep .p-dialog-content-container.macos-dialog,
+::ng-deep .macos-dialog .p-dialog-content,
+::ng-deep .macos-dialog {
+  border: 1px solid #9ca3af !important;
+  border-radius: 20px !important;
+}
+
+/* Asegurar que el wrapper del modal también sea sólido */
+::ng-deep .p-confirm-dialog {
+  opacity: 1 !important;
+}
+
+::ng-deep .p-dialog {
+  background: #ffffff !important;
+  opacity: 1 !important;
+}
+
+::ng-deep .macos-dialog .p-dialog-header,
+::ng-deep .p-confirm-dialog .p-dialog-header {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  padding: 1.5rem 2rem !important;
+}
+
+::ng-deep .macos-dialog .p-dialog-header h3,
+::ng-deep .macos-dialog .p-dialog-header .p-dialog-title,
+::ng-deep .p-confirm-dialog .p-dialog-header .p-dialog-title {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
   color: #111827 !important;
+  margin: 0 !important;
+  letter-spacing: -0.02em !important;
+}
+
+::ng-deep .macos-dialog .p-dialog-header-icon,
+::ng-deep .p-confirm-dialog .p-dialog-header-icon {
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  color: #6b7280 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+::ng-deep .macos-dialog .p-dialog-header-icon:hover,
+::ng-deep .p-confirm-dialog .p-dialog-header-icon:hover {
+  background: #e5e7eb !important;
+  color: #111827 !important;
+  transform: scale(1.05);
+}
+
+::ng-deep .macos-dialog .p-dialog-content,
+::ng-deep .p-confirm-dialog .p-dialog-content {
+  background: #ffffff !important;
+  padding: 2rem !important;
+  max-height: calc(100vh - 250px) !important;
+  overflow-y: auto !important;
+}
+
+::ng-deep .p-confirm-dialog .p-confirm-dialog-icon {
+  font-size: 2.5rem !important;
+  color: #f59e0b !important;
+  margin-right: 1rem !important;
+  flex-shrink: 0;
+}
+
+::ng-deep .p-confirm-dialog .p-confirm-dialog-message {
+  color: #1f2937 !important;
+  font-size: 0.95rem !important;
+  line-height: 1.6 !important;
+}
+
+::ng-deep .macos-dialog .p-dialog-content::-webkit-scrollbar,
+::ng-deep .p-confirm-dialog .p-dialog-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+::ng-deep .macos-dialog .p-dialog-content::-webkit-scrollbar-track,
+::ng-deep .p-confirm-dialog .p-dialog-content::-webkit-scrollbar-track {
+  background: #f9fafb;
+  border-radius: 10px;
+}
+
+::ng-deep .macos-dialog .p-dialog-content::-webkit-scrollbar-thumb,
+::ng-deep .p-confirm-dialog .p-dialog-content::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 10px;
+}
+
+::ng-deep .macos-dialog .p-dialog-content::-webkit-scrollbar-thumb:hover,
+::ng-deep .p-confirm-dialog .p-dialog-content::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+::ng-deep .macos-dialog .p-dialog-footer,
+::ng-deep .p-confirm-dialog .p-dialog-footer {
+  background: #ffffff !important;
   border-top: 1px solid #e5e7eb !important;
-  padding: 1rem 1.5rem !important;
+  padding: 1.25rem 2rem !important;
+  display: flex !important;
+  gap: 0.75rem !important;
+  justify-content: flex-end !important;
 }
 
-.p-dialog-mask {
-  background-color: rgba(0, 0, 0, 0.4) !important;
+::ng-deep .macos-dialog .p-dialog-footer button,
+::ng-deep .p-confirm-dialog .p-dialog-footer button {
+  padding: 0.625rem 1.5rem !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  font-size: 0.9375rem !important;
+  transition: all 0.2s ease !important;
+  border: none !important;
+  cursor: pointer;
+  min-width: 90px;
+}
+
+::ng-deep .p-confirm-dialog .p-dialog-footer button.p-button-text {
+  background: transparent !important;
+  color: #6b7280 !important;
+}
+
+::ng-deep .p-confirm-dialog .p-dialog-footer button.p-button-text:hover {
+  background: #e5e7eb !important;
+  color: #374151 !important;
+}
+
+::ng-deep .p-confirm-dialog .p-dialog-footer button.p-button-text:active {
+  background: #d1d5db !important;
+}
+
+::ng-deep .p-confirm-dialog .p-dialog-footer button.p-confirm-dialog-accept {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+}
+
+::ng-deep .p-confirm-dialog .p-dialog-footer button.p-confirm-dialog-accept:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+  transform: translateY(-1px);
+}
+
+::ng-deep .p-confirm-dialog .p-dialog-footer button.p-confirm-dialog-accept:active {
+  transform: translateY(0);
+}
+
+::ng-deep .p-confirm-dialog .p-dialog-footer button.p-confirm-dialog-reject {
+  background: #ffffff !important;
+  color: #6b7280 !important;
+  border: 1.5px solid #d1d5db !important;
+}
+
+::ng-deep .p-confirm-dialog .p-dialog-footer button.p-confirm-dialog-reject:hover {
+  background: #f9fafb !important;
+  color: #374151 !important;
+  border-color: #9ca3af !important;
+}
+
+::ng-deep .p-confirm-dialog .p-dialog-footer button.p-confirm-dialog-reject:active {
+  background: #f3f4f6 !important;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .p-confirm-dialog {
+    width: 95% !important;
+    margin: 1rem;
+
+    .p-dialog-header {
+      padding: 1.25rem !important;
+
+      .p-dialog-title {
+        font-size: 1rem !important;
+      }
+    }
+
+    .p-dialog-content {
+      padding: 1.5rem 1.25rem !important;
+    }
+
+    .p-dialog-footer {
+      padding: 1rem 1.25rem !important;
+      flex-direction: column-reverse;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+
+  .p-toast {
+    width: calc(100% - 2rem) !important;
+    right: 1rem !important;
+    top: 1rem !important;
+  }
+}
+
+/* ============================================
+   Espaciado entre iconos y texto en botones
+   ============================================ */
+::ng-deep .p-button {
+  .p-button-icon {
+    margin-right: 0.5rem !important;
+
+    &.p-button-icon-right {
+      margin-right: 0 !important;
+      margin-left: 0.5rem !important;
+    }
+  }
+
+  &.p-button-icon-only .p-button-icon {
+    margin: 0 !important;
+  }
+}
+
+/* ============================================
+   Theme-Aware Global Component Styles
+   ============================================ */
+
+/* Input Styles */
+.macos-input,
+input[type="text"].macos-input,
+input[type="number"].macos-input,
+input[type="email"].macos-input,
+input[type="password"].macos-input,
+input[type="date"].macos-input,
+textarea.macos-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--input-border);
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  background: var(--input-bg);
+  color: var(--input-text);
+  transition: all 0.15s ease;
+  font-family: inherit;
+
+  &::placeholder {
+    color: var(--input-placeholder);
+  }
+
+  &:hover {
+    border-color: var(--input-border-hover);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--input-border-focus);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+/* Select Styles */
+.macos-select,
+select.macos-select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--input-border);
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  background: var(--input-bg);
+  color: var(--input-text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  font-weight: 500;
+
+  &:hover {
+    border-color: var(--input-border-hover);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--input-border-focus);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+/* Button Styles */
+.btn-primary {
+  background: linear-gradient(135deg, var(--btn-primary-bg) 0%, var(--btn-primary-hover) 100%);
+  color: white;
+  border: none;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: linear-gradient(135deg, var(--btn-primary-hover) 0%, #1d4ed8 100%);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+.btn-secondary {
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1.5px solid var(--border-secondary);
+  font-weight: 500;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--btn-secondary-hover);
+    border-color: var(--border-primary);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+/* Card Styles */
+.settings-card,
+.card,
+.budget-card,
+.summary-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: var(--card-hover-shadow);
+  }
+}
+
+/* Dialog Theme Support */
+::ng-deep .macos-dialog .p-dialog,
+::ng-deep .p-confirm-dialog .p-dialog {
+  background: var(--dialog-bg) !important;
+  border: 1px solid var(--dialog-border) !important;
+}
+
+::ng-deep .macos-dialog .p-dialog-header,
+::ng-deep .p-confirm-dialog .p-dialog-header {
+  background: var(--dialog-header-bg) !important;
+  border-bottom: 1px solid var(--dialog-border) !important;
+
+  .p-dialog-title,
+  h3 {
+    color: var(--text-primary) !important;
+  }
+
+  .p-dialog-header-icon {
+    color: var(--text-secondary) !important;
+
+    &:hover {
+      background: var(--btn-secondary-hover) !important;
+    }
+  }
+}
+
+::ng-deep .macos-dialog .p-dialog-content,
+::ng-deep .p-confirm-dialog .p-dialog-content {
+  background: var(--dialog-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+::ng-deep .macos-dialog .p-dialog-footer,
+::ng-deep .p-confirm-dialog .p-dialog-footer {
+  background: var(--dialog-bg) !important;
+  border-top: 1px solid var(--dialog-border) !important;
+}
+
+::ng-deep .p-dialog-mask {
+  background-color: var(--dialog-backdrop) !important;
+}
+
+/* Scrollbar Theme Support */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 10px;
+
+  &:hover {
+    background: var(--text-tertiary);
+  }
+}
+
+/* Help Text */
+.help-text,
+small.help-text {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+  line-height: 1.4;
 }

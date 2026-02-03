@@ -11,10 +11,11 @@ export class GoogleDriveService {
   private readonly DISCOVERY_DOCS = ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'];
   private readonly SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
-  // IMPORTANTE: El usuario debe configurar estas credenciales
-  // Ir a: https://console.cloud.google.com/apis/credentials
-  private CLIENT_ID = '';  // Configurar con tu Client ID
-  private API_KEY = '';    // Configurar con tu API Key
+  // Credenciales de Google OAuth
+  // IMPORTANTE: Estas credenciales están restringidas por dominio en Google Cloud Console
+  // Solo funcionarán desde los dominios autorizados (localhost:4200, tu-dominio.com, etc.)
+  private CLIENT_ID = '615072104513-iev6ja33i73h7goeoqdadur7aefjn8cc.apps.googleusercontent.com';
+  private API_KEY = 'AIzaSyDHEO5Vv-_pZxs5DGpO0kCieIe3XMHA5Bk';
 
   private isSignedInSubject = new BehaviorSubject<boolean>(false);
   public isSignedIn$ = this.isSignedInSubject.asObservable();
@@ -22,34 +23,41 @@ export class GoogleDriveService {
   private gapiInitialized = false;
   private tokenClient: any;
   private accessToken: string | null = null;
+  private readonly TOKEN_STORAGE_KEY = 'google_drive_access_token';
 
   constructor() {
-    this.loadGoogleDriveConfig();
+    // Cargar token guardado si existe
+    this.loadStoredToken();
   }
 
   /**
-   * Cargar configuración de Google Drive desde localStorage
+   * Cargar token almacenado
    */
-  private loadGoogleDriveConfig(): void {
-    const config = localStorage.getItem('google_drive_config');
-    if (config) {
-      try {
-        const { clientId, apiKey } = JSON.parse(config);
-        this.CLIENT_ID = clientId || '';
-        this.API_KEY = apiKey || '';
-      } catch (error) {
-        console.error('Error loading Google Drive config:', error);
-      }
+  private loadStoredToken(): void {
+    const storedToken = localStorage.getItem(this.TOKEN_STORAGE_KEY);
+    if (storedToken) {
+      this.accessToken = storedToken;
+      this.isSignedInSubject.next(true);
+      console.log('✅ [GoogleDriveService] Token cargado desde localStorage');
     }
   }
 
   /**
-   * Guardar configuración de Google Drive
+   * Guardar token en localStorage
    */
-  saveGoogleDriveConfig(clientId: string, apiKey: string): void {
-    this.CLIENT_ID = clientId;
-    this.API_KEY = apiKey;
-    localStorage.setItem('google_drive_config', JSON.stringify({ clientId, apiKey }));
+  private saveToken(token: string): void {
+    this.accessToken = token;
+    localStorage.setItem(this.TOKEN_STORAGE_KEY, token);
+    this.isSignedInSubject.next(true);
+  }
+
+  /**
+   * Eliminar token guardado
+   */
+  private clearToken(): void {
+    this.accessToken = null;
+    localStorage.removeItem(this.TOKEN_STORAGE_KEY);
+    this.isSignedInSubject.next(false);
   }
 
   /**
@@ -57,11 +65,9 @@ export class GoogleDriveService {
    */
   hasCredentials(): boolean {
     const hasCredentials = !!this.CLIENT_ID && !!this.API_KEY;
-    console.log('🔍 [GoogleDriveService] Verificando credenciales:', {
-      hasClientId: !!this.CLIENT_ID,
-      hasApiKey: !!this.API_KEY,
-      hasCredentials
-    });
+    if (!hasCredentials) {
+      console.warn('⚠️ [GoogleDriveService] Credenciales no configuradas. Agrega tu Client ID y API Key en google-drive.service.ts');
+    }
     return hasCredentials;
   }
 
@@ -154,13 +160,12 @@ export class GoogleDriveService {
         callback: (response: any) => {
           if (response.error) {
             console.error('❌ [GoogleDriveService] Error en autenticación:', response);
-            this.isSignedInSubject.next(false);
+            this.clearToken();
             return;
           }
 
           console.log('✅ [GoogleDriveService] Token obtenido exitosamente');
-          this.accessToken = response.access_token;
-          this.isSignedInSubject.next(true);
+          this.saveToken(response.access_token);
         },
       });
 
@@ -184,10 +189,24 @@ export class GoogleDriveService {
 
   /**
    * Iniciar sesión con Google
+   * @param forceConsent Si es true, fuerza a mostrar el selector de cuenta
    */
-  async signIn(): Promise<void> {
+  async signIn(forceConsent: boolean = false): Promise<void> {
+    // SIEMPRE inicializar gapi primero
     if (!this.gapiInitialized) {
       await this.initClient();
+    }
+
+    // Si ya hay token y no se fuerza consent, validar que esté disponible
+    if (this.accessToken && !forceConsent) {
+      console.log('✅ [GoogleDriveService] Usando token existente');
+      // Validar que gapi esté listo
+      if (typeof gapi === 'undefined') {
+        console.warn('⚠️ [GoogleDriveService] gapi no está definido, reinicializando...');
+        this.gapiInitialized = false;
+        await this.initClient();
+      }
+      return Promise.resolve();
     }
 
     console.log('🔐 [GoogleDriveService] Solicitando autenticación...');
@@ -206,17 +225,30 @@ export class GoogleDriveService {
             return;
           }
 
-          this.accessToken = response.access_token;
-          this.isSignedInSubject.next(true);
+          this.saveToken(response.access_token);
           resolve();
         };
 
-        // Solicitar token
-        this.tokenClient.requestAccessToken({ prompt: 'consent' });
+        // Solicitar token - usar prompt vacío para no pedir cuenta cada vez
+        // Solo usar 'consent' si se fuerza explícitamente
+        this.tokenClient.requestAccessToken({
+          prompt: forceConsent ? 'consent' : ''
+        });
       } catch (error) {
         reject(error);
       }
     });
+  }
+
+  /**
+   * Asegurar que gapi esté inicializado antes de usarlo
+   */
+  private async ensureInitialized(): Promise<void> {
+    if (!this.gapiInitialized || typeof gapi === 'undefined') {
+      console.log('🔄 [GoogleDriveService] Inicializando gapi...');
+      this.gapiInitialized = false;
+      await this.initClient();
+    }
   }
 
   /**
@@ -227,8 +259,7 @@ export class GoogleDriveService {
       google.accounts.oauth2.revoke(this.accessToken, () => {
         console.log('✅ [GoogleDriveService] Sesión cerrada');
       });
-      this.accessToken = null;
-      this.isSignedInSubject.next(false);
+      this.clearToken();
     }
   }
 
@@ -248,9 +279,7 @@ export class GoogleDriveService {
     mimeType: string,
     folderId?: string
   ): Promise<any> {
-    if (!this.gapiInitialized) {
-      await this.initClient();
-    }
+    await this.ensureInitialized();
 
     if (!this.isSignedIn()) {
       throw new Error('Usuario no autenticado. Por favor inicia sesión en Google Drive primero.');
@@ -296,21 +325,105 @@ export class GoogleDriveService {
    * Buscar archivo por nombre en el root de Drive
    */
   async findFileByName(fileName: string): Promise<string | null> {
+    await this.ensureInitialized();
+
+    // CRÍTICO: Verificar que haya un token de acceso
+    if (!this.accessToken) {
+      console.error('❌ [GoogleDriveService] No hay access token. Usuario no autenticado.');
+      throw new Error('No hay token de acceso. Por favor inicia sesión en Google Drive primero.');
+    }
+
+    // Configurar el token en gapi.client para esta llamada
+    gapi.client.setToken({ access_token: this.accessToken });
+
     try {
+      console.log(`🔍 [GoogleDriveService] Buscando archivo: ${fileName}`);
+      console.log(`🔐 [GoogleDriveService] Token presente:`, this.accessToken ? 'SÍ' : 'NO');
+
       const response = await gapi.client.drive.files.list({
         q: `name='${fileName}' and trashed=false and 'root' in parents`,
         fields: 'files(id, name, webViewLink)',
         spaces: 'drive'
       });
 
-      if (response.result.files && response.result.files.length > 0) {
-        console.log(`✅ [GoogleDriveService] Archivo encontrado: ${fileName} (ID: ${response.result.files[0].id})`);
-        return response.result.files[0].id;
+      console.log('📋 [GoogleDriveService] Respuesta de API:', {
+        filesEncontrados: response.result.files?.length || 0,
+        files: response.result.files,
+        resultCompleto: response.result
+      });
+
+      // Validar que la respuesta tenga la estructura esperada
+      if (!response.result.files) {
+        console.warn('⚠️ [GoogleDriveService] response.result.files es undefined o null');
+        return null;
+      }
+
+      if (response.result.files.length > 0) {
+        const file = response.result.files[0];
+
+        // Validar que el objeto file tenga las propiedades esperadas
+        if (!file) {
+          console.error('❌ [GoogleDriveService] files[0] es undefined o null');
+          return null;
+        }
+
+        if (!file.hasOwnProperty('id')) {
+          console.error('❌ [GoogleDriveService] El archivo no tiene propiedad "id":', file);
+          throw new Error(
+            `Google Drive retornó un archivo sin ID. ` +
+            `Archivo: ${JSON.stringify(file, null, 2)}`
+          );
+        }
+
+        const fileId = file.id;
+
+        console.log('📄 [GoogleDriveService] Archivo encontrado:', {
+          id: fileId,
+          name: file.name,
+          idTipo: typeof fileId,
+          idLength: fileId?.length,
+          idCharCodes: fileId ? Array.from(String(fileId)).map(c => c.charCodeAt(0)) : []
+        });
+
+        // Validar que el fileId sea válido
+        if (!fileId || fileId.trim() === '' || fileId === '.' || fileId === 'null' || fileId === 'undefined') {
+          const errorDetails = {
+            fileId,
+            fileIdTrim: fileId?.trim(),
+            esIgualAPunto: fileId === '.',
+            archivo: file,
+            respuestaCompleta: response.result
+          };
+          console.error('❌ [GoogleDriveService] Google Drive retornó un fileId inválido:', errorDetails);
+
+          // LANZAR ERROR en lugar de retornar null para diagnosticar el problema
+          throw new Error(
+            `Google Drive API retornó un fileId inválido: "${fileId}". ` +
+            `Esto puede indicar un problema con tu cuenta de Google Drive. ` +
+            `Detalles: ${JSON.stringify(errorDetails, null, 2)}`
+          );
+        }
+
+        console.log(`✅ [GoogleDriveService] Archivo encontrado: ${fileName} (ID: ${fileId})`);
+        return fileId;
       }
 
       console.log(`ℹ️ [GoogleDriveService] Archivo no encontrado: ${fileName}`);
       return null;
-    } catch (error) {
+    } catch (error: any) {
+      // Detectar error 401 (token expirado)
+      if (error.status === 401 || error.result?.error?.code === 401) {
+        console.warn('⚠️ [GoogleDriveService] Token expirado (401). Limpiando token y solicitando re-autenticación...');
+
+        // Limpiar token expirado
+        this.clearToken();
+
+        // Lanzar error específico para que el usuario sepa que debe re-autenticarse
+        throw new Error(
+          'Tu sesión de Google Drive ha expirado. Por favor cierra sesión y vuelve a iniciar sesión.'
+        );
+      }
+
       console.error('❌ [GoogleDriveService] Error buscando archivo:', error);
       throw error;
     }
@@ -324,11 +437,21 @@ export class GoogleDriveService {
     fileContent: Blob,
     mimeType: string
   ): Promise<any> {
+    await this.ensureInitialized();
+
     if (!this.isSignedIn()) {
       throw new Error('Usuario no autenticado. Por favor inicia sesión en Google Drive primero.');
     }
 
+    // Validar fileId
+    if (!fileId || fileId.trim() === '' || fileId === '.' || fileId === 'null' || fileId === 'undefined') {
+      console.error('❌ [GoogleDriveService] fileId inválido:', fileId);
+      throw new Error(`fileId inválido: "${fileId}". No se puede actualizar el archivo.`);
+    }
+
     try {
+      console.log(`🔄 [GoogleDriveService] Actualizando archivo con ID: ${fileId}`);
+
       const response = await fetch(
         `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
         {
@@ -343,19 +466,26 @@ export class GoogleDriveService {
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('❌ [GoogleDriveService] Error en PATCH:', errorText);
         throw new Error(`Fallo al actualizar archivo: ${response.statusText} - ${errorText}`);
       }
 
       const result = await response.json();
+      console.log('✅ [GoogleDriveService] Archivo actualizado (PATCH exitoso)');
 
       // Obtener webViewLink del archivo actualizado
-      const fileInfo = await gapi.client.drive.files.get({
-        fileId: fileId,
-        fields: 'id,name,webViewLink'
-      });
+      try {
+        const fileInfo = await gapi.client.drive.files.get({
+          fileId: fileId,
+          fields: 'id,name,webViewLink'
+        });
 
-      console.log('✅ [GoogleDriveService] Archivo actualizado en Google Drive:', fileInfo.result);
-      return fileInfo.result;
+        console.log('✅ [GoogleDriveService] Archivo actualizado en Google Drive:', fileInfo.result);
+        return fileInfo.result;
+      } catch (getError) {
+        console.warn('⚠️ [GoogleDriveService] No se pudo obtener info del archivo, pero actualización fue exitosa');
+        return result;
+      }
     } catch (error) {
       console.error('❌ [GoogleDriveService] Error al actualizar archivo:', error);
       throw error;
@@ -370,25 +500,27 @@ export class GoogleDriveService {
     fileContent: Blob,
     mimeType: string
   ): Promise<any> {
-    if (!this.gapiInitialized) {
-      await this.initClient();
-    }
+    await this.ensureInitialized();
 
     if (!this.isSignedIn()) {
       throw new Error('Usuario no autenticado. Por favor inicia sesión en Google Drive primero.');
     }
 
     try {
+      console.log(`📂 [GoogleDriveService] uploadOrUpdateFile iniciado para: ${fileName}`);
+
       // Buscar si ya existe el archivo
       const existingFileId = await this.findFileByName(fileName);
 
+      console.log(`📋 [GoogleDriveService] Resultado de búsqueda - fileId:`, existingFileId);
+
       if (existingFileId) {
         // Actualizar archivo existente
-        console.log(`🔄 [GoogleDriveService] Actualizando archivo existente: ${fileName}`);
+        console.log(`🔄 [GoogleDriveService] Archivo existe, actualizando: ${fileName} (ID: ${existingFileId})`);
         return await this.updateFile(existingFileId, fileContent, mimeType);
       } else {
         // Crear archivo nuevo en root (sin folderId)
-        console.log(`📝 [GoogleDriveService] Creando archivo nuevo: ${fileName}`);
+        console.log(`📝 [GoogleDriveService] Archivo no existe, creando nuevo: ${fileName}`);
         return await this.uploadFile(fileName, fileContent, mimeType);
       }
     } catch (error) {
@@ -398,39 +530,71 @@ export class GoogleDriveService {
   }
 
   /**
-   * Crear o obtener carpeta "Budget Tracker" en Drive
-   * @deprecated Usar uploadOrUpdateFile en lugar de carpetas
+   * Buscar o crear una carpeta en Google Drive
+   * @param folderName - Nombre de la carpeta a buscar/crear
+   * @param parentId - ID de la carpeta padre (opcional, si no se especifica se crea en root)
+   * @returns ID de la carpeta
    */
-  async getOrCreateBudgetFolder(): Promise<string> {
+  async findOrCreateFolder(folderName: string, parentId?: string): Promise<string> {
+    if (!this.gapiInitialized) {
+      await this.initClient();
+    }
+
+    if (!this.isSignedIn()) {
+      throw new Error('Usuario no autenticado. Por favor inicia sesión en Google Drive primero.');
+    }
+
     try {
+      // Construir query de búsqueda
+      let query = `mimeType='application/vnd.google-apps.folder' and name='${folderName}' and trashed=false`;
+
+      if (parentId) {
+        query += ` and '${parentId}' in parents`;
+      } else {
+        query += ` and 'root' in parents`;
+      }
+
       // Buscar si ya existe la carpeta
       const response = await gapi.client.drive.files.list({
-        q: "mimeType='application/vnd.google-apps.folder' and name='Budget Tracker' and trashed=false",
+        q: query,
         fields: 'files(id, name)',
         spaces: 'drive'
       });
 
       if (response.result.files && response.result.files.length > 0) {
+        console.log(`✅ [GoogleDriveService] Carpeta encontrada: ${folderName} (ID: ${response.result.files[0].id})`);
         return response.result.files[0].id;
       }
 
       // Crear la carpeta si no existe
-      const folderMetadata = {
-        name: 'Budget Tracker',
+      const folderMetadata: any = {
+        name: folderName,
         mimeType: 'application/vnd.google-apps.folder'
       };
+
+      if (parentId) {
+        folderMetadata.parents = [parentId];
+      }
 
       const folder = await gapi.client.drive.files.create({
         resource: folderMetadata,
         fields: 'id'
       });
 
-      console.log('✅ Created Budget Tracker folder:', folder.result.id);
+      console.log(`✅ [GoogleDriveService] Carpeta creada: ${folderName} (ID: ${folder.result.id})`);
       return folder.result.id;
     } catch (error) {
-      console.error('❌ Error creating/getting folder:', error);
+      console.error(`❌ [GoogleDriveService] Error al buscar/crear carpeta ${folderName}:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Crear o obtener carpeta "Budget Tracker" en Drive
+   * @deprecated Usar findOrCreateFolder('Budget Tracker') en su lugar
+   */
+  async getOrCreateBudgetFolder(): Promise<string> {
+    return this.findOrCreateFolder('Budget Tracker');
   }
 
   /**

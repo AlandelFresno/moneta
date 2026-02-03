@@ -20,7 +20,10 @@
         Categoría {{ currentCategory }}
       </div>
       <p class="category-limit">{{ getCategoryInfo(currentCategory)?.description }}</p>
-      <p class="category-fee">Cuota mensual: {{ formatCurrency(getCategoryInfo(currentCategory)?.monthlyFee || 0) }}</p>
+      <p class="category-fee">
+        Cuota Servicios: {{ formatCurrency(getCategoryInfo(currentCategory)?.monthlyFeeServices || 0) }}<br>
+        Cuota Bienes: {{ formatCurrency(getCategoryInfo(currentCategory)?.monthlyFeeGoods || 0) }}
+      </p>
     </div>
 
     <div class="summary-card total-billing">
@@ -71,7 +74,9 @@
           <tr>
             <th>Categoría</th>
             <th>Límite Anual</th>
-            <th>Cuota Mensual</th>
+            <th>Límite Mensual</th>
+            <th>Cuota Servicios</th>
+            <th>Cuota Bienes</th>
             <th>Tu Facturación</th>
             <th>Estado</th>
           </tr>
@@ -89,7 +94,9 @@
               </div>
             </td>
             <td>{{ formatCurrency(cat.maxAnnualBilling) }}</td>
-            <td>{{ formatCurrency(cat.monthlyFee) }}</td>
+            <td>{{ formatCurrency(cat.maxMonthlyBilling) }}</td>
+            <td>{{ formatCurrency(cat.monthlyFeeServices) }}</td>
+            <td>{{ formatCurrency(cat.monthlyFeeGoods) }}</td>
             <td>
               <div class="progress-bar">
                 <div class="progress-fill"
@@ -168,6 +175,7 @@
   [(visible)]="showBillingDialog"
   [header]="isEditing ? 'Editar Facturación' : 'Nueva Facturación'"
   [modal]="true"
+  styleClass="macos-dialog"
   [style]="{width: '500px'}"
   [draggable]="false"
   [resizable]="false">

@@ -155,6 +155,7 @@
     [(visible)]="showVehicleDialog"
     [header]="editingVehicle ? 'Editar Vehículo' : 'Nuevo Vehículo'"
     [modal]="true"
+    styleClass="macos-dialog"
     [style]="{width: '500px'}"
     [draggable]="false"
     [resizable]="false">
@@ -236,6 +237,7 @@
     [(visible)]="showFuelLogDialog"
     header="Nueva Carga de Combustible"
     [modal]="true"
+    styleClass="macos-dialog"
     [style]="{width: '500px'}"
     [draggable]="false"
     [resizable]="false">
@@ -293,20 +295,22 @@
 
       <div class="form-row">
         <div class="form-group">
-          <label>Km Total *</label>
-          <input
-            type="number"
-            [(ngModel)]="fuelLogForm.totalKm"
-            (ngModelChange)="onTotalKmChange()"
-            class="form-control">
-        </div>
-        <div class="form-group">
-          <label>Km Recorridos</label>
+          <label>Km Recorridos *</label>
           <input
             type="number"
             [(ngModel)]="fuelLogForm.kmTraveled"
+            (ngModelChange)="onKmTraveledChange()"
+            placeholder="Km hechos con este tanque"
+            class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Km Total (Odómetro)</label>
+          <input
+            type="number"
+            [(ngModel)]="fuelLogForm.totalKm"
             class="form-control"
-            [disabled]="true">
+            [disabled]="true"
+            placeholder="Se calcula automáticamente">
         </div>
       </div>
 

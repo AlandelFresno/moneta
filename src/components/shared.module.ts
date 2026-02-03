@@ -6,26 +6,33 @@ import { FormsModule } from '@angular/forms';
 // PrimeNG Modules
 import { ButtonModule } from 'primeng/button';
 import { AvatarModule } from 'primeng/avatar';
+import { DialogModule } from 'primeng/dialog';
+import { TooltipModule } from 'primeng/tooltip';
 
 // Components
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { LayoutComponent } from './layout/layout.component';
+import { ConfirmationDialogComponent } from './confirmation-dialog/confirmation-dialog.component';
 
 @NgModule({
   declarations: [
     SidebarComponent,
-    LayoutComponent
+    LayoutComponent,
+    ConfirmationDialogComponent
   ],
   imports: [
     CommonModule,
     RouterModule,
     FormsModule,
     ButtonModule,
-    AvatarModule
+    AvatarModule,
+    DialogModule,
+    TooltipModule
   ],
   exports: [
     SidebarComponent,
-    LayoutComponent
+    LayoutComponent,
+    ConfirmationDialogComponent
   ]
 })
 export class SharedModule { }

@@ -8,6 +8,11 @@ import { App } from './app';
 import { routes } from './app.routes';
 import { SharedModule } from '../components/shared.module';
 
+// PrimeNG
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { MessageService, ConfirmationService } from 'primeng/api';
+
 @NgModule({
   declarations: [
     App
@@ -17,9 +22,11 @@ import { SharedModule } from '../components/shared.module';
     BrowserAnimationsModule,
     HttpClientModule,
     RouterModule.forRoot(routes),
-    SharedModule
+    SharedModule,
+    ToastModule,
+    ConfirmDialogModule
   ],
-  providers: [],
+  providers: [MessageService, ConfirmationService],
   bootstrap: [App]
 })
 export class AppModule { }

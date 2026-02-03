@@ -1,6 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Subject, takeUntil } from 'rxjs';
 import { ExchangeRateService, CacheInfo } from '../../services/exchange-rate.service';
 import { PreferencesService } from '../../services/preferences.service';
+import { ToastService } from '../../services/toast.service';
 import { Router } from '@angular/router';
 
 interface CurrencyRate {
@@ -19,7 +21,9 @@ interface CurrencyRate {
   styleUrls: ['./currency-rates-widget.component.scss'],
   standalone: false
 })
-export class CurrencyRatesWidgetComponent implements OnInit {
+export class CurrencyRatesWidgetComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+
   preferredCurrency: string = 'ARS';
   cacheInfo: CacheInfo | null = null;
   topRates: CurrencyRate[] = [];
@@ -41,12 +45,30 @@ export class CurrencyRatesWidgetComponent implements OnInit {
   constructor(
     private exchangeRateService: ExchangeRateService,
     private preferencesService: PreferencesService,
-    private router: Router
+    private router: Router,
+    private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
     console.log('🔄 [CurrencyRatesWidget] Inicializando widget...');
     this.loadData();
+
+    // CRÍTICO: Suscribirse a cambios en preferencias para actualizar la tabla
+    this.preferencesService.preferences$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(preferences => {
+        const newCurrency = preferences.preferredCurrency;
+        if (newCurrency !== this.preferredCurrency) {
+          console.log(`💱 [CurrencyRatesWidget] Moneda preferida cambió de ${this.preferredCurrency} a ${newCurrency}`);
+          this.preferredCurrency = newCurrency;
+          this.buildTopRates();
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadData(): void {
@@ -61,6 +83,8 @@ export class CurrencyRatesWidgetComponent implements OnInit {
   }
 
   buildTopRates(): void {
+    console.log(`💱 [CurrencyRatesWidget] Construyendo tabla de tasas para ${this.preferredCurrency}...`);
+
     // Mostrar las tasas más relevantes según la moneda preferida
     // Si la moneda preferida es USD, mostrar otras monedas en relación a USD
     // Si no, mostrar USD primero y luego otras monedas importantes
@@ -78,6 +102,8 @@ export class CurrencyRatesWidgetComponent implements OnInit {
         // Calcular la tasa de 1 unidad de la moneda extranjera a la moneda preferida
         const rate = this.exchangeRateService.getExchangeRate(code, this.preferredCurrency);
 
+        console.log(`  📊 ${code} → ${this.preferredCurrency}: ${rate.toFixed(6)}`);
+
         return {
           code: currency.code,
           name: currency.name,
@@ -89,6 +115,8 @@ export class CurrencyRatesWidgetComponent implements OnInit {
         };
       })
       .filter(r => r !== null) as CurrencyRate[];
+
+    console.log(`✅ [CurrencyRatesWidget] Tabla construida con ${this.topRates.length} tasas`);
   }
 
   getCacheStatusClass(): string {
@@ -156,7 +184,7 @@ export class CurrencyRatesWidgetComponent implements OnInit {
 
     if (rate.editValue <= 0 || isNaN(rate.editValue)) {
       console.warn('⚠️ [CurrencyRatesWidget] Valor inválido');
-      alert('Por favor ingrese un valor válido mayor a 0');
+      this.toastService.warn('Valor inválido', 'Por favor ingrese un número válido mayor a 0');
       return;
     }
 

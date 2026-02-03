@@ -8,6 +8,7 @@ import { CsvService } from '../../services/csv.service';
 import { ExchangeRateService } from '../../services/exchange-rate.service';
 import { CurrencyDisplayService, FormattedCurrency } from '../../services/currency-display.service';
 import { PreferencesService } from '../../services/preferences.service';
+import { ToastService } from '../../services/toast.service';
 import { SUPPORTED_CURRENCIES } from '../../constants/currencies';
 
 interface TransactionWithDetails extends Transaction {
@@ -117,7 +118,8 @@ export class TransactionsPage implements OnInit, OnDestroy {
     private csvService: CsvService,
     private exchangeRateService: ExchangeRateService,
     private currencyDisplayService: CurrencyDisplayService,
-    private preferencesService: PreferencesService
+    private preferencesService: PreferencesService,
+    private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -141,7 +143,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
             accountName: account?.name || 'Unknown',
             categoryName: category?.name || 'Unknown',
             categoryColor: category?.color || '#6b7280',
-            categoryIcon: category?.icon || 'pi-tag'
+            categoryIcon: category?.icon || 'tag'
           };
         }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -505,9 +507,15 @@ export class TransactionsPage implements OnInit, OnDestroy {
     this.closeDialog();
   }
 
-  deleteTransaction(transaction: Transaction): void {
-    if (confirm(`Are you sure you want to delete this transaction?`)) {
+  async deleteTransaction(transaction: Transaction): Promise<void> {
+    const shouldDelete = await this.toastService.confirm(
+      'Esta acción no se puede deshacer',
+      '¿Eliminar transacción?'
+    );
+
+    if (shouldDelete) {
       this.transactionService.deleteTransaction(transaction.id);
+      this.toastService.success('Transacción eliminada', 'La transacción ha sido eliminada exitosamente');
     }
   }
 
@@ -623,10 +631,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
         this.transactionService.createTransaction(txn);
       });
 
-      alert(`Successfully imported ${transactions.length} transactions`);
+      this.toastService.success('Importación exitosa', `Se importaron ${transactions.length} transacciones correctamente`);
       this.showImportDialog = false;
     } catch (error) {
-      alert(`Error importing CSV: ${error}`);
+      this.toastService.error('Error al importar CSV', `${error}`);
     }
   }
 

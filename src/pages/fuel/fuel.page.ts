@@ -4,6 +4,7 @@ import { FuelLog } from '../../models/fuel-log.model';
 import { VehicleService } from '../../services/vehicle.service';
 import { FuelLogService } from '../../services/fuel-log.service';
 import { ExportService } from '../../services/export.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-fuel',
@@ -44,7 +45,7 @@ export class FuelPage implements OnInit {
     liters: 0,
     pricePerLiter: 0,
     totalPrice: 0,
-    currency: 'USD',
+    currency: 'ARS',
     totalKm: 0,
     kmTraveled: 0,
     fullTank: true,
@@ -70,7 +71,8 @@ export class FuelPage implements OnInit {
   constructor(
     public vehicleService: VehicleService,
     public fuelLogService: FuelLogService,
-    private exportService: ExportService
+    private exportService: ExportService,
+    private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -116,7 +118,7 @@ export class FuelPage implements OnInit {
 
   saveVehicle(): void {
     if (!this.vehicleForm.name || !this.vehicleForm.brand || !this.vehicleForm.model) {
-      alert('Por favor completa los campos obligatorios');
+      this.toastService.warn('Campos obligatorios', 'Por favor completa todos los campos requeridos');
       return;
     }
 
@@ -131,10 +133,16 @@ export class FuelPage implements OnInit {
     this.showVehicleDialog = false;
   }
 
-  deleteVehicle(vehicle: Vehicle): void {
-    if (confirm(`¿Eliminar el vehículo "${vehicle.name}"? Esto también eliminará todos sus registros de combustible.`)) {
+  async deleteVehicle(vehicle: Vehicle): Promise<void> {
+    const shouldDelete = await this.toastService.confirm(
+      `¿Eliminar el vehículo "${vehicle.name}"? Esto también eliminará todos sus registros de combustible.`,
+      'Confirmar eliminación'
+    );
+
+    if (shouldDelete) {
       this.fuelLogService.deleteLogsByVehicle(vehicle.id);
       this.vehicleService.deleteVehicle(vehicle.id);
+      this.toastService.success('Vehículo eliminado', `El vehículo "${vehicle.name}" ha sido eliminado`);
       this.loadData();
       if (this.selectedVehicle?.id === vehicle.id) {
         this.selectedVehicle = this.vehicles.length > 0 ? this.vehicles[0] : null;
@@ -163,21 +171,25 @@ export class FuelPage implements OnInit {
   // Fuel Log Management
   openFuelLogDialog(): void {
     if (!this.selectedVehicle) {
-      alert('Por favor selecciona un vehículo primero');
+      this.toastService.warn('Vehículo requerido', 'Por favor selecciona un vehículo primero');
       return;
     }
 
     this.editingLog = null;
     this.resetFuelLogForm();
 
-    // Pre-llenar con datos del vehículo
-    this.fuelLogForm.totalKm = this.selectedVehicle.currentKm;
-
-    // Calcular km desde la última carga
+    // Obtener el último kilometraje registrado
     const lastLog = this.fuelLogService.getLastLog(this.selectedVehicle.id);
     if (lastLog) {
-      this.fuelLogForm.kmTraveled = this.fuelLogForm.totalKm - lastLog.totalKm;
+      // El km total inicial es el último registrado
+      this.fuelLogForm.totalKm = lastLog.totalKm;
+    } else {
+      // Si no hay registros previos, usar el km actual del vehículo
+      this.fuelLogForm.totalKm = this.selectedVehicle.currentKm;
     }
+
+    // El usuario ingresará los km recorridos manualmente
+    this.fuelLogForm.kmTraveled = 0;
 
     this.showFuelLogDialog = true;
   }
@@ -185,8 +197,13 @@ export class FuelPage implements OnInit {
   saveFuelLog(): void {
     if (!this.selectedVehicle) return;
 
-    if (this.fuelLogForm.liters <= 0 || this.fuelLogForm.totalKm <= 0) {
-      alert('Por favor completa los campos obligatorios con valores válidos');
+    if (this.fuelLogForm.liters <= 0) {
+      this.toastService.warn('Litros requeridos', 'Por favor ingresa la cantidad de litros cargados');
+      return;
+    }
+
+    if (this.fuelLogForm.kmTraveled <= 0) {
+      this.toastService.warn('Kilómetros requeridos', 'Por favor ingresa los kilómetros recorridos con este tanque');
       return;
     }
 
@@ -231,14 +248,26 @@ export class FuelPage implements OnInit {
     };
 
     this.fuelLogService.createLog(logData);
+
+    // Actualizar el kilometraje del vehículo con el nuevo total
+    this.vehicleService.updateVehicle(this.selectedVehicle.id, {
+      currentKm: this.fuelLogForm.totalKm
+    });
+
     this.loadData();
     this.selectVehicle(this.selectedVehicle);
     this.showFuelLogDialog = false;
   }
 
-  deleteFuelLog(log: FuelLog): void {
-    if (confirm('¿Eliminar este registro de combustible?')) {
+  async deleteFuelLog(log: FuelLog): Promise<void> {
+    const shouldDelete = await this.toastService.confirm(
+      'Esta acción no se puede deshacer',
+      '¿Eliminar registro de combustible?'
+    );
+
+    if (shouldDelete) {
       this.fuelLogService.deleteLog(log.id);
+      this.toastService.success('Registro eliminado', 'El registro de combustible ha sido eliminado');
       if (this.selectedVehicle) {
         this.fuelLogs = this.fuelLogService.getLogsByVehicle(this.selectedVehicle.id);
       }
@@ -251,7 +280,7 @@ export class FuelPage implements OnInit {
       liters: 0,
       pricePerLiter: 0,
       totalPrice: 0,
-      currency: 'USD',
+      currency: 'ARS',
       totalKm: 0,
       kmTraveled: 0,
       fullTank: true,
@@ -261,12 +290,18 @@ export class FuelPage implements OnInit {
   }
 
   // Calculations
-  onTotalKmChange(): void {
+  onKmTraveledChange(): void {
     if (!this.selectedVehicle) return;
 
+    // Obtener el último kilometraje registrado
     const lastLog = this.fuelLogService.getLastLog(this.selectedVehicle.id);
-    if (lastLog && this.fuelLogForm.totalKm > lastLog.totalKm) {
-      this.fuelLogForm.kmTraveled = this.fuelLogForm.totalKm - lastLog.totalKm;
+    const lastKm = lastLog ? lastLog.totalKm : this.selectedVehicle.currentKm;
+
+    // Calcular el nuevo km total sumando los km recorridos
+    if (this.fuelLogForm.kmTraveled > 0) {
+      this.fuelLogForm.totalKm = lastKm + this.fuelLogForm.kmTraveled;
+    } else {
+      this.fuelLogForm.totalKm = lastKm;
     }
   }
 
@@ -327,7 +362,7 @@ export class FuelPage implements OnInit {
 
   exportVehicleData(): void {
     if (!this.selectedVehicle) {
-      alert('Por favor selecciona un vehículo primero');
+      this.toastService.warn('Vehículo requerido', 'Por favor selecciona un vehículo primero');
       return;
     }
     console.log('📤 [Fuel] Exportando datos del vehículo:', this.selectedVehicle.name);
@@ -356,7 +391,7 @@ export class FuelPage implements OnInit {
       const importedLogs = await this.exportService.importFuelLogsFromExcel(file);
 
       if (!this.selectedVehicle) {
-        alert('Por favor selecciona un vehículo primero para importar los registros');
+        this.toastService.warn('Vehículo requerido', 'Por favor selecciona un vehículo primero para importar los registros');
         return;
       }
 
@@ -370,7 +405,7 @@ export class FuelPage implements OnInit {
           liters: logData.liters || 0,
           pricePerLiter: logData.pricePerLiter || 0,
           totalPrice: logData.totalPrice || 0,
-          currency: logData.currency || 'USD',
+          currency: logData.currency || 'ARS',
           kmTraveled: logData.kmTraveled || 0,
           totalKm: logData.totalKm || 0,
           efficiency: logData.efficiency || 0,
@@ -384,12 +419,12 @@ export class FuelPage implements OnInit {
         importedCount++;
       }
 
-      alert(`Se importaron ${importedCount} registros exitosamente`);
+      this.toastService.success('Importación exitosa', `Se importaron ${importedCount} registros correctamente`);
       this.loadData();
       this.selectVehicle(this.selectedVehicle);
     } catch (error) {
       console.error('❌ [Fuel] Error al importar:', error);
-      alert('Error al importar el archivo. Por favor verifica que el formato sea correcto.');
+      this.toastService.error('Error al importar', 'Error al importar el archivo. Por favor verifica que el formato sea correcto.');
     }
   }
 

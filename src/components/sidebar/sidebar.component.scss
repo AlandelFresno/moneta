@@ -3,11 +3,11 @@
   left: 0;
   top: 0;
   height: 100vh;
-  background: white;
-  border-right: 1px solid #e5e7eb;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease;
+  transition: all 0.3s ease;
   width: 280px;
   z-index: 1000;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
@@ -31,7 +31,7 @@
 
 .sidebar-header {
   padding: 1rem;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--border-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -40,6 +40,24 @@
 
 .collapse-btn {
   flex-shrink: 0;
+  width: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  background: var(--btn-secondary-bg) !important;
+  border: 1px solid var(--border-primary) !important;
+  color: var(--text-secondary) !important;
+  transition: all 0.2s ease !important;
+
+  &:hover {
+    background: var(--btn-secondary-hover) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-secondary) !important;
+  }
+
+  i {
+    font-size: 1.25rem !important;
+  }
 }
 
 .mobile-only {
@@ -77,12 +95,17 @@
   padding: 0.875rem 1rem;
   margin-bottom: 0.25rem;
   border-radius: 10px;
-  color: #6b7280;
+  color: var(--sidebar-text);
   text-decoration: none;
   transition: all 0.2s ease;
   position: relative;
   font-weight: 500;
   font-size: 0.9375rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
 
   i {
     font-size: 1.25rem;
@@ -108,7 +131,7 @@
   }
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--sidebar-item-hover);
     color: #3b82f6;
   }
 
@@ -126,14 +149,29 @@
   &.collapsed {
     padding: 1rem;
   }
+
+  // Theme toggle specific styling
+  &.theme-toggle {
+    margin-top: 0.5rem;
+
+    i {
+      color: #f59e0b;
+      font-size: 1.375rem;
+    }
+
+    &:hover i {
+      color: #f97316;
+      transform: rotate(15deg);
+    }
+  }
 }
 
 .currency-section {
   margin: 1rem 0;
   padding: 1rem;
-  background: #f9fafb;
+  background: var(--bg-tertiary);
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-primary);
 }
 
 .currency-selector-container {
@@ -150,7 +188,7 @@
   gap: 0.5rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-secondary);
   margin-bottom: 0.5rem;
 
   i {
@@ -162,11 +200,11 @@
 .currency-select {
   width: 100%;
   padding: 0.5rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--input-border);
   border-radius: 6px;
-  background: white;
+  background: var(--input-bg);
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--input-text);
   cursor: pointer;
   transition: all 0.2s ease;
 
@@ -196,11 +234,149 @@
   i {
     color: #16a34a;
   }
+
+  &.import-button {
+    &:hover {
+      background: #eff6ff !important;
+      color: #3b82f6 !important;
+    }
+
+    i {
+      color: #3b82f6;
+    }
+  }
+
+  &.google-drive {
+    &:hover {
+      background: #fef3c7 !important;
+      color: #f59e0b !important;
+    }
+
+    i {
+      color: #f59e0b;
+    }
+  }
+
+  &.sync-drive {
+    &:hover {
+      background: #f3e8ff !important;
+      color: #a855f7 !important;
+    }
+
+    i {
+      color: #a855f7;
+    }
+  }
 }
 
 // Mobile overlay
 .sidebar-overlay {
   display: none;
+}
+
+// Estilos para los modales de confirmación del sidebar
+:host ::ng-deep {
+  // Backdrop
+  .p-dialog-mask {
+    background: transparent !important;
+  }
+
+  // Modal container - fondo blanco sólido con borde visible
+  .p-dialog {
+    background: #ffffff !important;
+    border: 1px solid #9ca3af !important;
+    border-radius: 20px !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+  }
+
+  // Header - mismo color que el fondo
+  .p-dialog-header {
+    background: #ffffff !important;
+    border-bottom: 2px solid #e5e7eb !important;
+    padding: 1.5rem 2rem !important;
+
+    h3 {
+      font-size: 1.25rem !important;
+      font-weight: 700 !important;
+      color: #111827 !important;
+      margin: 0 !important;
+    }
+
+    .p-dialog-header-icon {
+      width: 2rem !important;
+      height: 2rem !important;
+      color: #6b7280 !important;
+      border-radius: 8px !important;
+
+      &:hover {
+        background: #f3f4f6 !important;
+        color: #111827 !important;
+      }
+    }
+  }
+
+  // Content - mismo color que el fondo
+  .p-dialog-content {
+    background: #ffffff !important;
+    padding: 2rem !important;
+    color: #374151 !important;
+    font-size: 1rem !important;
+    line-height: 1.6 !important;
+
+    p {
+      margin: 0 !important;
+      color: #374151 !important;
+    }
+  }
+
+  // Footer - mismo color que el fondo
+  .p-dialog-footer {
+    background: #ffffff !important;
+    border-top: 2px solid #e5e7eb !important;
+    padding: 1.25rem 2rem !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 0.75rem !important;
+
+    // Estilo de botones de la app
+    button {
+      padding: 0.625rem 1.5rem !important;
+      border-radius: 8px !important;
+      font-weight: 600 !important;
+      font-size: 0.9375rem !important;
+      transition: all 0.2s ease !important;
+      border: none !important;
+      cursor: pointer !important;
+
+      // Botón cancelar (texto)
+      &.p-button-text {
+        background: #f3f4f6 !important;
+        color: #6b7280 !important;
+
+        &:hover {
+          background: #e5e7eb !important;
+          color: #374151 !important;
+        }
+      }
+
+      // Botón primario (acción principal)
+      &:not(.p-button-text) {
+        background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%) !important;
+        color: white !important;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25) !important;
+
+        &:hover {
+          box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35) !important;
+          transform: translateY(-1px) !important;
+        }
+
+        &:active {
+          transform: translateY(0) !important;
+        }
+      }
+    }
+  }
 }
 
 // Mobile styles
@@ -244,5 +420,16 @@
     inset: 0;
     background: rgba(0, 0, 0, 0.5);
     z-index: 999;
+  }
+}
+
+// Divisor de navegación
+.nav-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 0.5rem 0.75rem;
+
+  .sidebar.collapsed & {
+    margin: 0.5rem 0.5rem;
   }
 }
