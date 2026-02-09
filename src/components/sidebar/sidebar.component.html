@@ -1,15 +1,20 @@
-<div class="sidebar" [class.collapsed]="isCollapsed()" [class.mobile-open]="isMobileMenuOpen()">
+<div class="sidebar bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-[2px_0_8px_rgba(0,0,0,0.08)]"
+     [class.collapsed]="isCollapsed()" [class.mobile-open]="isMobileMenuOpen()">
   <!-- Header -->
-  <div class="sidebar-header">
+  <div class="sidebar-header border-b border-gray-100 dark:border-gray-700">
     <button
-      class="collapse-btn desktop-only"
+      class="collapse-btn desktop-only w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600
+             text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-800 dark:hover:text-gray-100
+             hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 flex-shrink-0"
       (click)="toggleSidebar()"
       pButton
       icon="pi pi-bars"
       [text]="true">
     </button>
     <button
-      class="collapse-btn mobile-only"
+      class="collapse-btn mobile-only w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600
+             text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-800 dark:hover:text-gray-100
+             hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 flex-shrink-0"
       (click)="closeMobileMenu()"
       pButton
       icon="pi pi-times"
@@ -21,7 +26,7 @@
   <nav class="sidebar-nav">
     <!-- Sincronizar Drive (arriba) -->
     <button
-      class="nav-item export-button sync-drive"
+      class="nav-item export-button sync-drive text-gray-600 dark:text-gray-300"
       [class.collapsed]="isCollapsed()"
       (click)="syncWithDrive()"
       pButton
@@ -30,13 +35,13 @@
       <span class="nav-text" *ngIf="!isCollapsed() || isMobileMenuOpen()">Sincronizar Drive</span>
     </button>
 
-    <div class="nav-divider"></div>
+    <div class="nav-divider bg-gray-200 dark:bg-gray-700"></div>
 
     <a
       *ngFor="let item of menuItems"
       [routerLink]="item.route"
       routerLinkActive="active"
-      class="nav-item"
+      class="nav-item text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-500"
       [class.collapsed]="isCollapsed()"
       (click)="closeMobileMenu()">
       <i [class]="'pi pi-' + item.icon"></i>
@@ -46,7 +51,7 @@
 
     <!-- Theme Toggle -->
     <button
-      class="nav-item theme-toggle"
+      class="nav-item theme-toggle text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
       [class.collapsed]="isCollapsed()"
       (click)="toggleTheme()"
       pButton
@@ -59,19 +64,22 @@
       </span>
     </button>
 
-    <div class="nav-divider"></div>
+    <div class="nav-divider bg-gray-200 dark:bg-gray-700"></div>
 
     <!-- Currency Selectors -->
-    <div class="currency-section" *ngIf="!isCollapsed() || isMobileMenuOpen()">
-      <div class="currency-selector-container">
-        <label class="currency-label">
-          <i class="pi pi-money-bill"></i>
+    <div class="currency-section bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg mx-0 my-4 p-4"
+         *ngIf="!isCollapsed() || isMobileMenuOpen()">
+      <div class="currency-selector-container mb-4 last:mb-0">
+        <label class="flex items-center gap-2 text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">
+          <i class="pi pi-money-bill text-base text-blue-500"></i>
           <span>Moneda Principal</span>
         </label>
         <select
           [(ngModel)]="primaryCurrency"
           (change)="onPrimaryCurrencyChange()"
-          class="currency-select">
+          class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700
+                 text-sm text-gray-900 dark:text-gray-100 cursor-pointer transition-all duration-200
+                 hover:border-blue-500 focus:outline-none focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/10">
           <option *ngFor="let currency of currencies" [value]="currency.code">
             {{ currency.code }} - {{ currency.name }}
           </option>
@@ -79,14 +87,16 @@
       </div>
 
       <div class="currency-selector-container">
-        <label class="currency-label">
-          <i class="pi pi-info-circle"></i>
+        <label class="flex items-center gap-2 text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">
+          <i class="pi pi-info-circle text-base text-blue-500"></i>
           <span>Detalle en</span>
         </label>
         <select
           [(ngModel)]="secondaryCurrency"
           (change)="onSecondaryCurrencyChange()"
-          class="currency-select">
+          class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700
+                 text-sm text-gray-900 dark:text-gray-100 cursor-pointer transition-all duration-200
+                 hover:border-blue-500 focus:outline-none focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/10">
           <option *ngFor="let currency of currencies" [value]="currency.code">
             {{ currency.code }} - {{ currency.name }}
           </option>

@@ -10,9 +10,9 @@
     <h3>{{ header }}</h3>
   </ng-template>
 
-  <div class="confirmation-content">
-    <i [class]="icon" class="confirmation-icon"></i>
-    <p class="confirmation-message">{{ message }}</p>
+  <div class="flex items-start gap-4 py-4">
+    <i [class]="icon" class="text-4xl text-amber-500 flex-shrink-0"></i>
+    <p class="text-gray-800 dark:text-gray-200 text-[0.95rem] leading-relaxed m-0">{{ message }}</p>
   </div>
 
   <ng-template pTemplate="footer">

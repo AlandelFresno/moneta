@@ -2,8 +2,8 @@
   <!-- Header -->
   <div class="page-header">
     <div class="header-left">
-      <h1 class="page-title">Transactions</h1>
-      <p class="page-subtitle">Track your income and expenses</p>
+      <h1 class="page-title text-gray-900 dark:text-gray-100">Transactions</h1>
+      <p class="page-subtitle text-gray-500 dark:text-gray-400">Track your income and expenses</p>
     </div>
     <div class="header-actions">
       <button pButton label="Import CSV" icon="pi pi-upload" class="btn-secondary" (click)="openImportDialog()"></button>
@@ -14,49 +14,49 @@
 
   <!-- Stats Cards -->
   <div class="stats-grid">
-    <div class="stat-card income">
+    <div class="stat-card income bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md">
       <div class="stat-header">
         <div class="stat-icon"><i class="pi pi-arrow-down"></i></div>
-        <p class="stat-label">Total Income</p>
+        <p class="stat-label text-gray-500 dark:text-gray-400">Total Income</p>
       </div>
       <div class="stat-info">
-        <p class="stat-value">{{ formatCurrency(stats.totalIncome) }}</p>
+        <p class="stat-value text-gray-900 dark:text-gray-100">{{ formatCurrency(stats.totalIncome) }}</p>
       </div>
     </div>
-    <div class="stat-card expense">
+    <div class="stat-card expense bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md">
       <div class="stat-header">
         <div class="stat-icon"><i class="pi pi-arrow-up"></i></div>
-        <p class="stat-label">Total Expense</p>
+        <p class="stat-label text-gray-500 dark:text-gray-400">Total Expense</p>
       </div>
       <div class="stat-info">
-        <p class="stat-value">{{ formatCurrency(stats.totalExpense) }}</p>
+        <p class="stat-value text-gray-900 dark:text-gray-100">{{ formatCurrency(stats.totalExpense) }}</p>
       </div>
     </div>
-    <div class="stat-card balance" [class.positive]="stats.balance >= 0" [class.negative]="stats.balance < 0">
+    <div class="stat-card balance bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md" [class.positive]="stats.balance >= 0" [class.negative]="stats.balance < 0">
       <div class="stat-header">
         <div class="stat-icon"><i class="pi pi-wallet"></i></div>
-        <p class="stat-label">Balance</p>
+        <p class="stat-label text-gray-500 dark:text-gray-400">Balance</p>
       </div>
       <div class="stat-info">
         <p class="stat-value">{{ formatCurrency(stats.balance) }}</p>
       </div>
     </div>
-    <div class="stat-card count">
+    <div class="stat-card count bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md">
       <div class="stat-header">
         <div class="stat-icon"><i class="pi pi-list"></i></div>
-        <p class="stat-label">Transactions</p>
+        <p class="stat-label text-gray-500 dark:text-gray-400">Transactions</p>
       </div>
       <div class="stat-info">
-        <p class="stat-value">{{ stats.count }}</p>
+        <p class="stat-value text-gray-900 dark:text-gray-100">{{ stats.count }}</p>
       </div>
     </div>
   </div>
 
   <!-- Filters -->
-  <div class="filters-card">
+  <div class="filters-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
     <div class="filters-row">
       <div class="filter-group">
-        <label>Type</label>
+        <label class="text-gray-700 dark:text-gray-200">Type</label>
         <select [(ngModel)]="filters.type" (ngModelChange)="applyFilters()" class="macos-select">
           <option value="all">All</option>
           <option value="income">Income</option>
@@ -64,21 +64,21 @@
         </select>
       </div>
       <div class="filter-group">
-        <label>Account</label>
+        <label class="text-gray-700 dark:text-gray-200">Account</label>
         <select [(ngModel)]="filters.accountId" (ngModelChange)="applyFilters()" class="macos-select">
           <option value="all">All Accounts</option>
           <option *ngFor="let account of accounts" [value]="account.id">{{ account.name }}</option>
         </select>
       </div>
       <div class="filter-group">
-        <label>Category</label>
+        <label class="text-gray-700 dark:text-gray-200">Category</label>
         <select [(ngModel)]="filters.categoryId" (ngModelChange)="applyFilters()" class="macos-select">
           <option value="all">All Categories</option>
           <option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</option>
         </select>
       </div>
       <div class="filter-group flex-2">
-        <label>Search</label>
+        <label class="text-gray-700 dark:text-gray-200">Search</label>
         <input type="text" [(ngModel)]="filters.searchText" (ngModelChange)="applyFilters()" placeholder="Search transactions..." class="macos-input" />
       </div>
       <div class="filter-group">
@@ -89,21 +89,21 @@
   </div>
 
   <!-- Transactions List -->
-  <div class="transactions-card">
-    <div class="transactions-header">
-      <h2>Transactions</h2>
-      <span class="count">{{ filteredTransactions.length }} results</span>
+  <div class="transactions-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
+    <div class="transactions-header border-b border-gray-200 dark:border-gray-700">
+      <h2 class="text-gray-900 dark:text-gray-100">Transactions</h2>
+      <span class="count bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">{{ filteredTransactions.length }} results</span>
     </div>
 
     <div class="transactions-list" *ngIf="filteredTransactions.length > 0">
-      <div *ngFor="let txn of filteredTransactions" class="transaction-item">
+      <div *ngFor="let txn of filteredTransactions" class="transaction-item border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50">
         <div class="transaction-icon" [style.background-color]="txn.categoryColor">
           <i [class]="'pi pi-' + txn.categoryIcon"></i>
         </div>
         <div class="transaction-main">
           <div class="transaction-info">
-            <h3>{{ txn.description || 'No description' }}</h3>
-            <div class="transaction-meta">
+            <h3 class="text-gray-900 dark:text-gray-100">{{ txn.description || 'No description' }}</h3>
+            <div class="transaction-meta text-gray-500 dark:text-gray-400">
               <span class="category"><i [class]="'pi pi-' + txn.categoryIcon"></i> {{ txn.categoryName }}</span>
               <span class="account"><i class="pi pi-building"></i> {{ txn.accountName }}</span>
               <span class="date"><i class="pi pi-calendar"></i> {{ formatDate(txn.date) }}</span>
@@ -120,7 +120,7 @@
                 <span>{{ txn.type === 'income' ? '+' : '-' }}</span>
                 <span class="currency-display">
                   <span class="primary-amount">{{ formatted.primary }}</span>
-                  <span class="secondary-amount" *ngIf="formatted.secondary">({{ formatted.secondary }})</span>
+                  <span class="secondary-amount text-gray-500 dark:text-gray-400" *ngIf="formatted.secondary">({{ formatted.secondary }})</span>
                 </span>
               </span>
             </ng-container>
@@ -133,10 +133,10 @@
       </div>
     </div>
 
-    <div *ngIf="filteredTransactions.length === 0" class="empty-state">
+    <div *ngIf="filteredTransactions.length === 0" class="empty-state text-gray-400 dark:text-gray-500">
       <i class="pi pi-inbox"></i>
-      <h3>No transactions found</h3>
-      <p>Try adjusting your filters or create a new transaction</p>
+      <h3 class="text-gray-500 dark:text-gray-400">No transactions found</h3>
+      <p class="text-gray-400 dark:text-gray-500">Try adjusting your filters or create a new transaction</p>
     </div>
   </div>
 </div>
@@ -149,7 +149,7 @@
 
   <div class="dialog-content">
     <div class="form-group">
-      <label>Type</label>
+      <label class="text-gray-700 dark:text-gray-200">Type</label>
       <div class="type-selector">
         <button type="button" class="type-btn" [class.active]="formData.type === 'income'" (click)="formData.type = 'income'; onTypeChange()">
           <i class="pi pi-arrow-down"></i> Income
@@ -162,7 +162,7 @@
 
     <div class="form-row">
       <div class="form-group">
-        <label>Account</label>
+        <label class="text-gray-700 dark:text-gray-200">Account</label>
         <div class="input-with-button">
           <select [(ngModel)]="formData.accountId" (change)="onAccountChange()" class="macos-select">
             <option value="">Select account</option>
@@ -172,7 +172,7 @@
         </div>
       </div>
       <div class="form-group">
-        <label>Category</label>
+        <label class="text-gray-700 dark:text-gray-200">Category</label>
         <div class="input-with-button">
           <select [(ngModel)]="formData.categoryId" class="macos-select">
             <option value="">Select category</option>
@@ -185,11 +185,11 @@
 
     <div class="form-row">
       <div class="form-group">
-        <label>Amount</label>
+        <label class="text-gray-700 dark:text-gray-200">Amount</label>
         <input type="number" [(ngModel)]="formData.amount" (ngModelChange)="onAmountOrCurrencyChange()" placeholder="0.00" step="0.01" min="0" class="macos-input" />
       </div>
       <div class="form-group">
-        <label>Currency</label>
+        <label class="text-gray-700 dark:text-gray-200">Currency</label>
         <select [(ngModel)]="formData.currency" (ngModelChange)="onAmountOrCurrencyChange()" class="macos-select">
           <option *ngFor="let curr of currencies" [value]="curr.code">{{ curr.code }} - {{ curr.name }}</option>
         </select>
@@ -199,7 +199,7 @@
     <!-- Conversion Info -->
     <div class="conversion-section" *ngIf="shouldShowConversion()">
       <div class="conversion-header">
-        <label>Conversión a Moneda Preferida ({{ getPreferredCurrency() }})</label>
+        <label class="text-gray-700 dark:text-gray-200">Conversion a Moneda Preferida ({{ getPreferredCurrency() }})</label>
         <div class="conversion-toggle">
           <input type="checkbox" id="manualConversion" [(ngModel)]="formData.useManualConversion" (ngModelChange)="onManualConversionToggle()" />
           <label for="manualConversion">Tasa Manual</label>
@@ -240,17 +240,17 @@
 
       <div class="conversion-note">
         <i class="pi pi-info-circle"></i>
-        <span>La tasa de conversión se guarda con esta transacción para mantener un historial preciso</span>
+        <span>La tasa de conversion se guarda con esta transaccion para mantener un historial preciso</span>
       </div>
     </div>
 
     <div class="form-group">
-      <label>Date</label>
+      <label class="text-gray-700 dark:text-gray-200">Date</label>
       <input type="datetime-local" [(ngModel)]="formData.date" class="macos-input" />
     </div>
 
     <div class="form-group">
-      <label>Description</label>
+      <label class="text-gray-700 dark:text-gray-200">Description</label>
       <textarea [(ngModel)]="formData.description" rows="3" placeholder="Enter description (optional)" class="macos-input"></textarea>
     </div>
   </div>
@@ -269,12 +269,12 @@
 
   <div class="dialog-content">
     <div class="form-group">
-      <label>Name</label>
+      <label class="text-gray-700 dark:text-gray-200">Name</label>
       <input type="text" [(ngModel)]="categoryFormData.name" placeholder="Category name" class="macos-input" />
     </div>
 
     <div class="form-group">
-      <label>Type</label>
+      <label class="text-gray-700 dark:text-gray-200">Type</label>
       <div class="type-selector">
         <button type="button" class="type-btn" [class.active]="categoryFormData.type === 'income'" (click)="categoryFormData.type = 'income'">
           <i class="pi pi-arrow-down"></i> Income
@@ -286,7 +286,7 @@
     </div>
 
     <div class="form-group">
-      <label>Color</label>
+      <label class="text-gray-700 dark:text-gray-200">Color</label>
       <div class="color-picker">
         <div
           *ngFor="let color of availableColors"
@@ -299,7 +299,7 @@
     </div>
 
     <div class="form-group">
-      <label>Icon</label>
+      <label class="text-gray-700 dark:text-gray-200">Icon</label>
       <div class="icon-picker">
         <div
           *ngFor="let icon of availableIcons"
@@ -326,19 +326,19 @@
 
   <div class="dialog-content">
     <div class="form-group">
-      <label>Name</label>
+      <label class="text-gray-700 dark:text-gray-200">Name</label>
       <input type="text" [(ngModel)]="accountFormData.name" placeholder="Account name" class="macos-input" />
     </div>
 
     <div class="form-row">
       <div class="form-group">
-        <label>Type</label>
+        <label class="text-gray-700 dark:text-gray-200">Type</label>
         <select [(ngModel)]="accountFormData.type" class="macos-select">
           <option *ngFor="let type of accountTypes" [value]="type.value">{{ type.label }}</option>
         </select>
       </div>
       <div class="form-group">
-        <label>Currency</label>
+        <label class="text-gray-700 dark:text-gray-200">Currency</label>
         <select [(ngModel)]="accountFormData.currency" class="macos-select">
           <option *ngFor="let curr of currencies" [value]="curr.code">{{ curr.code }}</option>
         </select>
@@ -346,12 +346,12 @@
     </div>
 
     <div class="form-group">
-      <label>Initial Balance</label>
+      <label class="text-gray-700 dark:text-gray-200">Initial Balance</label>
       <input type="number" [(ngModel)]="accountFormData.balance" placeholder="0.00" step="0.01" class="macos-input" />
     </div>
 
     <div class="form-group">
-      <label>Color</label>
+      <label class="text-gray-700 dark:text-gray-200">Color</label>
       <div class="color-picker">
         <div
           *ngFor="let color of availableColors"
@@ -364,7 +364,7 @@
     </div>
 
     <div class="form-group">
-      <label>Icon</label>
+      <label class="text-gray-700 dark:text-gray-200">Icon</label>
       <div class="icon-picker">
         <div
           *ngFor="let icon of availableIcons"
@@ -386,8 +386,8 @@
 <!-- Import CSV Dialog -->
 <p-dialog [(visible)]="showImportDialog" [modal]="true" header="Import Transactions from CSV" [closable]="true" styleClass="macos-dialog" [style]="{ width: '500px' }">
   <div class="dialog-content">
-    <p class="import-info">Upload a CSV file with the following format:</p>
-    <code class="csv-format">Date,Type,Account,Category,Amount,Description</code>
+    <p class="import-info text-gray-500 dark:text-gray-400">Upload a CSV file with the following format:</p>
+    <code class="csv-format bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">Date,Type,Account,Category,Amount,Description</code>
 
     <div class="file-upload">
       <input type="file" #fileInput accept=".csv" (change)="onFileSelected($event)" style="display: none" />

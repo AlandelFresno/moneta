@@ -1,9 +1,9 @@
 <div class="budgets-page">
   <!-- Header -->
-  <div class="page-header">
+  <div class="page-header border-b-2 border-gray-100 dark:border-gray-700">
     <div class="header-content">
-      <h1>Presupuestos</h1>
-      <p>Gestiona tus límites de gasto por categoría</p>
+      <h1 class="text-gray-900 dark:text-gray-100">Presupuestos</h1>
+      <p class="text-gray-500 dark:text-gray-400">Gestiona tus límites de gasto por categoría</p>
     </div>
     <p-button
       label="Nuevo Presupuesto"
@@ -15,60 +15,60 @@
 
   <!-- Summary Cards -->
   <div class="summary-cards" *ngIf="budgets.length > 0">
-    <div class="summary-card">
+    <div class="summary-card bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600">
       <div class="card-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);">
         <i class="pi pi-wallet"></i>
       </div>
       <div class="card-content">
-        <span class="card-label">Total Presupuestado</span>
-        <span class="card-value">{{ formatCurrency(summary.total, preferredCurrency) }}</span>
+        <span class="card-label text-gray-500 dark:text-gray-400">Total Presupuestado</span>
+        <span class="card-value text-gray-900 dark:text-gray-100">{{ formatCurrency(summary.total, preferredCurrency) }}</span>
       </div>
     </div>
 
-    <div class="summary-card">
+    <div class="summary-card bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600">
       <div class="card-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);">
         <i class="pi pi-chart-bar"></i>
       </div>
       <div class="card-content">
-        <span class="card-label">Total Gastado</span>
-        <span class="card-value">{{ formatCurrency(summary.spent, preferredCurrency) }}</span>
+        <span class="card-label text-gray-500 dark:text-gray-400">Total Gastado</span>
+        <span class="card-value text-gray-900 dark:text-gray-100">{{ formatCurrency(summary.spent, preferredCurrency) }}</span>
       </div>
     </div>
 
-    <div class="summary-card">
+    <div class="summary-card bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600">
       <div class="card-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
         <i class="pi pi-money-bill"></i>
       </div>
       <div class="card-content">
-        <span class="card-label">Disponible</span>
-        <span class="card-value">{{ formatCurrency(summary.remaining, preferredCurrency) }}</span>
+        <span class="card-label text-gray-500 dark:text-gray-400">Disponible</span>
+        <span class="card-value text-gray-900 dark:text-gray-100">{{ formatCurrency(summary.remaining, preferredCurrency) }}</span>
       </div>
     </div>
 
-    <div class="summary-card">
+    <div class="summary-card bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600">
       <div class="card-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
         <i class="pi pi-exclamation-triangle"></i>
       </div>
       <div class="card-content">
-        <span class="card-label">Excedidos</span>
-        <span class="card-value">{{ summary.overBudget }}</span>
+        <span class="card-label text-gray-500 dark:text-gray-400">Excedidos</span>
+        <span class="card-value text-gray-900 dark:text-gray-100">{{ summary.overBudget }}</span>
       </div>
     </div>
   </div>
 
   <!-- Filters -->
-  <div class="filters-section" *ngIf="budgets.length > 0">
+  <div class="filters-section bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700" *ngIf="budgets.length > 0">
     <div class="filter-group">
-      <label>Período</label>
-      <select [(ngModel)]="filterPeriod" (ngModelChange)="applyFilters()" class="filter-select">
+      <label class="text-gray-700 dark:text-gray-200">Período</label>
+      <select [(ngModel)]="filterPeriod" (ngModelChange)="applyFilters()" class="filter-select bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500">
         <option value="all">Todos</option>
         <option *ngFor="let period of periods" [value]="period.value">{{ period.label }}</option>
       </select>
     </div>
 
     <div class="filter-group">
-      <label>Categoría</label>
-      <select [(ngModel)]="filterCategory" (ngModelChange)="applyFilters()" class="filter-select">
+      <label class="text-gray-700 dark:text-gray-200">Categoría</label>
+      <select [(ngModel)]="filterCategory" (ngModelChange)="applyFilters()" class="filter-select bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500">
         <option value="all">Todas</option>
         <option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</option>
       </select>
@@ -77,15 +77,15 @@
 
   <!-- Budgets List -->
   <div class="budgets-list" *ngIf="budgets.length > 0">
-    <div class="budget-card" *ngFor="let budget of budgets" [class]="'status-' + budget.status">
-      <div class="budget-header">
+    <div class="budget-card bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600" *ngFor="let budget of budgets" [class]="'status-' + budget.status">
+      <div class="budget-header border-b border-gray-100 dark:border-gray-700">
         <div class="budget-info">
           <div class="category-badge" [style.background-color]="budget.categoryColor">
             <i [class]="'pi pi-' + budget.categoryIcon"></i>
             <span>{{ budget.categoryName }}</span>
           </div>
-          <h3>{{ budget.name }}</h3>
-          <span class="period-badge">{{ getPeriodLabel(budget.period) }}</span>
+          <h3 class="text-gray-900 dark:text-gray-100">{{ budget.name }}</h3>
+          <span class="period-badge bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">{{ getPeriodLabel(budget.period) }}</span>
         </div>
         <div class="budget-actions">
           <p-button
@@ -112,27 +112,27 @@
       <div class="budget-body">
         <div class="budget-amounts">
           <div class="amount-item">
-            <span class="amount-label">Límite</span>
-            <span class="amount-value">{{ formatCurrency(budget.limit, budget.currency) }}</span>
+            <span class="amount-label text-gray-500 dark:text-gray-400">Límite</span>
+            <span class="amount-value text-gray-900 dark:text-gray-100">{{ formatCurrency(budget.limit, budget.currency) }}</span>
           </div>
           <div class="amount-item">
-            <span class="amount-label">Gastado</span>
-            <span class="amount-value spent">{{ formatCurrency(budget.spent, budget.currency) }}</span>
+            <span class="amount-label text-gray-500 dark:text-gray-400">Gastado</span>
+            <span class="amount-value spent text-red-500">{{ formatCurrency(budget.spent, budget.currency) }}</span>
           </div>
           <div class="amount-item">
-            <span class="amount-label">Disponible</span>
-            <span class="amount-value remaining">{{ formatCurrency(budget.remaining, budget.currency) }}</span>
+            <span class="amount-label text-gray-500 dark:text-gray-400">Disponible</span>
+            <span class="amount-value remaining text-emerald-500">{{ formatCurrency(budget.remaining, budget.currency) }}</span>
           </div>
         </div>
 
         <div class="budget-progress">
           <div class="progress-header">
-            <span class="progress-percentage">{{ budget.percentage.toFixed(1) }}%</span>
+            <span class="progress-percentage text-gray-900 dark:text-gray-100">{{ budget.percentage.toFixed(1) }}%</span>
             <span class="progress-status" [style.color]="getStatusColor(budget.status)">
               {{ getStatusLabel(budget.status) }}
             </span>
           </div>
-          <div class="progress-bar-container">
+          <div class="progress-bar-container bg-gray-100 dark:bg-gray-700">
             <div
               class="progress-bar-fill"
               [style.width.%]="budget.percentage"
@@ -145,10 +145,10 @@
   </div>
 
   <!-- Empty State -->
-  <div class="empty-state" *ngIf="budgets.length === 0">
-    <i class="pi pi-chart-pie"></i>
-    <h2>No hay presupuestos configurados</h2>
-    <p>Crea tu primer presupuesto para comenzar a controlar tus gastos</p>
+  <div class="empty-state bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700" *ngIf="budgets.length === 0">
+    <i class="pi pi-chart-pie text-gray-300 dark:text-gray-600"></i>
+    <h2 class="text-gray-700 dark:text-gray-200">No hay presupuestos configurados</h2>
+    <p class="text-gray-500 dark:text-gray-400">Crea tu primer presupuesto para comenzar a controlar tus gastos</p>
     <p-button
       label="Crear Presupuesto"
       icon="pi pi-plus"
@@ -175,7 +175,7 @@
 
   <div class="dialog-content">
     <div class="form-group">
-      <label for="budget-name">Nombre del Presupuesto *</label>
+      <label for="budget-name" class="text-gray-700 dark:text-gray-200">Nombre del Presupuesto *</label>
       <input
         type="text"
         id="budget-name"
@@ -187,7 +187,7 @@
 
     <div class="form-row">
       <div class="form-group">
-        <label for="budget-category">Categoría *</label>
+        <label for="budget-category" class="text-gray-700 dark:text-gray-200">Categoría *</label>
         <select id="budget-category" [(ngModel)]="budgetForm.categoryId" class="macos-select">
           <option value="">Seleccionar categoría</option>
           <option *ngFor="let category of categories" [value]="category.id">
@@ -197,7 +197,7 @@
       </div>
 
       <div class="form-group">
-        <label for="budget-period">Período *</label>
+        <label for="budget-period" class="text-gray-700 dark:text-gray-200">Período *</label>
         <select id="budget-period" [(ngModel)]="budgetForm.period" class="macos-select">
           <option *ngFor="let period of periods" [value]="period.value">
             {{ period.label }}
@@ -208,7 +208,7 @@
 
     <div class="form-row">
       <div class="form-group">
-        <label for="budget-limit">Límite *</label>
+        <label for="budget-limit" class="text-gray-700 dark:text-gray-200">Límite *</label>
         <input
           type="number"
           id="budget-limit"
@@ -221,7 +221,7 @@
       </div>
 
       <div class="form-group">
-        <label for="budget-currency">Moneda *</label>
+        <label for="budget-currency" class="text-gray-700 dark:text-gray-200">Moneda *</label>
         <select id="budget-currency" [(ngModel)]="budgetForm.currency" class="macos-select">
           <option *ngFor="let curr of currencies" [value]="curr.code">
             {{ curr.code }} - {{ curr.name }}
@@ -231,7 +231,7 @@
     </div>
 
     <div class="form-group">
-      <label for="budget-threshold">Alerta al alcanzar (%)</label>
+      <label for="budget-threshold" class="text-gray-700 dark:text-gray-200">Alerta al alcanzar (%)</label>
       <div class="threshold-input">
         <input
           type="range"
@@ -241,9 +241,9 @@
           max="100"
           step="5"
           class="threshold-slider">
-        <span class="threshold-value">{{ budgetForm.alertThreshold }}%</span>
+        <span class="threshold-value text-blue-500">{{ budgetForm.alertThreshold }}%</span>
       </div>
-      <small class="help-text">Recibirás una alerta cuando alcances este porcentaje del límite</small>
+      <small class="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-snug">Recibirás una alerta cuando alcances este porcentaje del límite</small>
     </div>
   </div>
 

@@ -1,11 +1,11 @@
-<div class="page-container">
+<div class="page-container p-8 max-w-[1400px] mx-auto min-w-fit">
   <!-- Page Header -->
-  <div class="page-header">
-    <div class="header-left">
-      <h1 class="page-title">Análisis y Estadísticas</h1>
-      <p class="page-subtitle">Visualiza tus patrones financieros</p>
+  <div class="page-header flex justify-between items-start mb-6 gap-8">
+    <div class="header-left flex-1">
+      <h1 class="text-[2rem] font-bold text-gray-800 dark:text-gray-100 mb-2 tracking-tight">Análisis y Estadísticas</h1>
+      <p class="text-[0.9375rem] text-gray-500 dark:text-gray-400 m-0">Visualiza tus patrones financieros</p>
     </div>
-    <div class="header-actions">
+    <div class="header-actions flex gap-3">
       <div class="period-selector">
         <button
           pButton
@@ -49,19 +49,19 @@
 
   <!-- Custom Date Picker Dialog -->
   <div class="custom-date-overlay" *ngIf="showCustomDatePicker" (click)="onCancelCustomDate()">
-    <div class="custom-date-picker" (click)="$event.stopPropagation()">
-      <h3>Seleccionar Período</h3>
-      <div class="date-range-inputs">
-        <div class="date-input-group">
-          <label>Fecha Inicio</label>
+    <div class="custom-date-picker bg-white dark:bg-gray-800 rounded-xl p-6 shadow-2xl max-w-[90vw]" (click)="$event.stopPropagation()">
+      <h3 class="m-0 mb-4 text-lg font-semibold text-gray-800 dark:text-gray-100">Seleccionar Período</h3>
+      <div class="date-range-inputs flex gap-4 mb-4">
+        <div class="date-input-group flex-1 flex flex-col gap-2">
+          <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">Fecha Inicio</label>
           <input type="date" [(ngModel)]="customStartDate" [max]="getTodayString()" class="macos-input" />
         </div>
-        <div class="date-input-group">
-          <label>Fecha Fin</label>
+        <div class="date-input-group flex-1 flex flex-col gap-2">
+          <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">Fecha Fin</label>
           <input type="date" [(ngModel)]="customEndDate" [max]="getTodayString()" [min]="customStartDate" class="macos-input" />
         </div>
       </div>
-      <div class="custom-date-actions">
+      <div class="custom-date-actions flex gap-3 justify-end mt-4">
         <button pButton label="Cancelar" class="p-button-outlined p-button-sm" (click)="onCancelCustomDate()"></button>
         <button pButton label="Aplicar" class="p-button-sm" (click)="onCustomDateChange()" [disabled]="!customStartDate || !customEndDate"></button>
       </div>
@@ -69,129 +69,132 @@
   </div>
 
   <!-- Period Label -->
-  <div class="period-label">
-    <h3>{{ getPeriodLabel() }}</h3>
+  <div class="period-label mb-6">
+    <h3 class="text-lg font-semibold text-gray-600 dark:text-gray-300 m-0 flex items-center gap-2">{{ getPeriodLabel() }}</h3>
   </div>
 
   <!-- Stats Summary Cards -->
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-header">
+  <div class="stats-grid mb-6">
+    <div class="stat-card bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col gap-3">
+      <div class="stat-header flex items-center gap-3">
         <div class="stat-icon income-icon">
           <i class="pi pi-arrow-down"></i>
         </div>
-        <p class="stat-label">Ingresos</p>
+        <p class="stat-label text-[0.6875rem] text-gray-500 dark:text-gray-400 m-0 font-medium uppercase tracking-wide flex-1">Ingresos</p>
       </div>
-      <h2 class="stat-value">{{ formatCurrency(currentPeriodStats.totalIncome) }}</h2>
-      <div class="stat-change" *ngIf="previousPeriodStats.totalIncome > 0">
+      <h2 class="stat-value text-[1.75rem] font-bold text-gray-800 dark:text-gray-100 m-0 tracking-tight leading-tight whitespace-nowrap">{{ formatCurrency(currentPeriodStats.totalIncome) }}</h2>
+      <div class="stat-change flex flex-col gap-1 text-[0.8125rem]" *ngIf="previousPeriodStats.totalIncome > 0">
         <span
+          class="flex items-center gap-1 font-semibold"
           [class.positive]="getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) > 0"
           [class.negative]="getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) < 0"
         >
           <i
-            class="pi"
+            class="pi text-xs"
             [class.pi-arrow-up]="getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) > 0"
             [class.pi-arrow-down]="getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) < 0"
           ></i>
           {{ getPercentageChange(currentPeriodStats.totalIncome, previousPeriodStats.totalIncome) | number:'1.1-1' }}%
         </span>
-        <span class="vs-previous">vs período anterior</span>
+        <span class="text-gray-400 dark:text-gray-500 text-xs">vs período anterior</span>
       </div>
     </div>
 
-    <div class="stat-card">
-      <div class="stat-header">
+    <div class="stat-card bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col gap-3">
+      <div class="stat-header flex items-center gap-3">
         <div class="stat-icon expense-icon">
           <i class="pi pi-arrow-up"></i>
         </div>
-        <p class="stat-label">Gastos</p>
+        <p class="stat-label text-[0.6875rem] text-gray-500 dark:text-gray-400 m-0 font-medium uppercase tracking-wide flex-1">Gastos</p>
       </div>
-      <h2 class="stat-value">{{ formatCurrency(currentPeriodStats.totalExpense) }}</h2>
-      <div class="stat-change" *ngIf="previousPeriodStats.totalExpense > 0">
+      <h2 class="stat-value text-[1.75rem] font-bold text-gray-800 dark:text-gray-100 m-0 tracking-tight leading-tight whitespace-nowrap">{{ formatCurrency(currentPeriodStats.totalExpense) }}</h2>
+      <div class="stat-change flex flex-col gap-1 text-[0.8125rem]" *ngIf="previousPeriodStats.totalExpense > 0">
         <span
+          class="flex items-center gap-1 font-semibold"
           [class.positive]="getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) < 0"
           [class.negative]="getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) > 0"
         >
           <i
-            class="pi"
+            class="pi text-xs"
             [class.pi-arrow-up]="getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) > 0"
             [class.pi-arrow-down]="getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) < 0"
           ></i>
           {{ getPercentageChange(currentPeriodStats.totalExpense, previousPeriodStats.totalExpense) | number:'1.1-1' }}%
         </span>
-        <span class="vs-previous">vs período anterior</span>
+        <span class="text-gray-400 dark:text-gray-500 text-xs">vs período anterior</span>
       </div>
     </div>
 
-    <div class="stat-card">
-      <div class="stat-header">
+    <div class="stat-card bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col gap-3">
+      <div class="stat-header flex items-center gap-3">
         <div class="stat-icon balance-icon">
           <i class="pi pi-wallet"></i>
         </div>
-        <p class="stat-label">Balance</p>
+        <p class="stat-label text-[0.6875rem] text-gray-500 dark:text-gray-400 m-0 font-medium uppercase tracking-wide flex-1">Balance</p>
       </div>
       <h2
-        class="stat-value"
+        class="stat-value text-[1.75rem] font-bold text-gray-800 dark:text-gray-100 m-0 tracking-tight leading-tight whitespace-nowrap"
         [class.positive]="currentPeriodStats.balance > 0"
         [class.negative]="currentPeriodStats.balance < 0"
       >
         {{ formatCurrency(currentPeriodStats.balance) }}
       </h2>
-      <div class="stat-change" *ngIf="previousPeriodStats.balance !== 0">
+      <div class="stat-change flex flex-col gap-1 text-[0.8125rem]" *ngIf="previousPeriodStats.balance !== 0">
         <span
+          class="flex items-center gap-1 font-semibold"
           [class.positive]="getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) > 0"
           [class.negative]="getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) < 0"
         >
           <i
-            class="pi"
+            class="pi text-xs"
             [class.pi-arrow-up]="getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) > 0"
             [class.pi-arrow-down]="getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) < 0"
           ></i>
           {{ getPercentageChange(currentPeriodStats.balance, previousPeriodStats.balance) | number:'1.1-1' }}%
         </span>
-        <span class="vs-previous">vs período anterior</span>
+        <span class="text-gray-400 dark:text-gray-500 text-xs">vs período anterior</span>
       </div>
     </div>
 
-    <div class="stat-card">
-      <div class="stat-header">
+    <div class="stat-card bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col gap-3">
+      <div class="stat-header flex items-center gap-3">
         <div class="stat-icon transactions-icon">
           <i class="pi pi-list"></i>
         </div>
-        <p class="stat-label">Transacciones</p>
+        <p class="stat-label text-[0.6875rem] text-gray-500 dark:text-gray-400 m-0 font-medium uppercase tracking-wide flex-1">Transacciones</p>
       </div>
-      <h2 class="stat-value">{{ currentPeriodStats.transactionCount }}</h2>
-      <div class="stat-meta">
+      <h2 class="stat-value text-[1.75rem] font-bold text-gray-800 dark:text-gray-100 m-0 tracking-tight leading-tight whitespace-nowrap">{{ currentPeriodStats.transactionCount }}</h2>
+      <div class="stat-meta text-[0.8125rem] text-gray-500 dark:text-gray-400">
         <span>Promedio: {{ formatCurrency(currentPeriodStats.avgTransactionAmount) }}</span>
       </div>
     </div>
   </div>
 
   <!-- Top Category -->
-  <div class="top-category-card" *ngIf="currentPeriodStats.topCategory">
-    <div class="top-category-header">
-      <i class="pi pi-star"></i>
+  <div class="top-category-card rounded-xl mb-8" *ngIf="currentPeriodStats.topCategory">
+    <div class="top-category-header flex items-center gap-2 text-white text-sm font-semibold mb-3 opacity-95">
+      <i class="pi pi-star text-base"></i>
       <span>Categoría con más gastos</span>
     </div>
     <div class="top-category-content">
-      <h3>{{ currentPeriodStats.topCategory.name }}</h3>
-      <p>{{ formatCurrency(currentPeriodStats.topCategory.amount || 0) }}</p>
+      <h3 class="text-xl font-bold text-white m-0 mb-1">{{ currentPeriodStats.topCategory.name }}</h3>
+      <p class="text-2xl font-bold text-white m-0 tracking-tight">{{ formatCurrency(currentPeriodStats.topCategory.amount || 0) }}</p>
     </div>
   </div>
 
   <!-- Charts Section -->
-  <div class="charts-section">
+  <div class="charts-section flex flex-col gap-5 mb-8">
     <!-- Pie Charts Row -->
     <div class="charts-row">
-      <div class="chart-card">
-        <div class="chart-header">
-          <h3>Gastos por Categoría</h3>
-          <span class="chart-subtitle">Distribución del período seleccionado</span>
+      <div class="chart-card bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div class="chart-header px-6 py-5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 m-0 mb-1">Gastos por Categoría</h3>
+          <span class="text-[0.8125rem] text-gray-500 dark:text-gray-400">Distribución del período seleccionado</span>
         </div>
-        <div class="chart-body">
-          <div class="empty-chart" *ngIf="expensesByCategory.length === 0">
-            <i class="pi pi-chart-pie"></i>
-            <p>No hay gastos en este período</p>
+        <div class="chart-body p-6">
+          <div class="empty-chart flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 p-8" *ngIf="expensesByCategory.length === 0">
+            <i class="pi pi-chart-pie text-5xl mb-4 opacity-50"></i>
+            <p class="m-0 text-[0.9375rem]">No hay gastos en este período</p>
           </div>
           <canvas
             *ngIf="expensesByCategory.length > 0"
@@ -203,15 +206,15 @@
         </div>
       </div>
 
-      <div class="chart-card">
-        <div class="chart-header">
-          <h3>Ingresos por Categoría</h3>
-          <span class="chart-subtitle">Distribución del período seleccionado</span>
+      <div class="chart-card bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div class="chart-header px-6 py-5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 m-0 mb-1">Ingresos por Categoría</h3>
+          <span class="text-[0.8125rem] text-gray-500 dark:text-gray-400">Distribución del período seleccionado</span>
         </div>
-        <div class="chart-body">
-          <div class="empty-chart" *ngIf="incomesByCategory.length === 0">
-            <i class="pi pi-chart-pie"></i>
-            <p>No hay ingresos en este período</p>
+        <div class="chart-body p-6">
+          <div class="empty-chart flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 p-8" *ngIf="incomesByCategory.length === 0">
+            <i class="pi pi-chart-pie text-5xl mb-4 opacity-50"></i>
+            <p class="m-0 text-[0.9375rem]">No hay ingresos en este período</p>
           </div>
           <canvas
             *ngIf="incomesByCategory.length > 0"
@@ -225,12 +228,12 @@
     </div>
 
     <!-- Trend Chart -->
-    <div class="chart-card full-width">
-      <div class="chart-header">
-        <h3>Tendencia de Ingresos y Gastos</h3>
-        <span class="chart-subtitle">Últimos 6 meses</span>
+    <div class="chart-card full-width bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+      <div class="chart-header px-6 py-5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 m-0 mb-1">Tendencia de Ingresos y Gastos</h3>
+        <span class="text-[0.8125rem] text-gray-500 dark:text-gray-400">Últimos 6 meses</span>
       </div>
-      <div class="chart-body trend-chart">
+      <div class="chart-body trend-chart p-6">
         <canvas
           baseChart
           [data]="trendChartData"
@@ -241,12 +244,12 @@
     </div>
 
     <!-- Monthly Comparison Chart -->
-    <div class="chart-card full-width">
-      <div class="chart-header">
-        <h3>Comparación Mensual</h3>
-        <span class="chart-subtitle">Año {{ getCurrentYear() }}</span>
+    <div class="chart-card full-width bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+      <div class="chart-header px-6 py-5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 m-0 mb-1">Comparación Mensual</h3>
+        <span class="text-[0.8125rem] text-gray-500 dark:text-gray-400">Año {{ getCurrentYear() }}</span>
       </div>
-      <div class="chart-body comparison-chart">
+      <div class="chart-body comparison-chart p-6">
         <canvas
           baseChart
           [data]="monthlyComparisonData"
@@ -260,26 +263,26 @@
   <!-- Category Breakdown Tables -->
   <div class="tables-section">
     <!-- Expenses Breakdown -->
-    <div class="table-card">
-      <div class="table-header">
-        <h3>Detalle de Gastos por Categoría</h3>
-        <span class="count">{{ expensesByCategory.length }}</span>
+    <div class="table-card bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+      <div class="table-header px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 m-0">Detalle de Gastos por Categoría</h3>
+        <span class="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-2.5 py-1 rounded-xl text-[0.8125rem] font-semibold">{{ expensesByCategory.length }}</span>
       </div>
       <div class="table-body">
-        <div class="empty-state" *ngIf="expensesByCategory.length === 0">
-          <i class="pi pi-inbox"></i>
-          <p>No hay gastos registrados</p>
+        <div class="empty-state text-center py-12 px-8 text-gray-400 dark:text-gray-500" *ngIf="expensesByCategory.length === 0">
+          <i class="pi pi-inbox text-4xl mb-4 opacity-50"></i>
+          <p class="m-0 text-[0.9375rem]">No hay gastos registrados</p>
         </div>
-        <div class="category-list" *ngIf="expensesByCategory.length > 0">
-          <div class="category-item" *ngFor="let cat of expensesByCategory">
-            <div class="category-color" [style.background]="cat.color"></div>
-            <div class="category-info">
-              <h4>{{ cat.name }}</h4>
-              <span class="category-count">{{ cat.count }} transacciones</span>
+        <div class="category-list p-2" *ngIf="expensesByCategory.length > 0">
+          <div class="category-item flex items-center gap-4 p-4 rounded-lg transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-700" *ngFor="let cat of expensesByCategory">
+            <div class="category-color w-3 h-12 rounded-md flex-shrink-0" [style.background]="cat.color"></div>
+            <div class="category-info flex-1 min-w-0">
+              <h4 class="text-[0.9375rem] font-semibold text-gray-800 dark:text-gray-100 m-0 mb-1">{{ cat.name }}</h4>
+              <span class="text-[0.8125rem] text-gray-500 dark:text-gray-400">{{ cat.count }} transacciones</span>
             </div>
-            <div class="category-stats">
-              <span class="category-amount">{{ formatCurrency(cat.amount) }}</span>
-              <span class="category-percentage">{{ cat.percentage | number:'1.1-1' }}%</span>
+            <div class="category-stats flex flex-col items-end gap-1">
+              <span class="text-[0.9375rem] font-bold text-gray-800 dark:text-gray-100">{{ formatCurrency(cat.amount) }}</span>
+              <span class="text-[0.8125rem] font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-lg">{{ cat.percentage | number:'1.1-1' }}%</span>
             </div>
           </div>
         </div>
@@ -287,26 +290,26 @@
     </div>
 
     <!-- Incomes Breakdown -->
-    <div class="table-card">
-      <div class="table-header">
-        <h3>Detalle de Ingresos por Categoría</h3>
-        <span class="count">{{ incomesByCategory.length }}</span>
+    <div class="table-card bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+      <div class="table-header px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 m-0">Detalle de Ingresos por Categoría</h3>
+        <span class="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-2.5 py-1 rounded-xl text-[0.8125rem] font-semibold">{{ incomesByCategory.length }}</span>
       </div>
       <div class="table-body">
-        <div class="empty-state" *ngIf="incomesByCategory.length === 0">
-          <i class="pi pi-inbox"></i>
-          <p>No hay ingresos registrados</p>
+        <div class="empty-state text-center py-12 px-8 text-gray-400 dark:text-gray-500" *ngIf="incomesByCategory.length === 0">
+          <i class="pi pi-inbox text-4xl mb-4 opacity-50"></i>
+          <p class="m-0 text-[0.9375rem]">No hay ingresos registrados</p>
         </div>
-        <div class="category-list" *ngIf="incomesByCategory.length > 0">
-          <div class="category-item" *ngFor="let cat of incomesByCategory">
-            <div class="category-color" [style.background]="cat.color"></div>
-            <div class="category-info">
-              <h4>{{ cat.name }}</h4>
-              <span class="category-count">{{ cat.count }} transacciones</span>
+        <div class="category-list p-2" *ngIf="incomesByCategory.length > 0">
+          <div class="category-item flex items-center gap-4 p-4 rounded-lg transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-700" *ngFor="let cat of incomesByCategory">
+            <div class="category-color w-3 h-12 rounded-md flex-shrink-0" [style.background]="cat.color"></div>
+            <div class="category-info flex-1 min-w-0">
+              <h4 class="text-[0.9375rem] font-semibold text-gray-800 dark:text-gray-100 m-0 mb-1">{{ cat.name }}</h4>
+              <span class="text-[0.8125rem] text-gray-500 dark:text-gray-400">{{ cat.count }} transacciones</span>
             </div>
-            <div class="category-stats">
-              <span class="category-amount">{{ formatCurrency(cat.amount) }}</span>
-              <span class="category-percentage">{{ cat.percentage | number:'1.1-1' }}%</span>
+            <div class="category-stats flex flex-col items-end gap-1">
+              <span class="text-[0.9375rem] font-bold text-gray-800 dark:text-gray-100">{{ formatCurrency(cat.amount) }}</span>
+              <span class="text-[0.8125rem] font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-lg">{{ cat.percentage | number:'1.1-1' }}%</span>
             </div>
           </div>
         </div>

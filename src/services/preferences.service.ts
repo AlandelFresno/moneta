@@ -152,14 +152,10 @@ export class PreferencesService {
    * Aplica el tema al DOM
    */
   private applyTheme(theme: 'light' | 'dark'): void {
-    const root = document.documentElement;
-
     if (theme === 'dark') {
-      root.classList.add('dark-theme');
-      root.classList.remove('light-theme');
+      document.documentElement.classList.add('dark');
     } else {
-      root.classList.add('light-theme');
-      root.classList.remove('dark-theme');
+      document.documentElement.classList.remove('dark');
     }
   }
 

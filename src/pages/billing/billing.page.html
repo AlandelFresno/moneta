@@ -1,6 +1,6 @@
-<div class="billing-page">
-  <div class="page-header">
-    <h1>Facturación y Monotributo</h1>
+<div class="p-8 max-w-[1400px] mx-auto min-w-fit max-md:p-4">
+  <div class="flex justify-between items-center mb-8 max-md:flex-col max-md:items-stretch max-md:gap-4">
+    <h1 class="text-3xl font-semibold text-gray-900 dark:text-gray-100">Facturación y Monotributo</h1>
     <p-button
       label="Nueva Facturación"
       icon="pi pi-plus"
@@ -10,105 +10,127 @@
   </div>
 
   <!-- Resumen de Categoría Actual -->
-  <div class="category-summary">
-    <div class="summary-card current-category">
-      <div class="card-header">
-        <i class="pi pi-user"></i>
-        <h3>Categoría Actual</h3>
+  <div class="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-6 mb-8 max-md:grid-cols-1">
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border-2 border-blue-500">
+      <div class="flex items-center gap-2 mb-4">
+        <i class="pi pi-user text-xl text-gray-500 dark:text-gray-400"></i>
+        <h3 class="text-base font-semibold text-gray-700 dark:text-gray-200">Categoría Actual</h3>
       </div>
-      <div class="category-badge" [style.background-color]="getCategoryColor(currentCategory)">
+      <div class="inline-block py-3 px-6 rounded-lg text-white font-bold text-xl mb-3"
+           [style.background-color]="getCategoryColor(currentCategory)">
         Categoría {{ currentCategory }}
       </div>
-      <p class="category-limit">{{ getCategoryInfo(currentCategory)?.description }}</p>
-      <p class="category-fee">
+      <p class="text-gray-500 dark:text-gray-400 text-sm my-2">{{ getCategoryInfo(currentCategory)?.description }}</p>
+      <p class="text-gray-900 dark:text-gray-100 font-semibold my-2">
         Cuota Servicios: {{ formatCurrency(getCategoryInfo(currentCategory)?.monthlyFeeServices || 0) }}<br>
         Cuota Bienes: {{ formatCurrency(getCategoryInfo(currentCategory)?.monthlyFeeGoods || 0) }}
       </p>
     </div>
 
-    <div class="summary-card total-billing">
-      <div class="card-header">
-        <i class="pi pi-calendar"></i>
-        <h3>Últimos 12 Meses</h3>
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border-2 border-transparent">
+      <div class="flex items-center gap-2 mb-4">
+        <i class="pi pi-calendar text-xl text-gray-500 dark:text-gray-400"></i>
+        <h3 class="text-base font-semibold text-gray-700 dark:text-gray-200">Últimos 12 Meses</h3>
       </div>
-      <div class="total-amount">{{ formatCurrency(last12MonthsTotal) }}</div>
-      <p class="percentage">
+      <div class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{{ formatCurrency(last12MonthsTotal) }}</div>
+      <p class="text-gray-500 dark:text-gray-400 text-sm">
         {{ ((last12MonthsTotal / (getCategoryInfo(currentCategory)?.maxAnnualBilling || 1)) * 100).toFixed(1) }}%
         del límite de categoría {{ currentCategory }}
       </p>
     </div>
 
-    <div class="summary-card suggested-category" [class.needs-change]="needsRecategorization()">
-      <div class="card-header">
-        <i class="pi pi-lightbulb"></i>
-        <h3>Categoría Sugerida</h3>
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border-2"
+         [class.border-amber-500]="needsRecategorization()"
+         [class.bg-amber-50]="needsRecategorization()"
+         [class.dark:bg-amber-900/20]="needsRecategorization()"
+         [class.border-transparent]="!needsRecategorization()">
+      <div class="flex items-center gap-2 mb-4">
+        <i class="pi pi-lightbulb text-xl text-gray-500 dark:text-gray-400"></i>
+        <h3 class="text-base font-semibold text-gray-700 dark:text-gray-200">Categoría Sugerida</h3>
       </div>
-      <div class="category-badge"
+      <div class="inline-block py-3 px-6 rounded-lg text-white font-bold text-xl mb-3"
            [style.background-color]="suggestedCategory === 'EXCEDE' ? '#dc2626' : getCategoryColor(suggestedCategory)">
         {{ suggestedCategory === 'EXCEDE' ? 'Excede Monotributo' : 'Categoría ' + suggestedCategory }}
       </div>
-      <p class="suggestion-message" [class.warning]="needsRecategorization()">
+      <p class="text-sm mt-2 leading-relaxed"
+         [class.text-amber-800]="needsRecategorization()"
+         [class.dark:text-amber-300]="needsRecategorization()"
+         [class.font-medium]="needsRecategorization()"
+         [class.text-gray-700]="!needsRecategorization()"
+         [class.dark:text-gray-300]="!needsRecategorization()">
         {{ getRecategorizationMessage() }}
       </p>
     </div>
   </div>
 
   <!-- Períodos de Recategorización -->
-  <div class="recategorization-info">
-    <div class="info-card" [class.active]="canRecategorize">
-      <i class="pi" [ngClass]="canRecategorize ? 'pi-check-circle' : 'pi-info-circle'"></i>
+  <div class="mb-8">
+    <div class="rounded-xl p-5 flex items-start gap-4 border-2"
+         [class.bg-emerald-50]="canRecategorize"
+         [class.dark:bg-emerald-900/20]="canRecategorize"
+         [class.border-emerald-500]="canRecategorize"
+         [class.bg-gray-100]="!canRecategorize"
+         [class.dark:bg-gray-800]="!canRecategorize"
+         [class.border-gray-200]="!canRecategorize"
+         [class.dark:border-gray-700]="!canRecategorize">
+      <i class="pi text-2xl mt-1"
+         [ngClass]="canRecategorize ? 'pi-check-circle text-emerald-500' : 'pi-info-circle text-gray-500 dark:text-gray-400'"></i>
       <div>
-        <h4>Período de Recategorización</h4>
-        <p>{{ nextRecategorizationPeriod }}</p>
-        <p class="small">Solo podés cambiar de categoría en enero (anual) y julio (semestral)</p>
+        <h4 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">Período de Recategorización</h4>
+        <p class="text-sm text-gray-700 dark:text-gray-300 my-1">{{ nextRecategorizationPeriod }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 my-1">Solo podés cambiar de categoría en enero (anual) y julio (semestral)</p>
       </div>
     </div>
   </div>
 
   <!-- Tabla de Categorías de Monotributo -->
-  <div class="categories-table-section">
-    <h2>Categorías de Monotributo AFIP 2025</h2>
-    <div class="table-container">
-      <table class="categories-table">
-        <thead>
+  <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm mb-8">
+    <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Categorías de Monotributo AFIP 2025</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse">
+        <thead class="bg-gray-50 dark:bg-gray-700">
           <tr>
-            <th>Categoría</th>
-            <th>Límite Anual</th>
-            <th>Límite Mensual</th>
-            <th>Cuota Servicios</th>
-            <th>Cuota Bienes</th>
-            <th>Tu Facturación</th>
-            <th>Estado</th>
+            <th class="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-600">Categoría</th>
+            <th class="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-600">Límite Anual</th>
+            <th class="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-600">Límite Mensual</th>
+            <th class="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-600">Cuota Servicios</th>
+            <th class="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-600">Cuota Bienes</th>
+            <th class="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-600">Tu Facturación</th>
+            <th class="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-600">Estado</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let cat of monotributoCategories"
-              [class.current]="cat.category === currentCategory"
-              [class.suggested]="cat.category === suggestedCategory && suggestedCategory !== currentCategory">
-            <td>
-              <div class="category-cell">
-                <span class="category-badge-small" [style.background-color]="getCategoryColor(cat.category)">
+              class="border-b border-gray-200 dark:border-gray-700 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50"
+              [class.bg-blue-50]="cat.category === currentCategory"
+              [class.dark:bg-blue-900/20]="cat.category === currentCategory"
+              [class.bg-amber-50]="cat.category === suggestedCategory && suggestedCategory !== currentCategory"
+              [class.dark:bg-amber-900/20]="cat.category === suggestedCategory && suggestedCategory !== currentCategory">
+            <td class="p-4 text-sm text-gray-900 dark:text-gray-100">
+              <div class="flex items-center">
+                <span class="inline-block py-1 px-3 rounded-md text-white font-bold text-sm"
+                      [style.background-color]="getCategoryColor(cat.category)">
                   {{ cat.category }}
                 </span>
-                <i class="pi pi-star-fill" *ngIf="cat.category === currentCategory" style="color: #f59e0b; margin-left: 8px;"></i>
+                <i class="pi pi-star-fill ml-2" *ngIf="cat.category === currentCategory" style="color: #f59e0b;"></i>
               </div>
             </td>
-            <td>{{ formatCurrency(cat.maxAnnualBilling) }}</td>
-            <td>{{ formatCurrency(cat.maxMonthlyBilling) }}</td>
-            <td>{{ formatCurrency(cat.monthlyFeeServices) }}</td>
-            <td>{{ formatCurrency(cat.monthlyFeeGoods) }}</td>
-            <td>
+            <td class="p-4 text-sm text-gray-900 dark:text-gray-100">{{ formatCurrency(cat.maxAnnualBilling) }}</td>
+            <td class="p-4 text-sm text-gray-900 dark:text-gray-100">{{ formatCurrency(cat.maxMonthlyBilling) }}</td>
+            <td class="p-4 text-sm text-gray-900 dark:text-gray-100">{{ formatCurrency(cat.monthlyFeeServices) }}</td>
+            <td class="p-4 text-sm text-gray-900 dark:text-gray-100">{{ formatCurrency(cat.monthlyFeeGoods) }}</td>
+            <td class="p-4 text-sm text-gray-900 dark:text-gray-100">
               <div class="progress-bar">
                 <div class="progress-fill"
                      [style.width.%]="(last12MonthsTotal / cat.maxAnnualBilling) * 100"
                      [style.background-color]="getCategoryColor(cat.category)">
                 </div>
               </div>
-              <span class="progress-text">
+              <span class="text-xs text-gray-500 dark:text-gray-400">
                 {{ ((last12MonthsTotal / cat.maxAnnualBilling) * 100).toFixed(1) }}%
               </span>
             </td>
-            <td>
+            <td class="p-4 text-sm">
               <span class="status-badge" *ngIf="cat.category === currentCategory">Actual</span>
               <span class="status-badge suggested" *ngIf="cat.category === suggestedCategory && suggestedCategory !== currentCategory">Sugerida</span>
               <span class="status-badge available" *ngIf="last12MonthsTotal <= cat.maxAnnualBilling && cat.category !== currentCategory && cat.category !== suggestedCategory">Disponible</span>
@@ -121,47 +143,50 @@
   </div>
 
   <!-- Lista de Facturaciones -->
-  <div class="billings-section">
-    <h2>Historial de Facturación</h2>
-    <div class="table-container">
-      <table class="billings-table">
-        <thead>
+  <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+    <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Historial de Facturación</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse">
+        <thead class="bg-gray-50 dark:bg-gray-700">
           <tr>
-            <th>Período</th>
-            <th>Monto</th>
-            <th>Descripción</th>
-            <th>Acciones</th>
+            <th class="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-600">Período</th>
+            <th class="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-600">Monto</th>
+            <th class="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-600">Descripción</th>
+            <th class="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-600">Acciones</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let billing of billings">
-            <td>{{ getMonthName(billing.month) }} {{ billing.year }}</td>
-            <td class="amount">{{ formatCurrency(billing.amount) }}</td>
-            <td>{{ billing.description || '-' }}</td>
-            <td class="actions">
-              <p-button
-                icon="pi pi-pencil"
-                (onClick)="openEditDialog(billing)"
-                [text]="true"
-                [rounded]="true"
-                severity="info"
-                size="small">
-              </p-button>
-              <p-button
-                icon="pi pi-trash"
-                (onClick)="deleteBilling(billing.id)"
-                [text]="true"
-                [rounded]="true"
-                severity="danger"
-                size="small">
-              </p-button>
+          <tr *ngFor="let billing of billings"
+              class="border-b border-gray-200 dark:border-gray-700 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <td class="p-4 text-sm text-gray-900 dark:text-gray-100">{{ getMonthName(billing.month) }} {{ billing.year }}</td>
+            <td class="p-4 text-sm font-semibold text-emerald-600 dark:text-emerald-400">{{ formatCurrency(billing.amount) }}</td>
+            <td class="p-4 text-sm text-gray-900 dark:text-gray-100">{{ billing.description || '-' }}</td>
+            <td class="p-4 text-sm">
+              <div class="flex gap-2">
+                <p-button
+                  icon="pi pi-pencil"
+                  (onClick)="openEditDialog(billing)"
+                  [text]="true"
+                  [rounded]="true"
+                  severity="info"
+                  size="small">
+                </p-button>
+                <p-button
+                  icon="pi pi-trash"
+                  (onClick)="deleteBilling(billing.id)"
+                  [text]="true"
+                  [rounded]="true"
+                  severity="danger"
+                  size="small">
+                </p-button>
+              </div>
             </td>
           </tr>
           <tr *ngIf="billings.length === 0">
-            <td colspan="4" class="empty-state">
-              <i class="pi pi-inbox"></i>
-              <p>No hay facturaciones registradas</p>
-              <p class="small">Agregá tus facturaciones mensuales para calcular tu categoría de Monotributo</p>
+            <td colspan="4" class="text-center py-12 px-4">
+              <i class="pi pi-inbox text-5xl text-gray-300 dark:text-gray-600 block mb-4"></i>
+              <p class="text-gray-500 dark:text-gray-400 my-2">No hay facturaciones registradas</p>
+              <p class="text-sm text-gray-400 dark:text-gray-500">Agregá tus facturaciones mensuales para calcular tu categoría de Monotributo</p>
             </td>
           </tr>
         </tbody>
@@ -180,20 +205,26 @@
   [draggable]="false"
   [resizable]="false">
 
-  <div class="dialog-content">
-    <div class="form-row">
-      <div class="form-field">
-        <label for="month">Mes *</label>
-        <select id="month" [(ngModel)]="billingForm.month" class="form-control">
+  <div class="flex flex-col gap-4">
+    <div class="grid grid-cols-2 gap-4 max-md:grid-cols-1">
+      <div class="flex flex-col gap-2">
+        <label for="month" class="font-medium text-sm text-gray-700 dark:text-gray-200">Mes *</label>
+        <select id="month" [(ngModel)]="billingForm.month"
+                class="w-full py-2.5 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm
+                       bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                       focus:outline-none focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/10 transition-colors">
           <option *ngFor="let month of months" [value]="month.value">
             {{ month.label }}
           </option>
         </select>
       </div>
 
-      <div class="form-field">
-        <label for="year">Año *</label>
-        <select id="year" [(ngModel)]="billingForm.year" class="form-control">
+      <div class="flex flex-col gap-2">
+        <label for="year" class="font-medium text-sm text-gray-700 dark:text-gray-200">Año *</label>
+        <select id="year" [(ngModel)]="billingForm.year"
+                class="w-full py-2.5 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm
+                       bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                       focus:outline-none focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/10 transition-colors">
           <option *ngFor="let year of years" [value]="year">
             {{ year }}
           </option>
@@ -201,24 +232,24 @@
       </div>
     </div>
 
-    <div class="form-field">
-      <label for="amount">Monto Facturado *</label>
+    <div class="flex flex-col gap-2">
+      <label for="amount" class="font-medium text-sm text-gray-700 dark:text-gray-200">Monto Facturado *</label>
       <input
         type="number"
         id="amount"
         [(ngModel)]="billingForm.amount"
-        class="form-control"
+        class="macos-input"
         placeholder="0"
         min="0"
         step="1000">
     </div>
 
-    <div class="form-field">
-      <label for="description">Descripción (opcional)</label>
+    <div class="flex flex-col gap-2">
+      <label for="description" class="font-medium text-sm text-gray-700 dark:text-gray-200">Descripción (opcional)</label>
       <textarea
         id="description"
         [(ngModel)]="billingForm.description"
-        class="form-control"
+        class="macos-input resize-y font-[inherit]"
         rows="3"
         placeholder="Ej: Facturación servicios profesionales">
       </textarea>
