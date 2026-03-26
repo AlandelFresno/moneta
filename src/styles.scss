@@ -6,6 +6,20 @@ html, body {
   @apply overflow-x-auto min-w-fit;
 }
 
+/* Dark mode default text color — only applies to elements with no explicit color set.
+   Specific colored elements (green amounts, red, blue, etc.) override this naturally. */
+.dark .page-container,
+.dark .card,
+.dark .stat-card,
+.dark .p-dialog,
+.dark .p-dialog-content,
+.dark .sidebar,
+.dark .nav-item,
+.dark app-root {
+  color: #f9fafb;
+}
+
+
 @layer components {
   .macos-input {
     @apply w-full py-3 px-4 rounded-lg transition-all duration-150
@@ -26,21 +40,18 @@ html, body {
 
   .btn-primary {
     @apply px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-150
-           bg-blue-600 text-white
-           hover:bg-blue-700
-           active:bg-blue-800
-           dark:bg-blue-500 dark:text-white
-           dark:hover:bg-blue-400
-           dark:active:bg-blue-600;
+           bg-transparent text-gray-800 border-none
+           hover:text-blue-600
+           active:text-blue-700
+           dark:bg-transparent dark:text-white dark:border-none;
   }
 
   .btn-secondary {
     @apply px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-150
-           bg-gray-100 text-gray-700 border border-gray-300
-           hover:bg-gray-200 hover:border-gray-400
-           active:bg-gray-300
-           dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600
-           dark:hover:bg-gray-600 dark:hover:border-gray-500;
+           bg-transparent text-gray-800 border-none
+           hover:text-blue-600
+           active:text-blue-700
+           dark:bg-transparent dark:text-white dark:border-none;
   }
 }
 
@@ -343,6 +354,7 @@ html, body {
   @apply text-[1em] font-semibold;
 }
 
+
 .currency-display .secondary-amount {
   @apply text-[0.65em] font-normal opacity-75 text-gray-500 dark:text-gray-400;
 }
@@ -401,6 +413,84 @@ html, body {
 
 .p-button.p-button-icon-only .p-button-icon {
   @apply m-0;
+}
+
+/* Dark mode: all PrimeNG text/icon buttons default to white */
+.dark .p-button.p-button-text,
+.dark .p-button.p-button-rounded.p-button-text {
+  color: #ffffff !important;
+}
+
+.dark .p-button.p-button-text:hover,
+.dark .p-button.p-button-rounded.p-button-text:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+.dark .p-button.p-button-danger.p-button-text,
+.dark .p-button.p-button-rounded.p-button-danger.p-button-text {
+  color: #f87171 !important;
+}
+
+.dark .p-button.p-button-danger.p-button-text:hover,
+.dark .p-button.p-button-rounded.p-button-danger.p-button-text:hover {
+  background-color: rgba(248, 113, 113, 0.1) !important;
+  color: #f87171 !important;
+}
+
+/* Override PrimeNG defaults for custom button classes */
+.p-button.btn-primary,
+.p-button.btn-secondary {
+  background-color: transparent !important;
+  color: #1f2937 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.p-button.btn-primary:hover,
+.p-button.btn-secondary:hover {
+  background-color: transparent !important;
+  color: #2563eb !important;
+}
+
+.p-button.btn-primary:active,
+.p-button.btn-secondary:active {
+  background-color: transparent !important;
+  color: #1d4ed8 !important;
+}
+
+.dark .p-button.btn-primary,
+.dark .p-button.btn-secondary {
+  background-color: transparent !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.dark .p-button.btn-primary:hover,
+.dark .p-button.btn-secondary:hover {
+  background-color: transparent !important;
+  color: #ffffff !important;
+}
+
+.dark .p-button.btn-primary:active,
+.dark .p-button.btn-secondary:active {
+  background-color: transparent !important;
+  color: #ffffff !important;
+}
+
+/* Theme toggle button — prevent PrimeNG from changing text color on hover */
+.p-button.theme-toggle:hover,
+.p-button.theme-toggle:focus {
+  color: inherit !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.dark .p-button.theme-toggle:hover,
+.dark .p-button.theme-toggle:focus {
+  color: #d1d5db !important;
+  background: transparent !important;
 }
 
 /* Responsive */

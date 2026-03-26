@@ -62,6 +62,7 @@ export class SyncService {
   private readonly SYNC_FILE_NAME = 'budget_tracker_sync_data.xlsx';
   private readonly SYNC_METADATA_KEY = 'budget_sync_metadata';
   private readonly DEVICE_ID_KEY = 'budget_device_id';
+  private readonly STALE_THRESHOLD_DAYS = 30;
 
   constructor(
     private googleDriveService: GoogleDriveService,
@@ -209,7 +210,8 @@ export class SyncService {
           BRL: row['Tasa a BRL'] || undefined
         },
         createdAt: new Date(row['Creado'] || row['Fecha']),
-        updatedAt: new Date(row['Actualizado'] || row['Fecha'])
+        updatedAt: new Date(row['Actualizado'] || row['Fecha']),
+        deletedAt: row['Eliminado'] ? new Date(row['Eliminado']) : undefined
       })) : [];
 
       // Leer vehículos
@@ -224,7 +226,8 @@ export class SyncService {
         currentKm: row['Km Actual'] || 0,
         fuelType: (row['Tipo Combustible'] || 'gasoline') as 'gasoline' | 'diesel' | 'premium' | 'electric',
         createdAt: new Date(row['Creado'] || Date.now()),
-        updatedAt: new Date(row['Actualizado'] || Date.now())
+        updatedAt: new Date(row['Actualizado'] || Date.now()),
+        deletedAt: row['Eliminado'] ? new Date(row['Eliminado']) : undefined
       })) : [];
 
       // Leer combustible
@@ -256,7 +259,8 @@ export class SyncService {
         color: row['Color'],
         icon: row['Icono'],
         createdAt: new Date(row['Creado'] || Date.now()),
-        updatedAt: new Date(row['Actualizado'] || Date.now())
+        updatedAt: new Date(row['Actualizado'] || Date.now()),
+        deletedAt: row['Eliminado'] ? new Date(row['Eliminado']) : undefined
       })) : [];
 
       // Leer cuentas
@@ -270,7 +274,8 @@ export class SyncService {
         color: row['Color'],
         icon: row['Icono'],
         createdAt: new Date(row['Creado'] || Date.now()),
-        updatedAt: new Date(row['Actualizado'] || Date.now())
+        updatedAt: new Date(row['Actualizado'] || Date.now()),
+        deletedAt: row['Eliminado'] ? new Date(row['Eliminado']) : undefined
       })) : [];
 
       // Leer preferencias
@@ -349,7 +354,7 @@ export class SyncService {
       // Transacciones
       const transactionsData = data.transactions.map(t => ({
         'ID': t.id,
-        'Fecha': t.date.toISOString(),
+        'Fecha': new Date(t.date).toISOString(),
         'Descripción': t.description,
         'Monto': t.amount,
         'Moneda': t.currency,
@@ -360,8 +365,9 @@ export class SyncService {
         'Tasa a USD': t.exchangeRates?.USD || '',
         'Tasa a EUR': t.exchangeRates?.EUR || '',
         'Tasa a BRL': t.exchangeRates?.BRL || '',
-        'Creado': t.createdAt.toISOString(),
-        'Actualizado': t.updatedAt.toISOString()
+        'Creado': new Date(t.createdAt).toISOString(),
+        'Actualizado': new Date(t.updatedAt).toISOString(),
+        'Eliminado': (t as any).deletedAt ? new Date((t as any).deletedAt).toISOString() : ''
       }));
       const transactionsSheet = XLSX.utils.json_to_sheet(transactionsData);
       XLSX.utils.book_append_sheet(workbook, transactionsSheet, 'Transacciones');
@@ -376,8 +382,9 @@ export class SyncService {
         'Patente': v.plateNumber || '',
         'Km Actual': v.currentKm,
         'Tipo Combustible': v.fuelType,
-        'Creado': v.createdAt.toISOString(),
-        'Actualizado': v.updatedAt.toISOString()
+        'Creado': new Date(v.createdAt).toISOString(),
+        'Actualizado': new Date(v.updatedAt).toISOString(),
+        'Eliminado': v.deletedAt ? new Date(v.deletedAt).toISOString() : ''
       }));
       const vehiclesSheet = XLSX.utils.json_to_sheet(vehiclesData);
       XLSX.utils.book_append_sheet(workbook, vehiclesSheet, 'Vehículos');
@@ -386,7 +393,7 @@ export class SyncService {
       const fuelLogsData = data.fuelLogs.map(f => ({
         'ID': f.id,
         'Vehículo ID': f.vehicleId,
-        'Fecha': f.date.toISOString(),
+        'Fecha': new Date(f.date).toISOString(),
         'Litros': f.liters,
         'Precio por Litro': f.pricePerLiter,
         'Total': f.totalPrice,
@@ -397,8 +404,8 @@ export class SyncService {
         'Costo por Km': f.costPerKm,
         'Tanque Lleno': f.fullTank ? 'Sí' : 'No',
         'Notas': f.notes || '',
-        'Creado': f.createdAt.toISOString(),
-        'Actualizado': f.updatedAt.toISOString()
+        'Creado': new Date(f.createdAt).toISOString(),
+        'Actualizado': new Date(f.updatedAt).toISOString()
       }));
       const fuelLogsSheet = XLSX.utils.json_to_sheet(fuelLogsData);
       XLSX.utils.book_append_sheet(workbook, fuelLogsSheet, 'Combustible');
@@ -410,8 +417,9 @@ export class SyncService {
         'Tipo': c.type === 'income' ? 'Ingreso' : 'Gasto',
         'Color': c.color,
         'Icono': c.icon,
-        'Creado': c.createdAt.toISOString(),
-        'Actualizado': c.updatedAt.toISOString()
+        'Creado': new Date(c.createdAt).toISOString(),
+        'Actualizado': new Date(c.updatedAt).toISOString(),
+        'Eliminado': (c as any).deletedAt ? new Date((c as any).deletedAt).toISOString() : ''
       }));
       const categoriesSheet = XLSX.utils.json_to_sheet(categoriesData);
       XLSX.utils.book_append_sheet(workbook, categoriesSheet, 'Categorías');
@@ -425,8 +433,9 @@ export class SyncService {
         'Moneda': a.currency,
         'Color': a.color,
         'Icono': a.icon,
-        'Creado': a.createdAt.toISOString(),
-        'Actualizado': a.updatedAt.toISOString()
+        'Creado': new Date(a.createdAt).toISOString(),
+        'Actualizado': new Date(a.updatedAt).toISOString(),
+        'Eliminado': (a as any).deletedAt ? new Date((a as any).deletedAt).toISOString() : ''
       }));
       const accountsSheet = XLSX.utils.json_to_sheet(accountsData);
       XLSX.utils.book_append_sheet(workbook, accountsSheet, 'Cuentas');
@@ -447,8 +456,8 @@ export class SyncService {
         'Año': b.year,
         'Monto': b.amount,
         'Descripción': b.description || '',
-        'Creado': b.createdAt.toISOString(),
-        'Actualizado': b.updatedAt.toISOString()
+        'Creado': new Date(b.createdAt).toISOString(),
+        'Actualizado': new Date(b.updatedAt).toISOString()
       }));
       const billingsSheet = XLSX.utils.json_to_sheet(billingsData);
       XLSX.utils.book_append_sheet(workbook, billingsSheet, 'Facturaciones');
@@ -462,8 +471,8 @@ export class SyncService {
         'Moneda': b.currency,
         'Período': b.period,
         'Umbral Alerta': b.alertThreshold || '',
-        'Creado': b.createdAt.toISOString(),
-        'Actualizado': b.updatedAt.toISOString()
+        'Creado': new Date(b.createdAt).toISOString(),
+        'Actualizado': new Date(b.updatedAt).toISOString()
       }));
       const budgetsSheet = XLSX.utils.json_to_sheet(budgetsData);
       XLSX.utils.book_append_sheet(workbook, budgetsSheet, 'Presupuestos');
@@ -490,7 +499,7 @@ export class SyncService {
   /**
    * Merge de arrays por ID - ESTRATEGIA: El más reciente gana
    */
-  private mergeArrays<T extends { id: string; updatedAt: Date }>(
+  private mergeArrays<T extends { id: string; updatedAt: Date; deletedAt?: Date }>(
     local: T[],
     remote: T[],
     itemName: string
@@ -502,51 +511,58 @@ export class SyncService {
     let added = 0;
     let updated = 0;
 
-    // Procesar items locales
-    for (const localItem of local) {
-      const remoteItem = remoteMap.get(localItem.id);
+    // Procesar items locales (incluye los soft-deleted)
+    const allLocal = this.getAllFromStorage(itemName);
+    const localMap = new Map(allLocal.map((item: any) => [item.id, item]));
 
-      if (!remoteItem) {
-        // Solo existe localmente - agregar
-        merged.push(localItem);
-        console.log(`➕ [SyncService] ${itemName} solo local:`, localItem.id);
-      } else {
-        // Existe en ambos - comparar timestamps
+    // Combinar todos los IDs de local y remoto
+    const allIds = new Set([...localMap.keys(), ...remoteMap.keys()]);
+
+    for (const id of allIds) {
+      const localItem = localMap.get(id) as T | undefined;
+      const remoteItem = remoteMap.get(id);
+
+      if (localItem && remoteItem) {
+        // Existe en ambos - el más reciente (por updatedAt) gana, incluyendo deletedAt
         const localTime = new Date(localItem.updatedAt).getTime();
         const remoteTime = new Date(remoteItem.updatedAt).getTime();
-
-        if (localTime > remoteTime) {
-          // Local más reciente
-          merged.push(localItem);
-          updated++;
-          console.log(`🔄 [SyncService] ${itemName} local más reciente:`, localItem.id);
-        } else if (remoteTime > localTime) {
-          // Remote más reciente
-          merged.push(remoteItem);
-          updated++;
-          console.log(`🔄 [SyncService] ${itemName} remoto más reciente:`, localItem.id);
-        } else {
-          // Misma fecha - usar local
-          merged.push(localItem);
-        }
-      }
-
-      processedIds.add(localItem.id);
-    }
-
-    // Agregar items que solo existen en remoto
-    for (const remoteItem of remote) {
-      if (!processedIds.has(remoteItem.id)) {
+        merged.push(localTime >= remoteTime ? localItem : remoteItem);
+        updated++;
+      } else if (localItem) {
+        // Solo existe localmente (puede estar deleted o activo)
+        merged.push(localItem);
+      } else if (remoteItem) {
+        // Solo existe en remoto
         merged.push(remoteItem);
-        added++;
-        console.log(`➕ [SyncService] ${itemName} solo remoto:`, remoteItem.id);
+        if (!(remoteItem as any).deletedAt) added++;
       }
+
+      processedIds.add(id);
     }
 
-    // CRÍTICO: Deduplicar por ID para evitar duplicados
+    // Deduplicar por ID
     const deduped = this.deduplicateById(merged, itemName);
 
+    // Filtrar deletedAt para exponer solo activos
+    const active = deduped.filter(item => !(item as any).deletedAt);
+
     return { merged: deduped, added, updated };
+  }
+
+  private getAllFromStorage(itemName: string): any[] {
+    const keyMap: { [key: string]: string } = {
+      'Transaction': 'budget_transactions',
+      'Vehicle': 'budget_vehicles',
+      'FuelLog': 'budget_fuel_logs',
+      'Category': 'budget_categories',
+      'Account': 'budget_accounts',
+      'Billing': 'budget_monthly_billing',
+      'Budget': 'budgets'
+    };
+    const key = keyMap[itemName];
+    if (!key) return [];
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : [];
   }
 
   /**
@@ -583,6 +599,21 @@ export class SyncService {
     }
 
     return dedupedArray;
+  }
+
+  /**
+   * Deduplicar por nombre — elimina items con mismo nombre manteniendo el más reciente
+   */
+
+  /**
+   * Elimina hard los items con deletedAt mayor al umbral de días
+   */
+  private purgeDeleted<T extends { deletedAt?: Date }>(items: T[]): T[] {
+    const cutoff = Date.now() - this.STALE_THRESHOLD_DAYS * 24 * 60 * 60 * 1000;
+    return items.filter(item => {
+      if (!item.deletedAt) return true;
+      return new Date(item.deletedAt).getTime() > cutoff;
+    });
   }
 
   /**
@@ -665,7 +696,46 @@ export class SyncService {
         lastSync: driveData.metadata.lastSyncDate
       });
 
-      // 4. Merge de datos
+      // 4. Verificar si el dispositivo está obsoleto (sin sync por más de 30 días)
+      const localMetadata = this.getSyncMetadata();
+      const cutoffMs = this.STALE_THRESHOLD_DAYS * 24 * 60 * 60 * 1000;
+      const lastSyncMs = localMetadata ? Date.now() - localMetadata.lastSyncTimestamp : Infinity;
+      const isStaleDevice = lastSyncMs > cutoffMs;
+
+      if (isStaleDevice) {
+        console.warn('⚠️ [SyncService] Dispositivo obsoleto (+30 días sin sync). Reemplazando con datos de Drive.');
+        const purgedData = {
+          transactions: this.purgeDeleted(driveData.transactions),
+          vehicles: this.purgeDeleted(driveData.vehicles),
+          fuelLogs: driveData.fuelLogs,
+          categories: this.purgeDeleted(driveData.categories),
+          accounts: this.purgeDeleted(driveData.accounts),
+          billings: driveData.billings,
+          budgets: driveData.budgets
+        };
+        localStorage.setItem('budget_transactions', JSON.stringify(purgedData.transactions));
+        localStorage.setItem('budget_vehicles', JSON.stringify(purgedData.vehicles));
+        localStorage.setItem('budget_fuel_logs', JSON.stringify(purgedData.fuelLogs));
+        localStorage.setItem('budget_categories', JSON.stringify(purgedData.categories));
+        localStorage.setItem('budget_accounts', JSON.stringify(purgedData.accounts));
+        localStorage.setItem('budget_monthly_billing', JSON.stringify(purgedData.billings));
+        localStorage.setItem('budgets', JSON.stringify(purgedData.budgets));
+        localStorage.removeItem('budget_exchange_rates');
+        const newMetadata: SyncMetadata = {
+          lastSyncTimestamp: Date.now(),
+          lastSyncDate: new Date(),
+          deviceId: this.getDeviceId(),
+          dataVersion: driveData.metadata.dataVersion
+        };
+        this.saveSyncMetadata(newMetadata);
+        return {
+          success: true,
+          message: 'Dispositivo sincronizado desde Drive (datos locales obsoletos reemplazados).',
+          stats
+        };
+      }
+
+      // 5. Merge de datos
       console.log('🔀 [SyncService] Mergeando datos...');
 
       const transactionsResult = this.mergeArrays(
@@ -727,14 +797,20 @@ export class SyncService {
       // 5. Aplicar datos mergeados localmente
       console.log('💾 [SyncService] Aplicando datos mergeados localmente...');
 
-      // Guardar en localStorage directamente para evitar problemas con los servicios
-      localStorage.setItem('budget_transactions', JSON.stringify(transactionsResult.merged));
-      localStorage.setItem('budget_vehicles', JSON.stringify(vehiclesResult.merged));
+      // Purgar hard-delete (items eliminados hace más de 30 días)
+      const finalTransactions = this.purgeDeleted(transactionsResult.merged);
+      const finalVehicles = this.purgeDeleted(vehiclesResult.merged);
+      const finalCategories = this.purgeDeleted(categoriesResult.merged);
+      const finalAccounts = this.purgeDeleted(accountsResult.merged);
+
+      localStorage.setItem('budget_transactions', JSON.stringify(finalTransactions));
+      localStorage.setItem('budget_vehicles', JSON.stringify(finalVehicles));
       localStorage.setItem('budget_fuel_logs', JSON.stringify(fuelLogsResult.merged));
-      localStorage.setItem('budget_categories', JSON.stringify(categoriesResult.merged));
-      localStorage.setItem('budget_accounts', JSON.stringify(accountsResult.merged));
+      localStorage.setItem('budget_categories', JSON.stringify(finalCategories));
+      localStorage.setItem('budget_accounts', JSON.stringify(finalAccounts));
       localStorage.setItem('budget_monthly_billing', JSON.stringify(billingsResult.merged));
       localStorage.setItem('budgets', JSON.stringify(budgetsResult.merged));
+      localStorage.removeItem('budget_exchange_rates');
 
       // 6. Subir datos mergeados a Drive
       const newMetadata: SyncMetadata = {
@@ -746,11 +822,11 @@ export class SyncService {
 
       const mergedData: SyncData = {
         metadata: newMetadata,
-        transactions: transactionsResult.merged,
-        vehicles: vehiclesResult.merged,
+        transactions: finalTransactions,
+        vehicles: finalVehicles,
         fuelLogs: fuelLogsResult.merged,
-        categories: categoriesResult.merged,
-        accounts: accountsResult.merged,
+        categories: finalCategories,
+        accounts: finalAccounts,
         preferences: localData.preferences, // Siempre usar preferencias locales
         billings: billingsResult.merged,
         budgets: budgetsResult.merged

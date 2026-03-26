@@ -45,7 +45,7 @@
           [style.border-left-color]="category.color">
           <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                [style.background-color]="category.color">
-            <i [class]="'pi pi-' + category.icon" class="text-xl text-white"></i>
+            <i class="text-xl text-white" [ngClass]="getCategoryIconClass(category.icon)"></i>
           </div>
           <div class="flex-1 min-w-0">
             <h3 class="text-[0.9375rem] font-semibold text-gray-800 dark:text-gray-100 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">{{ category.name }}</h3>
@@ -99,7 +99,7 @@
           [style.border-left-color]="category.color">
           <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                [style.background-color]="category.color">
-            <i [class]="'pi pi-' + category.icon" class="text-xl text-white"></i>
+            <i class="text-xl text-white" [ngClass]="getCategoryIconClass(category.icon)"></i>
           </div>
           <div class="flex-1 min-w-0">
             <h3 class="text-[0.9375rem] font-semibold text-gray-800 dark:text-gray-100 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">{{ category.name }}</h3>

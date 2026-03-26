@@ -35,8 +35,18 @@
 }
 
 .collapse-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  .p-button-icon {
+    font-size: 1.25rem !important;
+    margin: 0 !important;
+  }
+
   i {
     font-size: 1.25rem !important;
+    margin: 0 !important;
   }
 }
 
@@ -117,6 +127,17 @@
     i {
       color: #f59e0b;
       font-size: 1.375rem;
+    }
+
+    &:hover,
+    &:focus {
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    &:hover .nav-text,
+    &:focus .nav-text {
+      color: inherit !important;
     }
 
     &:hover i {

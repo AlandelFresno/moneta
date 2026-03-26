@@ -8,6 +8,7 @@ export interface Account {
   icon: string;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date;
 }
 
 export type AccountType = Account['type'];

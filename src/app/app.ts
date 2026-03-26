@@ -48,15 +48,11 @@ export class App implements OnInit {
       if (cacheInfo.needsUpdate) {
         console.log('Cache de tasas de cambio expirado, actualizando...');
         try {
-          await this.exchangeRateService.getRates(preferredCurrency, false);
+          await this.exchangeRateService.getRates(preferredCurrency, true);
           console.log('Tasas de cambio actualizadas automáticamente');
         } catch (error) {
           console.warn('No se pudieron actualizar las tasas de cambio automáticamente:', error);
         }
-      } else {
-        // Si el caché es válido, cargarlo
-        console.log('Tasas de cambio válidas en caché');
-        await this.exchangeRateService.getRates(preferredCurrency, false);
       }
     } catch (error) {
       console.error('Error inicializando tasas de cambio:', error);

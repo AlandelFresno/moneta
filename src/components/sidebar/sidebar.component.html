@@ -3,22 +3,21 @@
   <!-- Header -->
   <div class="sidebar-header border-b border-gray-100 dark:border-gray-700">
     <button
-      class="collapse-btn desktop-only w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600
-             text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-800 dark:hover:text-gray-100
-             hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 flex-shrink-0"
-      (click)="toggleSidebar()"
-      pButton
-      icon="pi pi-bars"
-      [text]="true">
+      class="collapse-btn desktop-only w-10 h-10 rounded-lg
+             bg-gray-100 border border-gray-200 text-gray-500
+             hover:bg-gray-200 hover:border-gray-300 hover:text-gray-800
+             dark:bg-transparent dark:border-transparent dark:text-gray-300
+             dark:hover:bg-gray-700/50 dark:hover:text-white
+             transition-all duration-200 flex-shrink-0 flex items-center justify-center"
+      (click)="toggleSidebar()">
+      <i class="pi pi-bars" style="font-size: 1.25rem;"></i>
     </button>
     <button
       class="collapse-btn mobile-only w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600
              text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-800 dark:hover:text-gray-100
-             hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 flex-shrink-0"
-      (click)="closeMobileMenu()"
-      pButton
-      icon="pi pi-times"
-      [text]="true">
+             hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 flex-shrink-0 flex items-center justify-center"
+      (click)="closeMobileMenu()">
+      <i class="pi pi-times" style="font-size: 1.25rem;"></i>
     </button>
   </div>
 
@@ -51,13 +50,11 @@
 
     <!-- Theme Toggle -->
     <button
-      class="nav-item theme-toggle text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+      class="nav-item theme-toggle text-gray-600 dark:text-gray-300"
       [class.collapsed]="isCollapsed()"
       (click)="toggleTheme()"
       pButton
-      [text]="true"
-      [pTooltip]="currentTheme === 'light' ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro'"
-      tooltipPosition="right">
+      [text]="true">
       <i [class]="currentTheme === 'light' ? 'pi pi-moon' : 'pi pi-sun'"></i>
       <span class="nav-text" *ngIf="!isCollapsed() || isMobileMenuOpen()">
         {{ currentTheme === 'light' ? 'Tema Oscuro' : 'Tema Claro' }}

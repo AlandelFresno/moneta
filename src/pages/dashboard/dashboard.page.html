@@ -99,7 +99,7 @@
             </div>
             <div class="account-balance min-w-0 text-right">
               <span
-                class="amount text-[0.9375rem] font-bold leading-snug"
+                class="amount text-[0.9375rem] font-bold leading-snug text-gray-800 dark:text-gray-100"
                 [class.positive]="account.balance > 0"
                 [class.negative]="account.balance < 0"
               >
@@ -111,23 +111,13 @@
                 </ng-container>
               </span>
             </div>
-            <div class="account-actions">
-              <button
-                pButton
-                icon="pi pi-pencil"
-                class="p-button-rounded p-button-text p-button-sm"
-                (click)="editAccount(account)"
-                pTooltip="Editar cuenta"
-                tooltipPosition="top"
-              ></button>
-              <button
-                pButton
-                icon="pi pi-trash"
-                class="p-button-rounded p-button-text p-button-sm p-button-danger"
-                (click)="deleteAccount(account)"
-                pTooltip="Eliminar cuenta"
-                tooltipPosition="top"
-              ></button>
+            <div class="account-actions flex gap-1">
+              <button class="action-btn" (click)="editAccount(account)">
+                <i class="pi pi-pencil"></i>
+              </button>
+              <button class="action-btn danger" (click)="deleteAccount(account)">
+                <i class="pi pi-trash"></i>
+              </button>
             </div>
           </div>
         </div>

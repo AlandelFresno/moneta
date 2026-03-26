@@ -28,6 +28,7 @@ export interface Transaction {
     EUR: number;  // Cuántos EUR = 1 de la moneda de esta transacción
     BRL: number;  // Cuántos BRL = 1 de la moneda de esta transacción
   };
+  deletedAt?: Date;
 }
 
 export type TransactionType = Transaction['type'];

@@ -28,14 +28,54 @@
 // Account actions opacity hover transition
 .account-item {
   .account-actions {
-    display: flex;
-    gap: 0.25rem;
     opacity: 0;
     transition: opacity 0.2s ease;
   }
 
   &:hover .account-actions {
     opacity: 1;
+  }
+}
+
+.action-btn {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
+
+  &.danger {
+    color: #6b7280;
+
+    &:hover {
+      background: #fee2e2;
+      color: #ef4444;
+    }
+  }
+
+  :host-context(.dark) & {
+    color: #9ca3af;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e5e7eb;
+    }
+
+    &.danger:hover {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+    }
   }
 }
 

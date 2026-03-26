@@ -21,8 +21,9 @@ export class AccountService {
       const accounts = JSON.parse(data).map((acc: any) => ({
         ...acc,
         createdAt: new Date(acc.createdAt),
-        updatedAt: new Date(acc.updatedAt)
-      }));
+        updatedAt: new Date(acc.updatedAt),
+        deletedAt: acc.deletedAt ? new Date(acc.deletedAt) : undefined
+      })).filter((acc: any) => !acc.deletedAt);
       this.accountsSubject.next(accounts);
     } else {
       // Initialize with default accounts
@@ -94,8 +95,13 @@ export class AccountService {
   }
 
   deleteAccount(id: string): void {
-    const accounts = this.accountsSubject.value.filter(acc => acc.id !== id);
-    this.saveAccounts(accounts);
+    const stored = localStorage.getItem(this.STORAGE_KEY);
+    const all = stored ? JSON.parse(stored) : [];
+    const updated = all.map((acc: any) =>
+      acc.id === id ? { ...acc, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } : acc
+    );
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
+    this.accountsSubject.next(this.accountsSubject.value.filter(acc => acc.id !== id));
   }
 
   updateBalance(accountId: string, amount: number, transactionCurrency?: string): void {

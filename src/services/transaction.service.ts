@@ -22,8 +22,9 @@ export class TransactionService {
         ...txn,
         date: new Date(txn.date),
         createdAt: new Date(txn.createdAt),
-        updatedAt: new Date(txn.updatedAt)
-      }));
+        updatedAt: new Date(txn.updatedAt),
+        deletedAt: txn.deletedAt ? new Date(txn.deletedAt) : undefined
+      })).filter((txn: any) => !txn.deletedAt);
       this.transactionsSubject.next(transactions);
     }
   }
@@ -107,8 +108,13 @@ export class TransactionService {
     const amount = transaction.type === 'income' ? -transaction.amount : transaction.amount;
     this.accountService.updateBalance(transaction.accountId, amount, transaction.currency);
 
-    const transactions = this.transactionsSubject.value.filter(txn => txn.id !== id);
-    this.saveTransactions(transactions);
+    const stored = localStorage.getItem(this.STORAGE_KEY);
+    const all = stored ? JSON.parse(stored) : [];
+    const updated = all.map((txn: any) =>
+      txn.id === id ? { ...txn, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } : txn
+    );
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
+    this.transactionsSubject.next(this.transactionsSubject.value.filter(txn => txn.id !== id));
   }
 
   getTotalIncome(startDate?: Date, endDate?: Date): number {

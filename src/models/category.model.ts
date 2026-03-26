@@ -6,6 +6,7 @@ export interface Category {
   icon: string;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date;
 }
 
 export type CategoryType = Category['type'];

@@ -95,6 +95,11 @@
       letter-spacing: -0.02em;
       line-height: 1.15;
       word-wrap: break-word;
+      color: #1f2937;
+
+      :host-context(.dark) & {
+        color: #f9fafb;
+      }
       overflow-wrap: break-word;
       hyphens: none;
     }
@@ -596,6 +601,21 @@
         &.manual {
           background: #dbeafe;
           color: #1e40af;
+        }
+
+        :host-context(.dark) &.api {
+          background: #065f4620;
+          color: #6ee7b7;
+        }
+
+        :host-context(.dark) &.cache {
+          background: #92400e20;
+          color: #fcd34d;
+        }
+
+        :host-context(.dark) &.manual {
+          background: #1e40af20;
+          color: #93c5fd;
         }
       }
 

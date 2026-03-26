@@ -20,8 +20,9 @@ export class CategoryService {
       const categories = JSON.parse(data).map((cat: any) => ({
         ...cat,
         createdAt: new Date(cat.createdAt),
-        updatedAt: new Date(cat.updatedAt)
-      }));
+        updatedAt: new Date(cat.updatedAt),
+        deletedAt: cat.deletedAt ? new Date(cat.deletedAt) : undefined
+      })).filter((cat: any) => !cat.deletedAt);
 
       // Migrate old icon format (remove 'pi-' prefix if present)
       const migratedCategories = this.migrateIconFormat(categories);
@@ -111,8 +112,13 @@ export class CategoryService {
   }
 
   deleteCategory(id: string): void {
-    const categories = this.categoriesSubject.value.filter(cat => cat.id !== id);
-    this.saveCategories(categories);
+    const stored = localStorage.getItem(this.STORAGE_KEY);
+    const all = stored ? JSON.parse(stored) : [];
+    const updated = all.map((cat: any) =>
+      cat.id === id ? { ...cat, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } : cat
+    );
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
+    this.categoriesSubject.next(this.categoriesSubject.value.filter(cat => cat.id !== id));
   }
 
   private generateId(): string {

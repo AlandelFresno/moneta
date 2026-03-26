@@ -12,4 +12,5 @@ export interface Vehicle {
   notes?: string;            // Notas adicionales
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date;
 }

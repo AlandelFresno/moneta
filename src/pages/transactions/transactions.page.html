@@ -209,15 +209,16 @@
       <div class="conversion-info-box">
         <div class="conversion-row">
           <span class="label">Fuente:</span>
-          <span class="value source-badge" [class]="formData.conversionSource">{{ getConversionSourceLabel() }}</span>
+          <span class="value source-badge" [ngClass]="formData.conversionSource">{{ getConversionSourceLabel() }}</span>
         </div>
 
         <div class="conversion-row">
-          <span class="label">Tasa USD:</span>
+          <span class="label">Tasa:</span>
           <span class="value" *ngIf="!formData.useManualConversion">
-            {{ formData.usdRate | number:'1.2-4' }} {{ formData.currency }} = 1 USD
+            1 {{ formData.currency }} = {{ formData.conversionRate | number:'1.2-4' }} {{ getPreferredCurrency() }}
           </span>
           <div class="rate-input-container" *ngIf="formData.useManualConversion">
+            <span class="rate-prefix">1 {{ formData.currency }} =</span>
             <input
               type="number"
               [(ngModel)]="formData.usdRate"
@@ -226,7 +227,7 @@
               step="0.01"
               min="0"
               class="manual-rate-input" />
-            <span class="rate-suffix">{{ formData.currency }} = 1 USD</span>
+            <span class="rate-suffix">{{ getPreferredCurrency() }}</span>
           </div>
         </div>
 

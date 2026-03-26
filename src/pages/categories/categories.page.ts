@@ -107,6 +107,12 @@ export class CategoriesPage implements OnInit, OnDestroy {
     this.showDialog = true;
   }
 
+  getCategoryIconClass(icon: string): string {
+    // Handle all stored formats: 'heart', 'pi-heart', 'pi pi-heart'
+    const name = icon.replace(/^pi\s+pi-/, '').replace(/^pi-/, '');
+    return `pi pi-${name}`;
+  }
+
   closeDialog(): void {
     this.showDialog = false;
     this.editingCategory = null;

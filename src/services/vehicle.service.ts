@@ -20,11 +20,11 @@ export class VehicleService {
     if (stored) {
       try {
         const vehicles = JSON.parse(stored, (key, value) => {
-          if (key === 'createdAt' || key === 'updatedAt') {
-            return new Date(value);
+          if (key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt') {
+            return value ? new Date(value) : undefined;
           }
           return value;
-        });
+        }).filter((v: any) => !v.deletedAt);
         console.log('✅ [VehicleService] Vehículos cargados:', vehicles.length);
         this.vehiclesSubject.next(vehicles);
       } catch (error) {
@@ -89,8 +89,13 @@ export class VehicleService {
   deleteVehicle(id: string): void {
     console.log('🗑️ [VehicleService] Eliminando vehículo:', id);
 
-    const vehicles = this.vehiclesSubject.value.filter(v => v.id !== id);
-    this.saveVehicles(vehicles);
+    const stored = localStorage.getItem(this.STORAGE_KEY);
+    const all = stored ? JSON.parse(stored) : [];
+    const updated = all.map((v: any) =>
+      v.id === id ? { ...v, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } : v
+    );
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
+    this.vehiclesSubject.next(this.vehiclesSubject.value.filter(v => v.id !== id));
 
     console.log('✅ [VehicleService] Vehículo eliminado');
   }

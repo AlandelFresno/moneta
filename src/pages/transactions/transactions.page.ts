@@ -324,10 +324,12 @@ export class TransactionsPage implements OnInit, OnDestroy {
     const preferredCurrency = this.preferencesService.getPreferredCurrency();
     const ratesInfo = this.exchangeRateService.getRatesInfo();
 
-    // PASO 1: SIEMPRE calcular la tasa respecto a USD (base universal)
-    if (this.formData.currency === 'USD') {
-      // Si la transacción es en USD, la tasa es 1
+    // PASO 1: SIEMPRE calcular la tasa respecto a la moneda preferida
+    if (this.formData.currency === preferredCurrency) {
       this.formData.usdRate = 1;
+    } else if (this.formData.currency === 'USD' && preferredCurrency !== 'USD') {
+      // Mostrar cuántos preferredCurrency = 1 USD
+      this.formData.usdRate = this.exchangeRateService.getExchangeRate('USD', preferredCurrency);
     } else {
       // Obtener cuántas unidades de esta moneda = 1 USD
       this.formData.usdRate = this.exchangeRateService.getExchangeRate('USD', this.formData.currency);
@@ -400,13 +402,13 @@ export class TransactionsPage implements OnInit, OnDestroy {
       const preferredCurrency = this.preferencesService.getPreferredCurrency();
 
       if (this.formData.currency === 'USD') {
-        // Si es USD, convertir directamente
         if (preferredCurrency === 'USD') {
           this.formData.convertedAmount = this.formData.amount;
+          this.formData.conversionRate = 1;
         } else {
-          // Obtener tasa de la moneda preferida a USD
-          const preferredToUsdRate = this.exchangeRateService.getExchangeRate('USD', preferredCurrency);
-          this.formData.convertedAmount = this.formData.amount * preferredToUsdRate;
+          // usdRate ahora significa "cuántos preferredCurrency = 1 USD"
+          this.formData.convertedAmount = this.formData.amount * this.formData.usdRate;
+          this.formData.conversionRate = this.formData.usdRate;
         }
       } else {
         // Si no es USD, usar la tasa ingresada
