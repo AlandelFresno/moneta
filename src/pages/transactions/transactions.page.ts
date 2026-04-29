@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { Subject, takeUntil, combineLatest } from 'rxjs';
 import { Transaction, Account, Category } from '../../models';
 import { TransactionService } from '../../services/transaction.service';
@@ -89,6 +89,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     count: 0
   };
 
+  csvDropdownOpen = false;
   selectedFile: File | null = null;
 
   availableColors = [
@@ -121,6 +122,14 @@ export class TransactionsPage implements OnInit, OnDestroy {
     private preferencesService: PreferencesService,
     private toastService: ToastService
   ) {}
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.csv-dropdown')) {
+      this.csvDropdownOpen = false;
+    }
+  }
 
   ngOnInit(): void {
     // Load data

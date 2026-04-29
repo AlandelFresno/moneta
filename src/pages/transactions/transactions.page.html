@@ -6,8 +6,21 @@
       <p class="page-subtitle text-gray-500 dark:text-gray-400">Track your income and expenses</p>
     </div>
     <div class="header-actions">
-      <button pButton label="Import CSV" icon="pi pi-upload" class="btn-secondary" (click)="openImportDialog()"></button>
-      <button pButton label="Export CSV" icon="pi pi-download" class="btn-secondary" (click)="exportToCSV()"></button>
+      <div class="csv-dropdown" [class.open]="csvDropdownOpen">
+        <button pButton class="btn-secondary csv-trigger" (click)="csvDropdownOpen = !csvDropdownOpen">
+          <i class="pi pi-file"></i>
+          <span>CSV</span>
+          <i class="pi pi-chevron-down csv-chevron"></i>
+        </button>
+        <div class="csv-menu" (click)="csvDropdownOpen = false">
+          <button class="csv-menu-item" (click)="openImportDialog()">
+            <i class="pi pi-upload"></i> Import CSV
+          </button>
+          <button class="csv-menu-item" (click)="exportToCSV()">
+            <i class="pi pi-download"></i> Export CSV
+          </button>
+        </div>
+      </div>
       <button pButton label="New Transaction" icon="pi pi-plus" class="btn-primary" (click)="openCreateDialog()"></button>
     </div>
   </div>
@@ -77,13 +90,12 @@
           <option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</option>
         </select>
       </div>
-      <div class="filter-group flex-2">
+      <div class="filter-group filter-search-group flex-2">
         <label class="text-gray-700 dark:text-gray-200">Search</label>
-        <input type="text" [(ngModel)]="filters.searchText" (ngModelChange)="applyFilters()" placeholder="Search transactions..." class="macos-input" />
-      </div>
-      <div class="filter-group">
-        <label>&nbsp;</label>
-        <button pButton label="Clear" icon="pi pi-filter-slash" class="btn-secondary" (click)="clearFilters()"></button>
+        <div class="search-with-clear">
+          <input type="text" [(ngModel)]="filters.searchText" (ngModelChange)="applyFilters()" placeholder="Search transactions..." class="macos-input" />
+          <button pButton label="Clear" icon="pi pi-filter-slash" class="btn-secondary filter-clear-btn" (click)="clearFilters()"></button>
+        </div>
       </div>
     </div>
   </div>
