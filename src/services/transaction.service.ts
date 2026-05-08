@@ -104,17 +104,99 @@ export class TransactionService {
     const transaction = this.getTransactionById(id);
     if (!transaction) return;
 
-    // Revert balance change with transaction currency
+    // Collect IDs to soft-delete (includes transfer pair if applicable)
+    const idsToDelete = new Set<string>([id]);
+
+    if (transaction.transferGroupId) {
+      const pair = this.transactionsSubject.value.find(
+        t => t.transferGroupId === transaction.transferGroupId && t.id !== id
+      );
+      if (pair) {
+        idsToDelete.add(pair.id);
+        // Revert pair's balance change
+        const pairAmount = pair.type === 'income' ? -pair.amount : pair.amount;
+        this.accountService.updateBalance(pair.accountId, pairAmount, pair.currency, true);
+      }
+    }
+
+    // Revert this transaction's balance change
+    const isTransfer = transaction.rateMode === 'transfer';
     const amount = transaction.type === 'income' ? -transaction.amount : transaction.amount;
-    this.accountService.updateBalance(transaction.accountId, amount, transaction.currency);
+    this.accountService.updateBalance(transaction.accountId, amount, transaction.currency, isTransfer);
 
     const stored = localStorage.getItem(this.STORAGE_KEY);
     const all = stored ? JSON.parse(stored) : [];
+    const now = new Date().toISOString();
     const updated = all.map((txn: any) =>
-      txn.id === id ? { ...txn, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } : txn
+      idsToDelete.has(txn.id) ? { ...txn, deletedAt: now, updatedAt: now } : txn
     );
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
-    this.transactionsSubject.next(this.transactionsSubject.value.filter(txn => txn.id !== id));
+    this.transactionsSubject.next(this.transactionsSubject.value.filter(txn => !idsToDelete.has(txn.id)));
+  }
+
+  createTransfer(params: {
+    fromAccountId: string;
+    toAccountId: string;
+    fromAmount: number;
+    toAmount: number;
+    fromCurrency: string;
+    toCurrency: string;
+    isCurrencyExchange: boolean;
+    convertedAmount: number;
+    exchangeRates: { ARS: number; USD: number; EUR: number; BRL: number };
+    usdRate: number;
+    conversionSource: 'api' | 'cache' | 'manual' | '';
+    description: string;
+    date: Date;
+    categoryId: string;
+  }): void {
+    const transferGroupId = this.generateId();
+    const now = new Date();
+
+    const expenseLeg: Transaction = {
+      id: this.generateId(),
+      accountId: params.fromAccountId,
+      categoryId: params.categoryId,
+      type: 'expense',
+      amount: params.fromAmount,
+      currency: params.fromCurrency,
+      description: params.description,
+      date: params.date,
+      createdAt: now,
+      updatedAt: now,
+      rateMode: 'transfer',
+      transferGroupId,
+      convertedAmount: params.convertedAmount,
+      exchangeRates: params.exchangeRates,
+      usdRate: params.usdRate,
+      conversionSource: params.conversionSource || undefined,
+    };
+
+    const incomeLeg: Transaction = {
+      id: this.generateId(),
+      accountId: params.toAccountId,
+      categoryId: params.categoryId,
+      type: 'income',
+      amount: params.toAmount,
+      currency: params.toCurrency,
+      description: params.description,
+      date: params.date,
+      createdAt: now,
+      updatedAt: now,
+      rateMode: 'transfer',
+      transferGroupId,
+      convertedAmount: params.convertedAmount,
+      exchangeRates: params.exchangeRates,
+      usdRate: params.usdRate,
+      conversionSource: params.conversionSource || undefined,
+    };
+
+    const transactions = [...this.transactionsSubject.value, expenseLeg, incomeLeg];
+    this.saveTransactions(transactions);
+
+    // Update balances directly in native currency — no live conversion
+    this.accountService.updateBalance(params.fromAccountId, -params.fromAmount, params.fromCurrency, true);
+    this.accountService.updateBalance(params.toAccountId, params.toAmount, params.toCurrency, true);
   }
 
   getTotalIncome(startDate?: Date, endDate?: Date): number {

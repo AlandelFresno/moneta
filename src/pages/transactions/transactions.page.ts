@@ -1,6 +1,9 @@
-import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, ViewChild } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil, combineLatest } from 'rxjs';
+import { TransactionDialogComponent } from '../../components/transaction-dialog/transaction-dialog.component';
 import { Transaction, Account, Category } from '../../models';
+import { resolveRateMode } from '../../models/transaction.model';
 import { TransactionService } from '../../services/transaction.service';
 import { AccountService } from '../../services/account.service';
 import { CategoryService } from '../../services/category.service';
@@ -9,7 +12,6 @@ import { ExchangeRateService } from '../../services/exchange-rate.service';
 import { CurrencyDisplayService, FormattedCurrency } from '../../services/currency-display.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { ToastService } from '../../services/toast.service';
-import { SUPPORTED_CURRENCIES } from '../../constants/currencies';
 
 interface TransactionWithDetails extends Transaction {
   accountName: string;
@@ -27,51 +29,14 @@ interface TransactionWithDetails extends Transaction {
 export class TransactionsPage implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
+  @ViewChild('txnDialog') txnDialog!: TransactionDialogComponent;
+
   transactions: TransactionWithDetails[] = [];
   filteredTransactions: TransactionWithDetails[] = [];
   accounts: Account[] = [];
   categories: Category[] = [];
 
-  showDialog = false;
   showImportDialog = false;
-  showCategoryDialog = false;
-  showAccountDialog = false;
-  editingTransaction: Transaction | null = null;
-
-  currencies = SUPPORTED_CURRENCIES;
-
-  formData = {
-    accountId: '',
-    categoryId: '',
-    type: 'expense' as 'income' | 'expense',
-    amount: 0,
-    currency: 'ARS',
-    description: '',
-    date: '',
-    // Conversion fields
-    convertedAmount: 0,
-    conversionRate: 0,
-    conversionSource: '' as 'api' | 'cache' | 'manual' | '',
-    useManualConversion: false,
-    // USD-based rate (SIEMPRE relativo a 1 USD)
-    usdRate: 0  // Ejemplo: 1050 ARS = 1 USD
-  };
-
-  categoryFormData = {
-    name: '',
-    type: 'expense' as 'income' | 'expense',
-    color: '#3b82f6',
-    icon: 'pi-tag'
-  };
-
-  accountFormData = {
-    name: '',
-    type: 'bank' as 'bank' | 'cash' | 'credit' | 'savings' | 'investment',
-    balance: 0,
-    currency: 'ARS',
-    color: '#3b82f6',
-    icon: 'pi-wallet'
-  };
 
   filters = {
     type: 'all' as 'all' | 'income' | 'expense',
@@ -92,26 +57,6 @@ export class TransactionsPage implements OnInit, OnDestroy {
   csvDropdownOpen = false;
   selectedFile: File | null = null;
 
-  availableColors = [
-    '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
-    '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#6366f1'
-  ];
-
-  availableIcons = [
-    'pi-wallet', 'pi-shopping-cart', 'pi-home', 'pi-car', 'pi-heart', 'pi-gift',
-    'pi-coffee', 'pi-book', 'pi-briefcase', 'pi-chart-line', 'pi-credit-card',
-    'pi-dollar', 'pi-users', 'pi-send', 'pi-building', 'pi-star', 'pi-tag',
-    'pi-bolt', 'pi-ticket', 'pi-shield', 'pi-palette', 'pi-list'
-  ];
-
-  accountTypes: Array<{ value: string; label: string }> = [
-    { value: 'bank', label: 'Bank' },
-    { value: 'cash', label: 'Cash' },
-    { value: 'credit', label: 'Credit Card' },
-    { value: 'savings', label: 'Savings' },
-    { value: 'investment', label: 'Investment' }
-  ];
-
   constructor(
     private transactionService: TransactionService,
     private accountService: AccountService,
@@ -120,7 +65,8 @@ export class TransactionsPage implements OnInit, OnDestroy {
     private exchangeRateService: ExchangeRateService,
     private currencyDisplayService: CurrencyDisplayService,
     private preferencesService: PreferencesService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private route: ActivatedRoute
   ) {}
 
   @HostListener('document:click', ['$event'])
@@ -132,7 +78,9 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // Load data
+    const openNew = this.route.snapshot.queryParamMap.get('new') === '1';
+    let dialogOpened = false;
+
     combineLatest([
       this.transactionService.transactions$,
       this.accountService.accounts$,
@@ -157,6 +105,11 @@ export class TransactionsPage implements OnInit, OnDestroy {
         }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
         this.applyFilters();
+
+        if (openNew && !dialogOpened) {
+          dialogOpened = true;
+          this.openCreateDialog();
+        }
       });
   }
 
@@ -208,314 +161,34 @@ export class TransactionsPage implements OnInit, OnDestroy {
   calculateStats(): void {
     const preferredCurrency = this.preferencesService.getPreferredCurrency();
 
-    // Convertir todas las transacciones a la moneda preferida antes de sumar
-    // IMPORTANTE: Usar la tasa guardada en la transacción si existe
     this.stats.totalIncome = this.filteredTransactions
       .filter(t => t.type === 'income')
-      .reduce((sum, t) => {
-        // Si la transacción tiene una conversión guardada y la moneda preferida no ha cambiado, usar ese valor
-        if (t.convertedAmount && t.conversionRate) {
-          // La conversión guardada podría ser a una moneda diferente, necesitamos verificar
-          // Por ahora asumimos que convertedAmount está en la moneda preferida al momento de la transacción
-          return sum + (t.currency === preferredCurrency ? t.amount : t.convertedAmount);
-        }
-
-        // Fallback: Si no hay conversión guardada, usar el servicio (transacciones antiguas)
-        const convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
-          t.amount,
-          t.currency,
-          preferredCurrency
-        );
-        return sum + convertedAmount;
-      }, 0);
+      .reduce((sum, t) => sum + this.getStatAmount(t, preferredCurrency), 0);
 
     this.stats.totalExpense = this.filteredTransactions
       .filter(t => t.type === 'expense')
-      .reduce((sum, t) => {
-        // Usar la tasa guardada si existe
-        if (t.convertedAmount && t.conversionRate) {
-          return sum + (t.currency === preferredCurrency ? t.amount : t.convertedAmount);
-        }
-
-        // Fallback: Si no hay conversión guardada, usar el servicio
-        const convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
-          t.amount,
-          t.currency,
-          preferredCurrency
-        );
-        return sum + convertedAmount;
-      }, 0);
+      .reduce((sum, t) => sum + this.getStatAmount(t, preferredCurrency), 0);
 
     this.stats.balance = this.stats.totalIncome - this.stats.totalExpense;
     this.stats.count = this.filteredTransactions.length;
   }
 
-  openCreateDialog(): void {
-    this.editingTransaction = null;
-    // Formato datetime-local: "YYYY-MM-DDTHH:mm"
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const todayWithTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+  private getStatAmount(t: Transaction, preferredCurrency: string): number {
+    const mode = resolveRateMode(t);
+    if (mode === 'transfer') return 0;
+    if (mode === 'frozen') {
+      if (t.currency === preferredCurrency) return t.amount;
+      return t.convertedAmount ?? this.exchangeRateService.convertToPreferredCurrency(t.amount, t.currency, preferredCurrency);
+    }
+    return this.exchangeRateService.convertToPreferredCurrency(t.amount, t.currency, preferredCurrency);
+  }
 
-    const defaultCurrency = this.accounts[0]?.currency || 'ARS';
-    this.formData = {
-      accountId: this.accounts[0]?.id || '',
-      categoryId: this.categories.filter(c => c.type === 'expense')[0]?.id || '',
-      type: 'expense',
-      amount: 0,
-      currency: defaultCurrency,
-      description: '',
-      date: todayWithTime,
-      convertedAmount: 0,
-      conversionRate: 0,
-      conversionSource: '',
-      useManualConversion: false,
-      usdRate: 0
-    };
-    this.calculateConversion();
-    this.showDialog = true;
+  openCreateDialog(): void {
+    this.txnDialog.open();
   }
 
   openEditDialog(transaction: Transaction): void {
-    this.editingTransaction = transaction;
-    // Formato datetime-local: "YYYY-MM-DDTHH:mm"
-    const date = new Date(transaction.date);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
-
-    this.formData = {
-      accountId: transaction.accountId,
-      categoryId: transaction.categoryId,
-      type: transaction.type,
-      amount: transaction.amount,
-      currency: transaction.currency,
-      description: transaction.description,
-      date: formattedDate,
-      convertedAmount: transaction.convertedAmount || 0,
-      conversionRate: transaction.conversionRate || 0,
-      conversionSource: transaction.conversionSource || '',
-      useManualConversion: transaction.manualConversion || false,
-      usdRate: transaction.usdRate || 0
-    };
-    if (!this.formData.useManualConversion) {
-      this.calculateConversion();
-    }
-    this.showDialog = true;
-  }
-
-  closeDialog(): void {
-    this.showDialog = false;
-    this.editingTransaction = null;
-  }
-
-  calculateConversion(): void {
-    console.log('🔄 [Transactions] Calculando conversión...', {
-      amount: this.formData.amount,
-      currency: this.formData.currency
-    });
-
-    if (!this.formData.amount || !this.formData.currency) {
-      this.formData.convertedAmount = 0;
-      this.formData.conversionRate = 0;
-      this.formData.usdRate = 0;
-      this.formData.conversionSource = '';
-      return;
-    }
-
-    const preferredCurrency = this.preferencesService.getPreferredCurrency();
-    const ratesInfo = this.exchangeRateService.getRatesInfo();
-
-    // PASO 1: SIEMPRE calcular la tasa respecto a la moneda preferida
-    if (this.formData.currency === preferredCurrency) {
-      this.formData.usdRate = 1;
-    } else if (this.formData.currency === 'USD' && preferredCurrency !== 'USD') {
-      // Mostrar cuántos preferredCurrency = 1 USD
-      this.formData.usdRate = this.exchangeRateService.getExchangeRate('USD', preferredCurrency);
-    } else {
-      // Obtener cuántas unidades de esta moneda = 1 USD
-      this.formData.usdRate = this.exchangeRateService.getExchangeRate('USD', this.formData.currency);
-    }
-
-    // PASO 2: Calcular el monto convertido a la moneda preferida
-    if (this.formData.currency === preferredCurrency) {
-      // Misma moneda, no necesita conversión
-      this.formData.convertedAmount = this.formData.amount;
-      this.formData.conversionRate = 1;
-    } else {
-      // Convertir a la moneda preferida
-      this.formData.convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
-        this.formData.amount,
-        this.formData.currency,
-        preferredCurrency
-      );
-      // Calcular tasa (para compatibilidad con código existente)
-      if (this.formData.amount > 0) {
-        this.formData.conversionRate = this.formData.convertedAmount / this.formData.amount;
-      }
-    }
-
-    // PASO 3: Determinar fuente de datos
-    if (ratesInfo) {
-      const today = new Date().toISOString().split('T')[0];
-      const rateDate = new Date(ratesInfo.date).toISOString().split('T')[0];
-
-      if (rateDate === today) {
-        this.formData.conversionSource = 'api';
-      } else {
-        this.formData.conversionSource = 'cache';
-      }
-    } else {
-      this.formData.conversionSource = 'api';
-    }
-
-    console.log('✅ [Transactions] Conversión calculada:', {
-      from: `${this.formData.amount} ${this.formData.currency}`,
-      to: `${this.formData.convertedAmount.toFixed(2)} ${preferredCurrency}`,
-      usdRate: `${this.formData.usdRate.toFixed(4)} ${this.formData.currency}/USD`,
-      conversionRate: `1 ${this.formData.currency} = ${this.formData.conversionRate.toFixed(4)} ${preferredCurrency}`,
-      source: this.formData.conversionSource
-    });
-  }
-
-  onAmountOrCurrencyChange(): void {
-    if (!this.formData.useManualConversion) {
-      this.calculateConversion();
-    }
-  }
-
-  onManualConversionToggle(): void {
-    if (!this.formData.useManualConversion) {
-      // Switched to auto, recalculate
-      this.calculateConversion();
-    } else {
-      // Switched to manual, set source and keep current rate
-      this.formData.conversionSource = 'manual';
-      // Keep the current rate for editing
-    }
-  }
-
-  onManualRateChange(): void {
-    // When user changes the USD rate manually, recalculate converted amount
-    if (this.formData.amount > 0 && this.formData.usdRate > 0) {
-      // El usuario ingresa la tasa basada en USD
-      // Por ejemplo: 1050 ARS = 1 USD, entonces usdRate = 1050
-
-      const preferredCurrency = this.preferencesService.getPreferredCurrency();
-
-      if (this.formData.currency === 'USD') {
-        if (preferredCurrency === 'USD') {
-          this.formData.convertedAmount = this.formData.amount;
-          this.formData.conversionRate = 1;
-        } else {
-          // usdRate ahora significa "cuántos preferredCurrency = 1 USD"
-          this.formData.convertedAmount = this.formData.amount * this.formData.usdRate;
-          this.formData.conversionRate = this.formData.usdRate;
-        }
-      } else {
-        // Si no es USD, usar la tasa ingresada
-        // Primero convertir a USD
-        const amountInUSD = this.formData.amount / this.formData.usdRate;
-
-        // Luego convertir USD a moneda preferida
-        if (preferredCurrency === 'USD') {
-          this.formData.convertedAmount = amountInUSD;
-          this.formData.conversionRate = 1 / this.formData.usdRate;
-        } else {
-          const usdToPreferredRate = this.exchangeRateService.getExchangeRate('USD', preferredCurrency);
-          this.formData.convertedAmount = amountInUSD * usdToPreferredRate;
-          this.formData.conversionRate = this.formData.convertedAmount / this.formData.amount;
-        }
-      }
-
-      console.log('✅ [Transactions] Tasa USD manual actualizada:', {
-        amount: this.formData.amount,
-        currency: this.formData.currency,
-        usdRate: this.formData.usdRate,
-        converted: this.formData.convertedAmount,
-        preferredCurrency: preferredCurrency
-      });
-    }
-  }
-
-  shouldShowConversion(): boolean {
-    const preferredCurrency = this.preferencesService.getPreferredCurrency();
-    return this.formData.currency !== preferredCurrency && this.formData.amount > 0;
-  }
-
-  getPreferredCurrency(): string {
-    return this.preferencesService.getPreferredCurrency();
-  }
-
-  getConversionSourceLabel(): string {
-    switch (this.formData.conversionSource) {
-      case 'api':
-        return 'API (Hoy)';
-      case 'cache':
-        return 'Caché (Ayer)';
-      case 'manual':
-        return 'Manual';
-      default:
-        return 'N/A';
-    }
-  }
-
-  saveTransaction(): void {
-    if (!this.formData.accountId || !this.formData.categoryId || this.formData.amount <= 0) {
-      return;
-    }
-
-    // IMPORTANTE: Guardar TODAS las tasas de cambio con la transacción
-    // Esto permite mostrar cualquier moneda en cualquier otra sin recalcular
-    const allRates = this.exchangeRateService.getAllExchangeRates(this.formData.currency);
-
-    const txnData = {
-      accountId: this.formData.accountId,
-      categoryId: this.formData.categoryId,
-      type: this.formData.type,
-      amount: this.formData.amount,
-      currency: this.formData.currency,
-      description: this.formData.description,
-      date: new Date(this.formData.date),
-      // Guardar datos de conversión histórica
-      convertedAmount: this.formData.convertedAmount > 0 ? this.formData.convertedAmount : undefined,
-      conversionRate: this.formData.conversionRate > 0 ? this.formData.conversionRate : undefined,
-      conversionSource: this.formData.conversionSource || undefined,
-      conversionDate: new Date(),
-      manualConversion: this.formData.useManualConversion,
-      // Tasa respecto a USD (para compatibilidad)
-      usdRate: this.formData.usdRate > 0 ? this.formData.usdRate : undefined,
-      // NUEVO: Todas las tasas de cambio guardadas
-      exchangeRates: allRates
-    };
-
-    console.log(`💾 [Transactions] ${this.editingTransaction ? 'Actualizando' : 'Creando'} transacción:`, {
-      amount: `${txnData.amount} ${txnData.currency}`,
-      convertedAmount: txnData.convertedAmount ? `${txnData.convertedAmount.toFixed(2)} ${this.preferencesService.getPreferredCurrency()}` : 'N/A',
-      exchangeRates: txnData.exchangeRates,
-      usdRate: `${txnData.usdRate} ${txnData.currency}/USD`,
-      conversionSource: txnData.conversionSource,
-      manualConversion: txnData.manualConversion,
-      type: txnData.type,
-      date: txnData.date
-    });
-
-    if (this.editingTransaction) {
-      this.transactionService.updateTransaction(this.editingTransaction.id, txnData);
-      console.log('✅ [Transactions] Transacción actualizada exitosamente');
-    } else {
-      this.transactionService.createTransaction(txnData);
-      console.log('✅ [Transactions] Transacción creada exitosamente');
-    }
-
-    this.closeDialog();
+    this.txnDialog.open(transaction);
   }
 
   async deleteTransaction(transaction: Transaction): Promise<void> {
@@ -528,75 +201,6 @@ export class TransactionsPage implements OnInit, OnDestroy {
       this.transactionService.deleteTransaction(transaction.id);
       this.toastService.success('Transacción eliminada', 'La transacción ha sido eliminada exitosamente');
     }
-  }
-
-  onTypeChange(): void {
-    // Update available categories based on type
-    const availableCategories = this.categories.filter(c => c.type === this.formData.type);
-    if (availableCategories.length > 0) {
-      this.formData.categoryId = availableCategories[0].id;
-    }
-  }
-
-  onAccountChange(): void {
-    // Update currency based on selected account
-    const account = this.accounts.find(a => a.id === this.formData.accountId);
-    if (account) {
-      this.formData.currency = account.currency;
-    }
-  }
-
-  getAvailableCategories(): Category[] {
-    return this.categories.filter(c => c.type === this.formData.type);
-  }
-
-  // Quick create category
-  openQuickCreateCategory(): void {
-    this.categoryFormData = {
-      name: '',
-      type: this.formData.type,
-      color: '#3b82f6',
-      icon: 'pi-tag'
-    };
-    this.showCategoryDialog = true;
-  }
-
-  closeCategoryDialog(): void {
-    this.showCategoryDialog = false;
-  }
-
-  saveQuickCategory(): void {
-    if (!this.categoryFormData.name) return;
-
-    const newCategory = this.categoryService.createCategory(this.categoryFormData);
-    this.formData.categoryId = newCategory.id;
-    this.closeCategoryDialog();
-  }
-
-  // Quick create account
-  openQuickCreateAccount(): void {
-    this.accountFormData = {
-      name: '',
-      type: 'bank',
-      balance: 0,
-      currency: this.formData.currency,
-      color: '#3b82f6',
-      icon: 'pi-wallet'
-    };
-    this.showAccountDialog = true;
-  }
-
-  closeAccountDialog(): void {
-    this.showAccountDialog = false;
-  }
-
-  saveQuickAccount(): void {
-    if (!this.accountFormData.name) return;
-
-    const newAccount = this.accountService.createAccount(this.accountFormData);
-    this.formData.accountId = newAccount.id;
-    this.formData.currency = newAccount.currency;
-    this.closeAccountDialog();
   }
 
   clearFilters(): void {
@@ -647,6 +251,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
     } catch (error) {
       this.toastService.error('Error al importar CSV', `${error}`);
     }
+  }
+
+  getPreferredCurrency(): string {
+    return this.preferencesService.getPreferredCurrency();
   }
 
   formatCurrency(amount: number, currency?: string): string {

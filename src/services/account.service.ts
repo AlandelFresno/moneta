@@ -104,7 +104,7 @@ export class AccountService {
     this.accountsSubject.next(this.accountsSubject.value.filter(acc => acc.id !== id));
   }
 
-  updateBalance(accountId: string, amount: number, transactionCurrency?: string): void {
+  updateBalance(accountId: string, amount: number, transactionCurrency?: string, skipConversion = false): void {
     const account = this.getAccountById(accountId);
     if (!account) {
       console.warn(`⚠️ [AccountService] Account not found: ${accountId}`);
@@ -113,7 +113,7 @@ export class AccountService {
 
     // Convertir el monto a la moneda de la cuenta si es diferente
     let amountInAccountCurrency = amount;
-    if (transactionCurrency && transactionCurrency !== account.currency) {
+    if (!skipConversion && transactionCurrency && transactionCurrency !== account.currency) {
       amountInAccountCurrency = this.exchangeRateService.convertToPreferredCurrency(
         amount,
         transactionCurrency,

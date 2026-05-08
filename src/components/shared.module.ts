@@ -13,12 +13,14 @@ import { TooltipModule } from 'primeng/tooltip';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { LayoutComponent } from './layout/layout.component';
 import { ConfirmationDialogComponent } from './confirmation-dialog/confirmation-dialog.component';
+import { TransactionDialogComponent } from './transaction-dialog/transaction-dialog.component';
 
 @NgModule({
   declarations: [
     SidebarComponent,
     LayoutComponent,
-    ConfirmationDialogComponent
+    ConfirmationDialogComponent,
+    TransactionDialogComponent
   ],
   imports: [
     CommonModule,
@@ -32,7 +34,8 @@ import { ConfirmationDialogComponent } from './confirmation-dialog/confirmation-
   exports: [
     SidebarComponent,
     LayoutComponent,
-    ConfirmationDialogComponent
+    ConfirmationDialogComponent,
+    TransactionDialogComponent
   ]
 })
 export class SharedModule { }

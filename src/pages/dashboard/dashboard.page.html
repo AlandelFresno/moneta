@@ -11,7 +11,7 @@
         class="btn-primary"
         icon="pi pi-plus"
         label="Nueva Transacción"
-        (click)="navigateToTransactions()"
+        (click)="navigateToTransactions(true)"
       ></button>
     </div>
   </div>
@@ -170,7 +170,7 @@
                 [class.income]="tx.type === 'income'"
                 [class.expense]="tx.type === 'expense'"
               >
-                <ng-container *ngIf="formatCurrencyWithOriginal(tx.amount, tx.currency) as formatted">
+                <ng-container *ngIf="formatCurrencyWithOriginal(tx.amount, tx.currency, tx.exchangeRates) as formatted">
                   <span>{{ tx.type === 'income' ? '+' : '-' }}</span>
                   <span class="currency-display">
                     <span class="primary-amount">{{ formatted.primary }}</span>
@@ -187,7 +187,7 @@
 
   <!-- Quick Actions -->
   <div class="quick-actions grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-5">
-    <div class="action-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl py-8 px-6 text-center cursor-pointer transition-all duration-200 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-blue-500 dark:hover:border-blue-500" (click)="navigateToTransactions()">
+    <div class="action-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl py-8 px-6 text-center cursor-pointer transition-all duration-200 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-blue-500 dark:hover:border-blue-500" (click)="navigateToTransactions(true)">
       <div class="action-icon w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)">
         <i class="pi pi-plus-circle text-[2rem] text-white"></i>
       </div>
@@ -277,3 +277,5 @@
     <button pButton [label]="editingAccount ? 'Guardar' : 'Crear Cuenta'" class="btn-primary" (click)="saveAccount()" [disabled]="!accountFormData.name"></button>
   </ng-template>
 </p-dialog>
+
+<app-transaction-dialog #txnDialog></app-transaction-dialog>

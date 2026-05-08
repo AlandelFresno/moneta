@@ -10,26 +10,42 @@ export interface Transaction {
   createdAt: Date;
   updatedAt: Date;
 
-  // Conversion information
-  convertedAmount?: number;          // Amount in preferred currency
-  conversionRate?: number;           // Exchange rate used (deprecated, usar usdRate)
-  conversionSource?: 'api' | 'cache' | 'manual';  // Source of conversion
-  conversionDate?: Date;             // When conversion was done
-  manualConversion?: boolean;        // Whether user manually set the converted amount
+  // Rate mode: how this transaction's currency conversion works
+  // 'live'     — balance stays in native currency, converts at today's API rate
+  // 'frozen'   — conversion happened at entry time, rate never changes
+  // 'transfer' — internal move between accounts, excluded from income/expense stats
+  rateMode?: 'live' | 'frozen' | 'transfer';
 
-  // USD-based exchange rate (ALWAYS relative to 1 USD)
-  usdRate?: number;                  // Tasa respecto al USD: X currency = 1 USD (ej: 1050 ARS = 1 USD)
+  // Links both legs of a Mode 3 transfer (same UUID on both records)
+  transferGroupId?: string;
 
-  // Tasas de cambio guardadas para todas las monedas soportadas
-  // Esto permite mostrar cualquier moneda en cualquier otra sin recalcular
+  // Frozen conversion data (only for rateMode 'frozen' or 'transfer' with currency exchange)
+  convertedAmount?: number;          // Amount in preferred currency, frozen at entry time
+  conversionSource?: 'api' | 'cache' | 'manual';
+  usdRate?: number;                  // 1 fromCurrency = usdRate preferredCurrency (or X currency = 1 USD for non-preferred)
+
+  // Snapshot of all rates at save time — used for display only, not stats
   exchangeRates?: {
-    ARS: number;  // Cuántos ARS = 1 de la moneda de esta transacción
-    USD: number;  // Cuántos USD = 1 de la moneda de esta transacción
-    EUR: number;  // Cuántos EUR = 1 de la moneda de esta transacción
-    BRL: number;  // Cuántos BRL = 1 de la moneda de esta transacción
+    ARS: number;
+    USD: number;
+    EUR: number;
+    BRL: number;
   };
+
+  /** @deprecated use conversionSource instead */
+  conversionRate?: number;
+
   deletedAt?: Date;
 }
 
 export type TransactionType = Transaction['type'];
 
+/**
+ * Resolves the effective rate mode for a transaction.
+ * Handles legacy records that predate the rateMode field.
+ */
+export function resolveRateMode(t: Transaction): 'live' | 'frozen' | 'transfer' {
+  if (t.rateMode) return t.rateMode;
+  if (t.convertedAmount && t.convertedAmount > 0) return 'frozen';
+  return 'live';
+}

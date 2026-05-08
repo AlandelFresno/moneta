@@ -1,9 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
+import { TransactionDialogComponent } from '../../components/transaction-dialog/transaction-dialog.component';
 import { combineLatest, Subject, takeUntil } from 'rxjs';
 import { Account } from '../../models/account.model';
 import { Category } from '../../models/category.model';
-import { Transaction } from '../../models/transaction.model';
+import { Transaction, resolveRateMode } from '../../models/transaction.model';
 import { AccountService } from '../../services/account.service';
 import { CategoryService } from '../../services/category.service';
 import { TransactionService } from '../../services/transaction.service';
@@ -27,6 +28,8 @@ interface ExtendedTransaction extends Transaction {
 })
 export class DashboardPage implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+
+  @ViewChild('txnDialog') txnDialog!: TransactionDialogComponent;
 
   // Stats
   totalBalance = 0;
@@ -154,38 +157,14 @@ export class DashboardPage implements OnInit, OnDestroy {
         const txDate = new Date(t.date);
         return t.type === 'income' && txDate >= startOfMonth && txDate <= endOfMonth;
       })
-      .reduce((sum, t) => {
-        // Usar la tasa histórica guardada si existe
-        if (t.convertedAmount && t.conversionRate) {
-          return sum + (t.currency === preferredCurrency ? t.amount : t.convertedAmount);
-        }
-        // Fallback para transacciones antiguas sin tasa guardada
-        const convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
-          t.amount,
-          t.currency,
-          preferredCurrency
-        );
-        return sum + convertedAmount;
-      }, 0);
+      .reduce((sum, t) => sum + this.getStatAmount(t, preferredCurrency), 0);
 
     this.monthExpense = transactions
       .filter(t => {
         const txDate = new Date(t.date);
         return t.type === 'expense' && txDate >= startOfMonth && txDate <= endOfMonth;
       })
-      .reduce((sum, t) => {
-        // Usar la tasa histórica guardada si existe
-        if (t.convertedAmount && t.conversionRate) {
-          return sum + (t.currency === preferredCurrency ? t.amount : t.convertedAmount);
-        }
-        // Fallback para transacciones antiguas sin tasa guardada
-        const convertedAmount = this.exchangeRateService.convertToPreferredCurrency(
-          t.amount,
-          t.currency,
-          preferredCurrency
-        );
-        return sum + convertedAmount;
-      }, 0);
+      .reduce((sum, t) => sum + this.getStatAmount(t, preferredCurrency), 0);
   }
 
   loadRecentTransactions(
@@ -212,13 +191,27 @@ export class DashboardPage implements OnInit, OnDestroy {
     });
   }
 
+  private getStatAmount(t: Transaction, preferredCurrency: string): number {
+    const mode = resolveRateMode(t);
+    if (mode === 'transfer') return 0;
+    if (mode === 'frozen') {
+      if (t.currency === preferredCurrency) return t.amount;
+      return t.convertedAmount ?? this.exchangeRateService.convertToPreferredCurrency(t.amount, t.currency, preferredCurrency);
+    }
+    return this.exchangeRateService.convertToPreferredCurrency(t.amount, t.currency, preferredCurrency);
+  }
+
   formatCurrency(amount: number, currency?: string): string {
     const preferredCurrency = this.preferencesService.getPreferredCurrency();
     return this.currencyDisplayService.formatAmount(amount, currency || preferredCurrency);
   }
 
-  formatCurrencyWithOriginal(amount: number, originalCurrency: string): FormattedCurrency {
-    return this.currencyDisplayService.formatWithPreferredCurrency(amount, originalCurrency);
+  formatCurrencyWithOriginal(
+    amount: number,
+    originalCurrency: string,
+    exchangeRates?: { ARS: number; USD: number; EUR: number; BRL: number }
+  ): FormattedCurrency {
+    return this.currencyDisplayService.formatWithDualCurrency(amount, originalCurrency, exchangeRates);
   }
 
   formatDate(date: Date): string {
@@ -240,8 +233,12 @@ export class DashboardPage implements OnInit, OnDestroy {
     return icons[type] || 'pi-wallet';
   }
 
-  navigateToTransactions(): void {
-    this.router.navigate(['/transactions']);
+  navigateToTransactions(openNew = false): void {
+    if (openNew) {
+      this.txnDialog.open();
+    } else {
+      this.router.navigate(['/transactions']);
+    }
   }
 
   navigateToCategories(): void {

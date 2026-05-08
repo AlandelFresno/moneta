@@ -20,7 +20,7 @@ import {
   PieController
 } from 'chart.js';
 
-import { Transaction } from '../../models/transaction.model';
+import { Transaction, resolveRateMode } from '../../models/transaction.model';
 import { Category } from '../../models/category.model';
 import { Account } from '../../models/account.model';
 import { TransactionService } from '../../services/transaction.service';
@@ -247,6 +247,17 @@ export class AnalyticsPage implements OnInit, OnDestroy {
     };
   }
 
+  private getConvertedAmount(t: Transaction): number {
+    const preferred = this.preferencesService.getPreferredCurrency();
+    const mode = resolveRateMode(t);
+    if (mode === 'transfer') return 0;
+    if (mode === 'frozen') {
+      if (t.currency === preferred) return t.amount;
+      return t.convertedAmount ?? this.exchangeRateService.convertToPreferredCurrency(t.amount, t.currency, preferred);
+    }
+    return this.exchangeRateService.convertToPreferredCurrency(t.amount, t.currency, preferred);
+  }
+
   private calculateAnalytics(): void {
     const now = new Date();
     const { start: currentStart, end: currentEnd } = this.getPeriodDates(now, this.selectedPeriod);
@@ -318,11 +329,11 @@ export class AnalyticsPage implements OnInit, OnDestroy {
 
     const income = transactions
       .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + this.exchangeRateService.convertToPreferredCurrency(t.amount, t.currency, preferredCurrency), 0);
+      .reduce((sum, t) => sum + this.getConvertedAmount(t), 0);
 
     const expense = transactions
       .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + this.exchangeRateService.convertToPreferredCurrency(t.amount, t.currency, preferredCurrency), 0);
+      .reduce((sum, t) => sum + this.getConvertedAmount(t), 0);
 
     const avgAmount = transactions.length > 0
       ? (income + expense) / transactions.length
@@ -332,7 +343,7 @@ export class AnalyticsPage implements OnInit, OnDestroy {
     const categoryTotals = new Map<string, number>();
     transactions.filter(t => t.type === 'expense').forEach(t => {
       const current = categoryTotals.get(t.categoryId) || 0;
-      categoryTotals.set(t.categoryId, current + this.exchangeRateService.convertToPreferredCurrency(t.amount, t.currency, preferredCurrency));
+      categoryTotals.set(t.categoryId, current + this.getConvertedAmount(t));
     });
 
     let topCategory = null;
@@ -362,7 +373,7 @@ export class AnalyticsPage implements OnInit, OnDestroy {
     const expenseMap = new Map<string, { amount: number; count: number }>();
     transactions.filter(t => t.type === 'expense').forEach(t => {
       const current = expenseMap.get(t.categoryId) || { amount: 0, count: 0 };
-      current.amount += this.exchangeRateService.convertToPreferredCurrency(t.amount, t.currency, preferredCurrency);
+      current.amount += this.getConvertedAmount(t);
       current.count += 1;
       expenseMap.set(t.categoryId, current);
     });
@@ -387,7 +398,7 @@ export class AnalyticsPage implements OnInit, OnDestroy {
     const incomeMap = new Map<string, { amount: number; count: number }>();
     transactions.filter(t => t.type === 'income').forEach(t => {
       const current = incomeMap.get(t.categoryId) || { amount: 0, count: 0 };
-      current.amount += this.exchangeRateService.convertToPreferredCurrency(t.amount, t.currency, preferredCurrency);
+      current.amount += this.getConvertedAmount(t);
       current.count += 1;
       incomeMap.set(t.categoryId, current);
     });
@@ -464,11 +475,11 @@ export class AnalyticsPage implements OnInit, OnDestroy {
 
       const income = monthTransactions
         .filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + this.exchangeRateService.convertToPreferredCurrency(t.amount, t.currency, preferredCurrency), 0);
+        .reduce((sum, t) => sum + this.getConvertedAmount(t), 0);
 
       const expense = monthTransactions
         .filter(t => t.type === 'expense')
-        .reduce((sum, t) => sum + this.exchangeRateService.convertToPreferredCurrency(t.amount, t.currency, preferredCurrency), 0);
+        .reduce((sum, t) => sum + this.getConvertedAmount(t), 0);
 
       incomeData.push(income);
       expenseData.push(expense);
@@ -513,11 +524,11 @@ export class AnalyticsPage implements OnInit, OnDestroy {
 
       const income = monthTransactions
         .filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + this.exchangeRateService.convertToPreferredCurrency(t.amount, t.currency, preferredCurrency), 0);
+        .reduce((sum, t) => sum + this.getConvertedAmount(t), 0);
 
       const expense = monthTransactions
         .filter(t => t.type === 'expense')
-        .reduce((sum, t) => sum + this.exchangeRateService.convertToPreferredCurrency(t.amount, t.currency, preferredCurrency), 0);
+        .reduce((sum, t) => sum + this.getConvertedAmount(t), 0);
 
       incomeData.push(income);
       expenseData.push(expense);

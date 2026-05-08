@@ -242,8 +242,8 @@ export class ExportService {
             'Monto Convertido': transaction.convertedAmount || '',
             'Tasa de Cambio (legacy)': transaction.conversionRate || '',
             'Fuente de Conversión': transaction.conversionSource || '',
-            'Fecha de Conversión': transaction.conversionDate ? this.formatDate(transaction.conversionDate) : '',
-            'Conversión Manual': transaction.manualConversion ? 'Sí' : 'No'
+            'Rate Mode': transaction.rateMode || 'live',
+            'Conversión Manual': transaction.conversionSource === 'manual' ? 'Sí' : 'No'
           };
         });
         const transactionsSheet = XLSX.utils.json_to_sheet(transactionsData);

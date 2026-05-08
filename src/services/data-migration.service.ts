@@ -5,7 +5,7 @@ import { Injectable } from '@angular/core';
 })
 export class DataMigrationService {
   private readonly MIGRATION_VERSION_KEY = 'budget_migration_version';
-  private readonly CURRENT_VERSION = 3;
+  private readonly CURRENT_VERSION = 4;
 
   constructor() {}
 
@@ -33,6 +33,12 @@ export class DataMigrationService {
       console.log('Ejecutando migración v3: Remover prefijo pi- de iconos de categorías');
       await this.migrationV3RemoveCategoryIconPrefix();
       this.setMigrationVersion(3);
+    }
+
+    if (currentVersion < 4) {
+      console.log('Ejecutando migración v4: Agregar rateMode a transacciones');
+      await this.migrationV4AddRateMode();
+      this.setMigrationVersion(4);
     }
 
     console.log('Todas las migraciones completadas');
@@ -150,6 +156,31 @@ export class DataMigrationService {
       console.log('✓ Migración v3 completada exitosamente');
     } catch (error) {
       console.error('Error en migración v3:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Migración v4: Agregar campo rateMode a transacciones existentes
+   * y eliminar campo manualConversion obsoleto
+   */
+  private async migrationV4AddRateMode(): Promise<void> {
+    try {
+      const data = localStorage.getItem('budget_transactions');
+      if (!data) return;
+
+      const transactions = JSON.parse(data);
+      transactions.forEach((t: any) => {
+        if (!t.rateMode) {
+          t.rateMode = (t.convertedAmount && t.convertedAmount > 0) ? 'frozen' : 'live';
+        }
+        delete t.manualConversion;
+      });
+
+      localStorage.setItem('budget_transactions', JSON.stringify(transactions));
+      console.log(`✓ Migración v4: ${transactions.length} transacciones actualizadas con rateMode`);
+    } catch (error) {
+      console.error('Error en migración v4:', error);
       throw error;
     }
   }
