@@ -178,6 +178,10 @@
   &.google-drive:hover { background: #f59e0b20 !important; }
 }
 
+.mobile-only {
+  display: none;
+}
+
 .sidebar-overlay {
   display: none;
 }
@@ -192,6 +196,11 @@
 }
 
 @media (max-width: 768px) {
+  .sidebar-header {
+    justify-content: flex-end;
+    padding: 0.75rem 1rem;
+  }
+
   .sidebar {
     transform: translateX(-100%);
     width: 280px !important;
@@ -218,7 +227,7 @@
   }
 
   .mobile-only {
-    display: block;
+    display: flex;
   }
 
   .desktop-only {

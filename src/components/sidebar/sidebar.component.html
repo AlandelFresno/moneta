@@ -2,6 +2,7 @@
      [class.collapsed]="isCollapsed()" [class.mobile-open]="isMobileMenuOpen()">
   <!-- Header -->
   <div class="sidebar-header border-b border-gray-100 dark:border-gray-700">
+    <!-- Desktop: collapse toggle -->
     <button
       class="collapse-btn desktop-only w-10 h-10 rounded-lg
              bg-gray-100 border border-gray-200 text-gray-500
@@ -11,6 +12,17 @@
              transition-all duration-200 flex-shrink-0 flex items-center justify-center"
       (click)="toggleSidebar()">
       <i class="pi pi-bars" style="font-size: 1.25rem;"></i>
+    </button>
+    <!-- Mobile: close button -->
+    <button
+      class="mobile-only w-10 h-10 rounded-lg
+             bg-gray-100 border border-gray-200 text-gray-600
+             hover:bg-gray-200 hover:text-gray-900
+             dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200
+             dark:hover:bg-gray-600 dark:hover:text-white
+             transition-all duration-200 flex-shrink-0 flex items-center justify-center"
+      (click)="closeMobileMenu()">
+      <i class="pi pi-times" style="font-size: 1.125rem;"></i>
     </button>
   </div>
 
