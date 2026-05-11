@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
 import { ExchangeRateService, CacheInfo, ExchangeRates } from '../../services/exchange-rate.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { GoogleDriveService } from '../../services/google-drive.service';
@@ -28,6 +29,7 @@ interface CurrencyDisplay {
   standalone: false
 })
 export class SettingsPage implements OnInit {
+  readonly isNativePlatform = Capacitor.isNativePlatform();
   preferredCurrency: string = 'ARS';
   dollarType: 'oficial' | 'blue' | 'mep' | 'ccl' | 'mayorista' = 'oficial';
   cacheInfo: CacheInfo | null = null;

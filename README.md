@@ -95,6 +95,14 @@ Después de hacer cambios en el código web:
 npm run cap:sync
 ```
 
+### Build APK
+
+npm run build
+npx cap sync android
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+cd android && ./gradlew assembleDebug
+
+
 ## Características
 
 - ✅ Dashboard con resumen financiero
