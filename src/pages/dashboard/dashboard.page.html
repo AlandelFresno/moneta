@@ -154,10 +154,19 @@
                   <i class="pi pi-tag text-xs"></i>
                   {{ tx.categoryName }}
                 </span>
-                <span class="flex items-center gap-1.5">
-                  <i class="pi pi-wallet text-xs"></i>
-                  {{ tx.accountName }}
-                </span>
+                @if (tx.isTransfer) {
+                  <span class="flex items-center gap-1.5">
+                    <i class="pi pi-wallet text-xs"></i>
+                    {{ tx.fromAccountName }}
+                    <i class="pi pi-arrow-right text-xs"></i>
+                    {{ tx.toAccountName }}
+                  </span>
+                } @else {
+                  <span class="flex items-center gap-1.5">
+                    <i class="pi pi-wallet text-xs"></i>
+                    {{ tx.accountName }}
+                  </span>
+                }
                 <span class="flex items-center gap-1.5">
                   <i class="pi pi-calendar text-xs"></i>
                   {{ formatDate(tx.date) }}
@@ -165,19 +174,34 @@
               </div>
             </div>
             <div class="transaction-amount min-w-0 text-right">
-              <span
-                class="amount text-[0.9375rem] font-bold leading-snug"
-                [class.income]="tx.type === 'income'"
-                [class.expense]="tx.type === 'expense'"
-              >
-                <ng-container *ngIf="formatCurrencyWithOriginal(tx.amount, tx.currency, tx.exchangeRates) as formatted">
-                  <span>{{ tx.type === 'income' ? '+' : '-' }}</span>
-                  <span class="currency-display">
-                    <span class="primary-amount">{{ formatted.primary }}</span>
-                    <span class="secondary-amount" *ngIf="formatted.secondary">({{ formatted.secondary }})</span>
+              @if (tx.isTransfer) {
+                @if (formatCurrencyWithOriginal(tx.amount, tx.currency, tx.exchangeRates); as formatted) {
+                  <span class="amount text-[0.9375rem] font-bold leading-snug transfer">
+                    <span class="currency-display">
+                      <span class="primary-amount">{{ formatted.primary }}</span>
+                      @if (formatted.secondary) {
+                        <span class="secondary-amount">({{ formatted.secondary }})</span>
+                      }
+                    </span>
                   </span>
-                </ng-container>
-              </span>
+                }
+              } @else {
+                @if (formatCurrencyWithOriginal(tx.amount, tx.currency, tx.exchangeRates); as formatted) {
+                  <span
+                    class="amount text-[0.9375rem] font-bold leading-snug"
+                    [class.income]="tx.type === 'income'"
+                    [class.expense]="tx.type === 'expense'"
+                  >
+                    <span>{{ tx.type === 'income' ? '+' : '-' }}</span>
+                    <span class="currency-display">
+                      <span class="primary-amount">{{ formatted.primary }}</span>
+                      @if (formatted.secondary) {
+                        <span class="secondary-amount">({{ formatted.secondary }})</span>
+                      }
+                    </span>
+                  </span>
+                }
+              }
             </div>
           </div>
         </div>

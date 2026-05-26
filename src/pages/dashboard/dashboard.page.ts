@@ -18,6 +18,9 @@ interface ExtendedTransaction extends Transaction {
   categoryName: string;
   categoryColor: string;
   categoryIcon: string;
+  isTransfer?: boolean;
+  fromAccountName?: string;
+  toAccountName?: string;
 }
 
 @Component({
@@ -172,23 +175,51 @@ export class DashboardPage implements OnInit, OnDestroy {
     accounts: Account[],
     categories: Category[]
   ): void {
-    // Get last 10 transactions sorted by date
     const sorted = [...transactions].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
-    this.recentTransactions = sorted.slice(0, 10).map(tx => {
-      const account = accounts.find(a => a.id === tx.accountId);
-      const category = categories.find(c => c.id === tx.categoryId);
+    const seen = new Set<string>();
+    const result: ExtendedTransaction[] = [];
 
-      return {
-        ...tx,
-        accountName: account?.name || 'Unknown',
-        categoryName: category?.name || 'Unknown',
-        categoryColor: category?.color || '#6b7280',
-        categoryIcon: category?.icon || 'question'
-      };
-    });
+    for (const tx of sorted) {
+      if (result.length >= 10) break;
+
+      if (tx.transferGroupId) {
+        if (seen.has(tx.transferGroupId)) continue;
+        seen.add(tx.transferGroupId);
+
+        const pair = sorted.find(t => t.transferGroupId === tx.transferGroupId && t.id !== tx.id);
+        const expenseLeg = tx.type === 'expense' ? tx : pair;
+        const incomeLeg = tx.type === 'income' ? tx : pair;
+        const fromAccount = accounts.find(a => a.id === expenseLeg?.accountId);
+        const toAccount = accounts.find(a => a.id === incomeLeg?.accountId);
+
+        result.push({
+          ...tx,
+          accountName: fromAccount?.name || 'Unknown',
+          categoryName: 'Transferencia',
+          categoryColor: '#6366f1',
+          categoryIcon: 'arrow-right-arrow-left',
+          isTransfer: true,
+          fromAccountName: fromAccount?.name || 'Unknown',
+          toAccountName: toAccount?.name || 'Unknown'
+        });
+      } else {
+        const account = accounts.find(a => a.id === tx.accountId);
+        const category = categories.find(c => c.id === tx.categoryId);
+
+        result.push({
+          ...tx,
+          accountName: account?.name || 'Unknown',
+          categoryName: category?.name || 'Unknown',
+          categoryColor: category?.color || '#6b7280',
+          categoryIcon: category?.icon || 'question'
+        });
+      }
+    }
+
+    this.recentTransactions = result;
   }
 
   private getStatAmount(t: Transaction, preferredCurrency: string): number {

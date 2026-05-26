@@ -96,6 +96,10 @@
   @apply text-red-500;
 }
 
+.transfer {
+  @apply text-indigo-400;
+}
+
 // Dialog color picker (complex :hover/:selected states)
 .dialog-content {
   .color-picker {

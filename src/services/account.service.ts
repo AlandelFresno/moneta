@@ -20,6 +20,7 @@ export class AccountService {
     if (data) {
       const accounts = JSON.parse(data).map((acc: any) => ({
         ...acc,
+        icon: acc.icon?.startsWith('pi-') ? acc.icon.substring(3) : acc.icon,
         createdAt: new Date(acc.createdAt),
         updatedAt: new Date(acc.updatedAt),
         deletedAt: acc.deletedAt ? new Date(acc.deletedAt) : undefined
