@@ -9,6 +9,7 @@ import { DialogModule } from 'primeng/dialog';
 import { DashboardPage } from './dashboard.page';
 import { CurrencyRatesWidgetComponent } from '../../components/currency-rates-widget/currency-rates-widget.component';
 import { SharedModule } from '../../components/shared.module';
+import { TransactionDialogModule } from '../../components/transaction-dialog/transaction-dialog.module';
 
 const routes: Routes = [
   {
@@ -29,7 +30,8 @@ const routes: Routes = [
     ButtonModule,
     TooltipModule,
     DialogModule,
-    SharedModule
+    SharedModule,
+    TransactionDialogModule
   ]
 })
 export class DashboardModule { }

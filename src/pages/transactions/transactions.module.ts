@@ -11,6 +11,7 @@ import { TooltipModule } from 'primeng/tooltip';
 
 import { TransactionsPage } from './transactions.page';
 import { SharedModule } from '../../components/shared.module';
+import { TransactionDialogModule } from '../../components/transaction-dialog/transaction-dialog.module';
 
 const routes: Routes = [
   {
@@ -29,7 +30,8 @@ const routes: Routes = [
     DialogModule,
     InputTextModule,
     TooltipModule,
-    SharedModule
+    SharedModule,
+    TransactionDialogModule
   ]
 })
 export class TransactionsModule { }

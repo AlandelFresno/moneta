@@ -33,8 +33,6 @@ export class SidebarComponent {
   secondaryCurrency: string;
   currentTheme: 'light' | 'dark';
 
-  showSyncDialog = false;
-  showImportDialog = false;
   pendingImportFile: File | null = null;
   pendingImportEvent: any = null;
 
@@ -215,28 +213,20 @@ export class SidebarComponent {
   }
 
   async syncWithDrive() {
-    console.log('🔄 [Sidebar] Iniciando sincronización con Google Drive...');
-
     try {
       if (!this.googleDriveService.hasCredentials()) {
         this.toastService.warn('Credenciales requeridas', 'Por favor, configura las credenciales de Google Drive en google-drive.service.ts');
         return;
       }
 
-      this.showSyncDialog = true;
+      const confirmed = await this.toastService.confirm(
+        'La sincronización combinará los datos locales con los de Drive. El más reciente prevalecerá. ¿Continuar?',
+        'Confirmar sincronización'
+      );
+      if (confirmed) await this.performSync();
     } catch (error: any) {
-      console.error('❌ [Sidebar] Error en sincronización:', error);
       this.toastService.error('Error en sincronización', error.message || 'Error desconocido. Por favor, revisa la consola.');
     }
-  }
-
-  closeSyncDialog() {
-    this.showSyncDialog = false;
-  }
-
-  async confirmSync() {
-    this.showSyncDialog = false;
-    await this.performSync();
   }
 
   private async performSync() {
@@ -321,39 +311,22 @@ export class SidebarComponent {
 
   async importFromExcel(event: any) {
     const file = event.target.files[0];
-    if (!file) {
-      return;
-    }
-
-    console.log('📥 [Sidebar] Iniciando importación desde Excel...');
+    if (!file) return;
 
     try {
-      this.pendingImportFile = file;
-      this.pendingImportEvent = event;
-      this.showImportDialog = true;
+      const confirmed = await this.toastService.confirm(
+        '¿Deseas importar datos desde este archivo Excel? Esto agregará los datos al sistema actual.',
+        'Confirmar importación'
+      );
+      if (confirmed) {
+        await this.performImport(file, event);
+      } else {
+        event.target.value = '';
+      }
     } catch (error: any) {
-      console.error('❌ [Sidebar] Error en importación:', error);
       this.toastService.error('Error en importación', error.message || 'Error desconocido');
       event.target.value = '';
     }
-  }
-
-  closeImportDialog() {
-    this.showImportDialog = false;
-    if (this.pendingImportEvent) {
-      this.pendingImportEvent.target.value = '';
-    }
-    this.pendingImportFile = null;
-    this.pendingImportEvent = null;
-  }
-
-  async confirmImport() {
-    this.showImportDialog = false;
-    if (this.pendingImportFile && this.pendingImportEvent) {
-      await this.performImport(this.pendingImportFile, this.pendingImportEvent);
-    }
-    this.pendingImportFile = null;
-    this.pendingImportEvent = null;
   }
 
   private async performImport(file: File, event: any) {
