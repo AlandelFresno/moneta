@@ -10,11 +10,11 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - [x] **2. Scaffold layout** — old app moved to `src-old/` (reference only, not built). Fresh `src/` created: standalone `App` root via `bootstrapApplication`, zoneless, empty `app.routes.ts`, `src/app/{core/{guards,interfaces,types,enums,utils},pages,shared,services}` scaffolded. `angular.json` polyfills updated (dropped zone.js). Build verified clean.
 - [x] **3. Drop out-of-scope domains** — n/a now: fresh `src/` starts empty, so fuel/vehicle/billing are simply never ported from `src-old/`.
 - [x] **4. Redesign + write models** — scope simplified hard during rewrite (see Scope change below). Written to `src/app/core/types/`: `category.types.ts`, `transaction.types.ts`. Dead code found: `src-old/app/core/models/*` and `src-old/app/core/services/budget.service.ts` were unused duplicates (confirmed via import grep) — not ported.
-- [ ] **5. Convert pages to standalone** — Transactions page (+ Categories, if it gets its own page rather than inline management) rebuilt as standalone components with `@if`/`@for`, no `*.module.ts`.
-- [ ] **6. Rebuild services** — Category + Transaction services in `services/`, `providedIn: 'root'`, typed `Observable<T>`, no `any`.
-- [ ] **7. Port order** (each tested live in browser before moving to next):
-  - [ ] Category
-  - [ ] Transaction (plain ARS amount, no rate modes/transfers/conversion)
+- [x] **6. Rebuild services** — `CategoryService` and `TransactionService` written in `services/`, `providedIn: 'root'`, typed `Observable<T>`, no `any`, localStorage-backed, soft delete. No account-balance/currency/transfer logic (dropped with scope).
+- [~] **7. Port order**:
+  - [x] Category — service done, seeded with 2 defaults (Salario/Almacén). No dedicated Categories page yet — can't add/edit/delete categories from the UI.
+  - [x] Transaction — service + `TransactionsPage` (list, filters, stats, dialog form) done, verified working in browser.
+- [x] **Layout** — `LayoutComponent` + `SidebarComponent` + `ThemeService` (dark mode toggle, localStorage-persisted) added, not in original plan but needed once the app had a real page to navigate to.
 
 ### Scope change (decided during step 4)
 
