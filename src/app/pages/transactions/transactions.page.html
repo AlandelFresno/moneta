@@ -1,18 +1,26 @@
-<div class="page-container">
-  <div class="header">
-    <div class="title-block">
-      <h1>Transacciones</h1>
-      <p class="subtitle">{{ stats.count }} {{ stats.count === 1 ? 'movimiento' : 'movimientos' }}</p>
+<div class="p-6 md:p-8 max-w-5xl mx-auto">
+  <div class="flex items-start justify-between gap-4 flex-wrap mb-7">
+    <div>
+      <h1 class="text-[1.75rem] font-semibold tracking-tight text-text-primary">Transacciones</h1>
+      <p class="text-sm text-text-secondary mt-0.5">
+        {{ stats.count }} {{ stats.count === 1 ? 'movimiento' : 'movimientos' }}
+      </p>
     </div>
-    <div class="header-actions">
+
+    <div class="flex items-center gap-3">
       <input #csvFileInput type="file" accept=".csv" hidden (change)="onCsvFileSelected($event)" />
-      <div class="csv-actions">
-        <button type="button" class="icon-action" title="Importar CSV" (click)="csvFileInput.click()">
+      <div class="flex items-center gap-1 rounded-lg p-1 bg-surface-input border border-border-subtle">
+        <button
+          type="button"
+          class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-card hover:text-accent"
+          title="Importar CSV"
+          (click)="csvFileInput.click()"
+        >
           <i class="pi pi-upload"></i>
         </button>
         <button
           type="button"
-          class="icon-action"
+          class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-card hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed"
           title="Exportar CSV"
           [disabled]="filteredTransactions.length === 0"
           (click)="exportToCsv()"
@@ -24,32 +32,50 @@
     </div>
   </div>
 
-  <div class="stats">
-    <div class="stat-card income">
-      <div class="stat-icon"><i class="pi pi-arrow-down-left"></i></div>
-      <div class="stat-body">
-        <span class="label">Ingresos</span>
-        <span class="value">{{ stats.totalIncome | number: '1.2-2' }}</span>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+    <div class="flex items-center gap-3.5 p-4 rounded-2xl bg-surface-card border border-border-subtle">
+      <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base text-income bg-income/15">
+        <i class="pi pi-arrow-down-left"></i>
+      </div>
+      <div class="flex flex-col gap-0.5 min-w-0">
+        <span class="text-xs uppercase tracking-wider font-medium text-text-secondary">Ingresos</span>
+        <span class="text-xl font-semibold text-income [font-variant-numeric:tabular-nums]">
+          {{ stats.totalIncome | number: '1.2-2' }}
+        </span>
       </div>
     </div>
-    <div class="stat-card expense">
-      <div class="stat-icon"><i class="pi pi-arrow-up-right"></i></div>
-      <div class="stat-body">
-        <span class="label">Gastos</span>
-        <span class="value">{{ stats.totalExpense | number: '1.2-2' }}</span>
+
+    <div class="flex items-center gap-3.5 p-4 rounded-2xl bg-surface-card border border-border-subtle">
+      <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base text-expense bg-expense/15">
+        <i class="pi pi-arrow-up-right"></i>
+      </div>
+      <div class="flex flex-col gap-0.5 min-w-0">
+        <span class="text-xs uppercase tracking-wider font-medium text-text-secondary">Gastos</span>
+        <span class="text-xl font-semibold text-expense [font-variant-numeric:tabular-nums]">
+          {{ stats.totalExpense | number: '1.2-2' }}
+        </span>
       </div>
     </div>
-    <div class="stat-card balance" [class.negative]="stats.balance < 0">
-      <div class="stat-icon"><i class="pi pi-wallet"></i></div>
-      <div class="stat-body">
-        <span class="label">Balance</span>
-        <span class="value">{{ stats.balance | number: '1.2-2' }}</span>
+
+    <div class="flex items-center gap-3.5 p-4 rounded-2xl bg-surface-card border border-border-subtle">
+      <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base text-accent bg-accent/15">
+        <i class="pi pi-wallet"></i>
+      </div>
+      <div class="flex flex-col gap-0.5 min-w-0">
+        <span class="text-xs uppercase tracking-wider font-medium text-text-secondary">Balance</span>
+        <span
+          class="text-xl font-semibold [font-variant-numeric:tabular-nums]"
+          [class.text-expense]="stats.balance < 0"
+          [class.text-text-primary]="stats.balance >= 0"
+        >
+          {{ stats.balance | number: '1.2-2' }}
+        </span>
       </div>
     </div>
   </div>
 
-  <div class="filters">
-    <p-inputgroup class="search">
+  <div class="flex flex-wrap items-center gap-2.5 mb-5">
+    <p-inputgroup class="flex-1 min-w-[14rem]">
       <p-inputgroup-addon><i class="pi pi-search"></i></p-inputgroup-addon>
       <input
         type="text"
@@ -61,6 +87,7 @@
     </p-inputgroup>
 
     <p-select
+      class="min-w-[9rem]"
       [options]="typeOptions"
       optionLabel="label"
       optionValue="value"
@@ -69,6 +96,7 @@
     />
 
     <p-select
+      class="min-w-[9rem]"
       [options]="categoryFilterOptions"
       optionLabel="label"
       optionValue="value"
@@ -81,42 +109,74 @@
     }
   </div>
 
-  <div class="transaction-list">
+  <div class="flex flex-col gap-2">
     @if (filteredTransactions.length === 0) {
-      <div class="empty-state">
-        <i class="pi pi-inbox"></i>
-        <span>No hay transacciones{{ filters.searchText || filters.type !== 'all' || filters.categoryId !== 'all' ? ' que coincidan con el filtro' : '' }}.</span>
+      <div class="flex flex-col items-center justify-center gap-2 py-16 text-sm text-text-secondary">
+        <i class="pi pi-inbox text-3xl opacity-50"></i>
+        <span>
+          No hay transacciones{{
+            filters.searchText || filters.type !== 'all' || filters.categoryId !== 'all'
+              ? ' que coincidan con el filtro'
+              : ''
+          }}.
+        </span>
       </div>
     }
 
     @for (txn of filteredTransactions; track txn.id) {
-      <div class="transaction-row">
-        <div class="category-badge" [style.background-color]="txn.categoryColor + '22'" [style.color]="txn.categoryColor">
+      <div
+        class="flex items-center gap-4 px-4 py-3.5 rounded-xl bg-surface-card border border-border-subtle transition-colors duration-150 hover:border-border-strong"
+      >
+        <div
+          class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base"
+          [style.background-color]="txn.categoryColor + '22'"
+          [style.color]="txn.categoryColor"
+        >
           <i class="pi pi-{{ txn.categoryIcon }}"></i>
         </div>
 
-        <div class="details">
-          <span class="name">{{ txn.name }}</span>
+        <div class="flex flex-col flex-1 min-w-0 gap-0.5">
+          <span class="font-medium truncate text-text-primary">{{ txn.name }}</span>
           @if (txn.description) {
-            <span class="description">{{ txn.description }}</span>
+            <span class="text-sm truncate text-text-secondary">{{ txn.description }}</span>
           }
         </div>
 
-        <span class="category-pill" [style.background-color]="txn.categoryColor + '1a'" [style.color]="txn.categoryColor">
+        <span
+          class="text-xs font-medium px-2.5 py-1 rounded-full hidden md:inline-block flex-shrink-0"
+          [style.background-color]="txn.categoryColor + '1a'"
+          [style.color]="txn.categoryColor"
+        >
           {{ txn.categoryName }}
         </span>
 
-        <span class="date">{{ formatDate(txn.date) }}</span>
+        <span class="text-sm hidden sm:block flex-shrink-0 w-24 text-text-secondary [font-variant-numeric:tabular-nums]">
+          {{ formatDate(txn.date) }}
+        </span>
 
-        <span class="amount" [class.income]="txn.type === 'income'" [class.expense]="txn.type === 'expense'">
+        <span
+          class="font-semibold w-28 text-right flex-shrink-0 [font-variant-numeric:tabular-nums]"
+          [class.text-income]="txn.type === 'income'"
+          [class.text-expense]="txn.type === 'expense'"
+        >
           {{ txn.type === 'income' ? '+' : '−' }}{{ txn.amount | number: '1.2-2' }}
         </span>
 
-        <div class="actions">
-          <button type="button" class="icon-action" title="Editar" (click)="openEditDialog(txn)">
+        <div class="flex items-center gap-1 flex-shrink-0">
+          <button
+            type="button"
+            class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-input hover:text-accent"
+            title="Editar"
+            (click)="openEditDialog(txn)"
+          >
             <i class="pi pi-pencil"></i>
           </button>
-          <button type="button" class="icon-action danger" title="Eliminar" (click)="deleteTransaction(txn)">
+          <button
+            type="button"
+            class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-input hover:text-expense"
+            title="Eliminar"
+            (click)="deleteTransaction(txn)"
+          >
             <i class="pi pi-trash"></i>
           </button>
         </div>
@@ -131,28 +191,33 @@
   [style]="{ width: '28rem' }"
   [header]="form.id ? 'Editar transacción' : 'Nueva transacción'"
 >
-  <div class="dialog-form">
-    <div class="type-toggle">
+  <div class="flex flex-col gap-1.5">
+    <div class="flex gap-2 mb-1">
       <button
         type="button"
-        class="type-option expense"
-        [class.active]="form.type === 'expense'"
+        class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-all duration-150 border"
+        [ngClass]="form.type === 'expense'
+          ? 'bg-expense/15 border-expense text-expense'
+          : 'bg-surface-input border-border-subtle text-text-secondary'"
         (click)="form.type = 'expense'; form.categoryId = ''"
       >
         <i class="pi pi-arrow-up-right"></i> Gasto
       </button>
       <button
         type="button"
-        class="type-option income"
-        [class.active]="form.type === 'income'"
+        class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-all duration-150 border"
+        [ngClass]="form.type === 'income'
+          ? 'bg-income/15 border-income text-income'
+          : 'bg-surface-input border-border-subtle text-text-secondary'"
         (click)="form.type = 'income'; form.categoryId = ''"
       >
         <i class="pi pi-arrow-down-left"></i> Ingreso
       </button>
     </div>
 
-    <label for="txn-category">Categoría</label>
+    <label for="txn-category" class="text-sm font-medium mt-2 text-text-primary">Categoría</label>
     <p-select
+      class="w-full"
       inputId="txn-category"
       [options]="categoriesForType(form.type)"
       optionLabel="name"
@@ -161,14 +226,15 @@
       [(ngModel)]="form.categoryId"
     />
 
-    <label for="txn-name">Nombre</label>
+    <label for="txn-name" class="text-sm font-medium mt-2 text-text-primary">Nombre</label>
     <input id="txn-name" type="text" pInputText [(ngModel)]="form.name" placeholder="Ej: Sueldo, Supermercado" />
 
-    <label for="txn-description">Descripción</label>
+    <label for="txn-description" class="text-sm font-medium mt-2 text-text-primary">Descripción</label>
     <input id="txn-description" type="text" pInputText [(ngModel)]="form.description" placeholder="Opcional" />
 
-    <label for="txn-amount">Monto (ARS)</label>
+    <label for="txn-amount" class="text-sm font-medium mt-2 text-text-primary">Monto (ARS)</label>
     <p-inputnumber
+      class="w-full"
       inputId="txn-amount"
       [(ngModel)]="form.amount"
       mode="decimal"
@@ -177,8 +243,8 @@
       placeholder="0.00"
     />
 
-    <label for="txn-date">Fecha</label>
-    <p-datepicker inputId="txn-date" [(ngModel)]="form.date" dateFormat="dd/mm/yy" />
+    <label for="txn-date" class="text-sm font-medium mt-2 text-text-primary">Fecha</label>
+    <p-datepicker class="w-full" inputId="txn-date" [(ngModel)]="form.date" dateFormat="dd/mm/yy" />
   </div>
 
   <ng-template #footer>

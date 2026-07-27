@@ -1,20 +1,28 @@
-<aside class="sidebar">
-  <div class="brand">
-    <i class="pi pi-wallet"></i>
+<aside class="w-56 flex-shrink-0 h-screen sticky top-0 flex flex-col bg-surface-card border-r border-border-subtle">
+  <div class="flex items-center gap-2 px-5 py-5 font-semibold text-lg text-text-primary">
+    <i class="pi pi-wallet text-accent"></i>
     <span>BudgetTracker</span>
   </div>
 
-  <nav class="nav">
+  <nav class="flex flex-col gap-1 px-3 flex-1">
     @for (item of menuItems; track item.route) {
-      <a [routerLink]="item.route" routerLinkActive="active" class="nav-item">
+      <a
+        [routerLink]="item.route"
+        routerLinkActive="bg-accent/15 text-accent"
+        class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-text-secondary hover:bg-surface-input hover:text-text-primary transition-colors duration-150"
+      >
         <i class="pi pi-{{ item.icon }}"></i>
         <span>{{ item.label }}</span>
       </a>
     }
   </nav>
 
-  <div class="footer">
-    <button type="button" class="theme-toggle" (click)="toggleTheme()">
+  <div class="px-3 py-4 border-t border-border-subtle">
+    <button
+      type="button"
+      class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 cursor-pointer bg-transparent border-none text-text-secondary hover:bg-surface-input hover:text-text-primary"
+      (click)="toggleTheme()"
+    >
       <i class="pi" [class.pi-moon]="themeService.theme() === 'light'" [class.pi-sun]="themeService.theme() === 'dark'"></i>
       <span>{{ themeService.theme() === 'dark' ? 'Tema claro' : 'Tema oscuro' }}</span>
     </button>
