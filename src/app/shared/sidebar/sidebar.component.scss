@@ -1,0 +1,33 @@
+.sidebar {
+  @apply w-56 flex-shrink-0 h-screen sticky top-0 flex flex-col
+         bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700;
+}
+
+.brand {
+  @apply flex items-center gap-2 px-5 py-5 font-semibold text-lg;
+}
+
+.nav {
+  @apply flex flex-col gap-1 px-3 flex-1;
+}
+
+.nav-item {
+  @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+         text-gray-600 dark:text-gray-300
+         hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150;
+
+  &.active {
+    @apply bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400;
+  }
+}
+
+.footer {
+  @apply px-3 py-4 border-t border-gray-200 dark:border-gray-700;
+}
+
+.theme-toggle {
+  @apply flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium
+         text-gray-600 dark:text-gray-300
+         hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150 cursor-pointer
+         bg-transparent border-none;
+}

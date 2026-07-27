@@ -1,0 +1,22 @@
+<aside class="sidebar">
+  <div class="brand">
+    <i class="pi pi-wallet"></i>
+    <span>BudgetTracker</span>
+  </div>
+
+  <nav class="nav">
+    @for (item of menuItems; track item.route) {
+      <a [routerLink]="item.route" routerLinkActive="active" class="nav-item">
+        <i class="pi pi-{{ item.icon }}"></i>
+        <span>{{ item.label }}</span>
+      </a>
+    }
+  </nav>
+
+  <div class="footer">
+    <button type="button" class="theme-toggle" (click)="toggleTheme()">
+      <i class="pi" [class.pi-moon]="themeService.theme() === 'light'" [class.pi-sun]="themeService.theme() === 'dark'"></i>
+      <span>{{ themeService.theme() === 'dark' ? 'Tema claro' : 'Tema oscuro' }}</span>
+    </button>
+  </div>
+</aside>
