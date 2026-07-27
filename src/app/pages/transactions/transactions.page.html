@@ -1,0 +1,131 @@
+<div class="page-container">
+  <div class="header">
+    <h1>Transacciones</h1>
+    <p-button label="Nueva" icon="pi pi-plus" (onClick)="openCreateDialog()" />
+  </div>
+
+  <div class="stats">
+    <div class="stat-card income">
+      <span class="label">Ingresos</span>
+      <span class="value">{{ stats.totalIncome | number: '1.2-2' }}</span>
+    </div>
+    <div class="stat-card expense">
+      <span class="label">Gastos</span>
+      <span class="value">{{ stats.totalExpense | number: '1.2-2' }}</span>
+    </div>
+    <div class="stat-card balance">
+      <span class="label">Balance</span>
+      <span class="value">{{ stats.balance | number: '1.2-2' }}</span>
+    </div>
+    <div class="stat-card count">
+      <span class="label">Cantidad</span>
+      <span class="value">{{ stats.count }}</span>
+    </div>
+  </div>
+
+  <div class="filters">
+    <input
+      type="text"
+      class="macos-input search"
+      placeholder="Buscar..."
+      [ngModel]="filters.searchText"
+      (ngModelChange)="onSearchInput($event)"
+    />
+
+    <select class="macos-select" [(ngModel)]="filters.type" (ngModelChange)="applyFilters()">
+      @for (option of typeOptions; track option.value) {
+        <option [value]="option.value">{{ option.label }}</option>
+      }
+    </select>
+
+    <select class="macos-select" [(ngModel)]="filters.categoryId" (ngModelChange)="applyFilters()">
+      <option value="all">Todas las categorías</option>
+      @for (category of categories; track category.id) {
+        <option [value]="category.id">{{ category.name }}</option>
+      }
+    </select>
+
+    <p-button label="Limpiar" severity="secondary" [text]="true" (onClick)="clearFilters()" />
+  </div>
+
+  <div class="transaction-list">
+    @if (filteredTransactions.length === 0) {
+      <div class="empty-state">No hay transacciones.</div>
+    }
+
+    @for (txn of filteredTransactions; track txn.id) {
+      <div class="transaction-row" [class.income]="txn.type === 'income'" [class.expense]="txn.type === 'expense'">
+        <div class="category-badge" [style.background-color]="txn.categoryColor">
+          <i class="pi pi-{{ txn.categoryIcon }}"></i>
+        </div>
+
+        <div class="details">
+          <span class="name">{{ txn.name }}</span>
+          <span class="description">{{ txn.description }}</span>
+        </div>
+
+        <span class="category-name">{{ txn.categoryName }}</span>
+        <span class="date">{{ formatDate(txn.date) }}</span>
+
+        <span class="amount" [class.income]="txn.type === 'income'" [class.expense]="txn.type === 'expense'">
+          {{ txn.type === 'income' ? '+' : '-' }}{{ txn.amount | number: '1.2-2' }}
+        </span>
+
+        <div class="actions">
+          <p-button icon="pi pi-pencil" [text]="true" (onClick)="openEditDialog(txn)" />
+          <p-button icon="pi pi-trash" severity="danger" [text]="true" (onClick)="deleteTransaction(txn)" />
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<p-dialog
+  [(visible)]="dialogVisible"
+  [modal]="true"
+  [style]="{ width: '28rem' }"
+  [header]="form.id ? 'Editar transacción' : 'Nueva transacción'"
+>
+  <div class="dialog-form">
+    <label>Tipo</label>
+    <select
+      class="macos-select"
+      [(ngModel)]="form.type"
+      (ngModelChange)="form.categoryId = ''"
+    >
+      <option value="expense">Gasto</option>
+      <option value="income">Ingreso</option>
+    </select>
+
+    <label>Categoría</label>
+    <select class="macos-select" [(ngModel)]="form.categoryId">
+      <option value="" disabled>Seleccioná una categoría</option>
+      @for (category of categoriesForType(form.type); track category.id) {
+        <option [value]="category.id">{{ category.name }}</option>
+      }
+    </select>
+
+    <label>Nombre</label>
+    <input type="text" class="macos-input" [(ngModel)]="form.name" placeholder="Ej: Sueldo, Supermercado" />
+
+    <label>Descripción</label>
+    <input type="text" class="macos-input" [(ngModel)]="form.description" placeholder="Opcional" />
+
+    <label>Monto (ARS)</label>
+    <p-inputnumber
+      [(ngModel)]="form.amount"
+      mode="decimal"
+      [minFractionDigits]="2"
+      [maxFractionDigits]="2"
+      placeholder="0.00"
+    />
+
+    <label>Fecha</label>
+    <p-datepicker [(ngModel)]="form.date" dateFormat="dd/mm/yy" />
+  </div>
+
+  <ng-template #footer>
+    <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="dialogVisible = false" />
+    <p-button label="Guardar" (onClick)="saveTransaction()" />
+  </ng-template>
+</p-dialog>
