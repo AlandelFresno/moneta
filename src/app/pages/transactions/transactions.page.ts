@@ -7,6 +7,8 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { InputGroupModule } from 'primeng/inputgroup';
+import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -53,6 +55,8 @@ const EMPTY_FORM: TransactionForm = {
     DialogModule,
     InputTextModule,
     InputNumberModule,
+    InputGroupModule,
+    InputGroupAddonModule,
     SelectModule,
     DatePickerModule
   ],
@@ -272,6 +276,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   categoriesForType(type: TransactionType): Category[] {
     return this.categories.filter((cat) => cat.type === type);
+  }
+
+  get categoryFilterOptions(): { label: string; value: string }[] {
+    return [{ label: 'Todas las categorías', value: 'all' }, ...this.categories.map((cat) => ({ label: cat.name, value: cat.id }))];
   }
 
   async saveTransaction(): Promise<void> {

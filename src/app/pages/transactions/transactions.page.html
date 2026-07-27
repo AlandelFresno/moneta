@@ -1,97 +1,124 @@
 <div class="page-container">
   <div class="header">
-    <h1>Transacciones</h1>
+    <div class="title-block">
+      <h1>Transacciones</h1>
+      <p class="subtitle">{{ stats.count }} {{ stats.count === 1 ? 'movimiento' : 'movimientos' }}</p>
+    </div>
     <div class="header-actions">
       <input #csvFileInput type="file" accept=".csv" hidden (change)="onCsvFileSelected($event)" />
-      <p-button
-        label="Importar CSV"
-        icon="pi pi-upload"
-        severity="secondary"
-        [outlined]="true"
-        (onClick)="csvFileInput.click()"
-      />
-      <p-button
-        label="Exportar CSV"
-        icon="pi pi-download"
-        severity="secondary"
-        [outlined]="true"
-        [disabled]="filteredTransactions.length === 0"
-        (onClick)="exportToCsv()"
-      />
-      <p-button label="Nueva" icon="pi pi-plus" (onClick)="openCreateDialog()" />
+      <div class="csv-actions">
+        <button type="button" class="icon-action" title="Importar CSV" (click)="csvFileInput.click()">
+          <i class="pi pi-upload"></i>
+        </button>
+        <button
+          type="button"
+          class="icon-action"
+          title="Exportar CSV"
+          [disabled]="filteredTransactions.length === 0"
+          (click)="exportToCsv()"
+        >
+          <i class="pi pi-download"></i>
+        </button>
+      </div>
+      <p-button label="Nueva transacción" icon="pi pi-plus" (onClick)="openCreateDialog()" />
     </div>
   </div>
 
   <div class="stats">
     <div class="stat-card income">
-      <span class="label">Ingresos</span>
-      <span class="value">{{ stats.totalIncome | number: '1.2-2' }}</span>
+      <div class="stat-icon"><i class="pi pi-arrow-down-left"></i></div>
+      <div class="stat-body">
+        <span class="label">Ingresos</span>
+        <span class="value">{{ stats.totalIncome | number: '1.2-2' }}</span>
+      </div>
     </div>
     <div class="stat-card expense">
-      <span class="label">Gastos</span>
-      <span class="value">{{ stats.totalExpense | number: '1.2-2' }}</span>
+      <div class="stat-icon"><i class="pi pi-arrow-up-right"></i></div>
+      <div class="stat-body">
+        <span class="label">Gastos</span>
+        <span class="value">{{ stats.totalExpense | number: '1.2-2' }}</span>
+      </div>
     </div>
-    <div class="stat-card balance">
-      <span class="label">Balance</span>
-      <span class="value">{{ stats.balance | number: '1.2-2' }}</span>
-    </div>
-    <div class="stat-card count">
-      <span class="label">Cantidad</span>
-      <span class="value">{{ stats.count }}</span>
+    <div class="stat-card balance" [class.negative]="stats.balance < 0">
+      <div class="stat-icon"><i class="pi pi-wallet"></i></div>
+      <div class="stat-body">
+        <span class="label">Balance</span>
+        <span class="value">{{ stats.balance | number: '1.2-2' }}</span>
+      </div>
     </div>
   </div>
 
   <div class="filters">
-    <input
-      type="text"
-      class="macos-input search"
-      placeholder="Buscar..."
-      [ngModel]="filters.searchText"
-      (ngModelChange)="onSearchInput($event)"
+    <p-inputgroup class="search">
+      <p-inputgroup-addon><i class="pi pi-search"></i></p-inputgroup-addon>
+      <input
+        type="text"
+        pInputText
+        placeholder="Buscar por nombre, descripción o categoría..."
+        [ngModel]="filters.searchText"
+        (ngModelChange)="onSearchInput($event)"
+      />
+    </p-inputgroup>
+
+    <p-select
+      [options]="typeOptions"
+      optionLabel="label"
+      optionValue="value"
+      [(ngModel)]="filters.type"
+      (onChange)="applyFilters()"
     />
 
-    <select class="macos-select" [(ngModel)]="filters.type" (ngModelChange)="applyFilters()">
-      @for (option of typeOptions; track option.value) {
-        <option [value]="option.value">{{ option.label }}</option>
-      }
-    </select>
+    <p-select
+      [options]="categoryFilterOptions"
+      optionLabel="label"
+      optionValue="value"
+      [(ngModel)]="filters.categoryId"
+      (onChange)="applyFilters()"
+    />
 
-    <select class="macos-select" [(ngModel)]="filters.categoryId" (ngModelChange)="applyFilters()">
-      <option value="all">Todas las categorías</option>
-      @for (category of categories; track category.id) {
-        <option [value]="category.id">{{ category.name }}</option>
-      }
-    </select>
-
-    <p-button label="Limpiar" severity="secondary" [text]="true" (onClick)="clearFilters()" />
+    @if (filters.type !== 'all' || filters.categoryId !== 'all' || filters.searchText) {
+      <p-button label="Limpiar" severity="secondary" [text]="true" icon="pi pi-times" (onClick)="clearFilters()" />
+    }
   </div>
 
   <div class="transaction-list">
     @if (filteredTransactions.length === 0) {
-      <div class="empty-state">No hay transacciones.</div>
+      <div class="empty-state">
+        <i class="pi pi-inbox"></i>
+        <span>No hay transacciones{{ filters.searchText || filters.type !== 'all' || filters.categoryId !== 'all' ? ' que coincidan con el filtro' : '' }}.</span>
+      </div>
     }
 
     @for (txn of filteredTransactions; track txn.id) {
-      <div class="transaction-row" [class.income]="txn.type === 'income'" [class.expense]="txn.type === 'expense'">
-        <div class="category-badge" [style.background-color]="txn.categoryColor">
+      <div class="transaction-row">
+        <div class="category-badge" [style.background-color]="txn.categoryColor + '22'" [style.color]="txn.categoryColor">
           <i class="pi pi-{{ txn.categoryIcon }}"></i>
         </div>
 
         <div class="details">
           <span class="name">{{ txn.name }}</span>
-          <span class="description">{{ txn.description }}</span>
+          @if (txn.description) {
+            <span class="description">{{ txn.description }}</span>
+          }
         </div>
 
-        <span class="category-name">{{ txn.categoryName }}</span>
+        <span class="category-pill" [style.background-color]="txn.categoryColor + '1a'" [style.color]="txn.categoryColor">
+          {{ txn.categoryName }}
+        </span>
+
         <span class="date">{{ formatDate(txn.date) }}</span>
 
         <span class="amount" [class.income]="txn.type === 'income'" [class.expense]="txn.type === 'expense'">
-          {{ txn.type === 'income' ? '+' : '-' }}{{ txn.amount | number: '1.2-2' }}
+          {{ txn.type === 'income' ? '+' : '−' }}{{ txn.amount | number: '1.2-2' }}
         </span>
 
         <div class="actions">
-          <p-button icon="pi pi-pencil" [text]="true" (onClick)="openEditDialog(txn)" />
-          <p-button icon="pi pi-trash" severity="danger" [text]="true" (onClick)="deleteTransaction(txn)" />
+          <button type="button" class="icon-action" title="Editar" (click)="openEditDialog(txn)">
+            <i class="pi pi-pencil"></i>
+          </button>
+          <button type="button" class="icon-action danger" title="Eliminar" (click)="deleteTransaction(txn)">
+            <i class="pi pi-trash"></i>
+          </button>
         </div>
       </div>
     }
@@ -105,32 +132,44 @@
   [header]="form.id ? 'Editar transacción' : 'Nueva transacción'"
 >
   <div class="dialog-form">
-    <label>Tipo</label>
-    <select
-      class="macos-select"
-      [(ngModel)]="form.type"
-      (ngModelChange)="form.categoryId = ''"
-    >
-      <option value="expense">Gasto</option>
-      <option value="income">Ingreso</option>
-    </select>
+    <div class="type-toggle">
+      <button
+        type="button"
+        class="type-option expense"
+        [class.active]="form.type === 'expense'"
+        (click)="form.type = 'expense'; form.categoryId = ''"
+      >
+        <i class="pi pi-arrow-up-right"></i> Gasto
+      </button>
+      <button
+        type="button"
+        class="type-option income"
+        [class.active]="form.type === 'income'"
+        (click)="form.type = 'income'; form.categoryId = ''"
+      >
+        <i class="pi pi-arrow-down-left"></i> Ingreso
+      </button>
+    </div>
 
-    <label>Categoría</label>
-    <select class="macos-select" [(ngModel)]="form.categoryId">
-      <option value="" disabled>Seleccioná una categoría</option>
-      @for (category of categoriesForType(form.type); track category.id) {
-        <option [value]="category.id">{{ category.name }}</option>
-      }
-    </select>
+    <label for="txn-category">Categoría</label>
+    <p-select
+      inputId="txn-category"
+      [options]="categoriesForType(form.type)"
+      optionLabel="name"
+      optionValue="id"
+      placeholder="Seleccioná una categoría"
+      [(ngModel)]="form.categoryId"
+    />
 
-    <label>Nombre</label>
-    <input type="text" class="macos-input" [(ngModel)]="form.name" placeholder="Ej: Sueldo, Supermercado" />
+    <label for="txn-name">Nombre</label>
+    <input id="txn-name" type="text" pInputText [(ngModel)]="form.name" placeholder="Ej: Sueldo, Supermercado" />
 
-    <label>Descripción</label>
-    <input type="text" class="macos-input" [(ngModel)]="form.description" placeholder="Opcional" />
+    <label for="txn-description">Descripción</label>
+    <input id="txn-description" type="text" pInputText [(ngModel)]="form.description" placeholder="Opcional" />
 
-    <label>Monto (ARS)</label>
+    <label for="txn-amount">Monto (ARS)</label>
     <p-inputnumber
+      inputId="txn-amount"
       [(ngModel)]="form.amount"
       mode="decimal"
       [minFractionDigits]="2"
@@ -138,8 +177,8 @@
       placeholder="0.00"
     />
 
-    <label>Fecha</label>
-    <p-datepicker [(ngModel)]="form.date" dateFormat="dd/mm/yy" />
+    <label for="txn-date">Fecha</label>
+    <p-datepicker inputId="txn-date" [(ngModel)]="form.date" dateFormat="dd/mm/yy" />
   </div>
 
   <ng-template #footer>

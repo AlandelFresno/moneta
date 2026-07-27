@@ -1,10 +1,16 @@
 .sidebar {
-  @apply w-56 flex-shrink-0 h-screen sticky top-0 flex flex-col
-         bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700;
+  @apply w-56 flex-shrink-0 h-screen sticky top-0 flex flex-col;
+  background: var(--surface-card);
+  border-right: 1px solid var(--border-subtle);
 }
 
 .brand {
   @apply flex items-center gap-2 px-5 py-5 font-semibold text-lg;
+  color: var(--text-primary);
+
+  i {
+    color: var(--accent);
+  }
 }
 
 .nav {
@@ -12,22 +18,32 @@
 }
 
 .nav-item {
-  @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
-         text-gray-600 dark:text-gray-300
-         hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150;
+  @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150;
+  color: var(--text-secondary);
+
+  &:hover {
+    background: var(--surface-input);
+    color: var(--text-primary);
+  }
 
   &.active {
-    @apply bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
   }
 }
 
 .footer {
-  @apply px-3 py-4 border-t border-gray-200 dark:border-gray-700;
+  @apply px-3 py-4;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .theme-toggle {
   @apply flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium
-         text-gray-600 dark:text-gray-300
-         hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150 cursor-pointer
-         bg-transparent border-none;
+         transition-colors duration-150 cursor-pointer bg-transparent border-none;
+  color: var(--text-secondary);
+
+  &:hover {
+    background: var(--surface-input);
+    color: var(--text-primary);
+  }
 }

@@ -2,6 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --surface-page: #f4f5f7;
+  --surface-card: #ffffff;
+  --surface-input: #f4f5f7;
+  --surface-input-focus: #ffffff;
+  --border-subtle: #e2e4e9;
+  --border-strong: #d1d5db;
+  --text-primary: #12141c;
+  --text-secondary: #6b7280;
+  --accent: #3b82f6;
+  --accent-strong: #2563eb;
+  --income: #10b981;
+  --expense: #ef4444;
+}
+
+.dark {
+  --surface-page: #0f1420;
+  --surface-card: #1a2133;
+  --surface-input: #242c42;
+  --surface-input-focus: #2a3350;
+  --border-subtle: #2d3548;
+  --border-strong: #3c465e;
+  --text-primary: #f1f2f6;
+  --text-secondary: #949cb8;
+  --accent: #5b9bf7;
+  --accent-strong: #3b82f6;
+  --income: #34d399;
+  --expense: #f87171;
+}
+
 html, body {
   @apply overflow-x-auto min-w-fit;
 }
