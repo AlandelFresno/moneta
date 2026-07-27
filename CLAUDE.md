@@ -39,8 +39,8 @@ One component per folder: `.ts` + `.html` + `.scss`. No component logic outside 
 
 ## Domain scope (post-rewrite)
 
-In scope: **Accounts, Transactions, Categories, Budgets, Exchange rates, Google Drive sync**, Dashboard/Analytics views.
+In scope: **Transactions, Categories** only. Transactions are plain ARS amounts — no multi-currency, no rate conversion.
 
-Out of scope — do not resurrect: Fuel log, Vehicle, Billing/Monotributo (AR tax bracket) domains. These were dropped in the rewrite; do not add new code for them without explicit request.
+Out of scope — do not resurrect without explicit request: Accounts, Budgets, Exchange rates/multi-currency, Google Drive sync, Fuel log, Vehicle, Billing/Monotributo (AR tax bracket), Dashboard/Analytics views.
 
 See `REWRITE_PLAN.md` for the active rewrite steps and status.
