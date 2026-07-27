@@ -8,6 +8,10 @@
   h1 {
     @apply text-2xl font-semibold;
   }
+
+  .header-actions {
+    @apply flex items-center gap-2;
+  }
 }
 
 .stats {

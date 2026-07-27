@@ -15,6 +15,7 @@ import { Transaction, TransactionType } from '../../core/types/transaction.types
 import { Category } from '../../core/types/category.types';
 import { TransactionService } from '../../services/transaction.service';
 import { CategoryService } from '../../services/category.service';
+import { CsvService, ParsedCsvRow } from '../../services/csv.service';
 
 interface TransactionWithCategory extends Transaction {
   categoryName: string;
@@ -91,6 +92,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
   constructor(
     private readonly transactionService: TransactionService,
     private readonly categoryService: CategoryService,
+    private readonly csvService: CsvService,
     private readonly confirmationService: ConfirmationService,
     private readonly messageService: MessageService,
     private readonly cdr: ChangeDetectorRef
@@ -174,6 +176,80 @@ export class TransactionsPage implements OnInit, OnDestroy {
   clearFilters(): void {
     this.filters = { type: 'all', categoryId: 'all', searchText: '' };
     this.applyFilters();
+  }
+
+  exportToCsv(): void {
+    this.csvService.exportTransactionsToCsv(this.filteredTransactions, this.categories);
+  }
+
+  async onCsvFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+
+    let result;
+    try {
+      result = await this.csvService.parseTransactionsCsv(file, this.categories, this.transactions);
+    } catch (error) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error al leer el CSV',
+        detail: error instanceof Error ? error.message : 'Formato inválido'
+      });
+      return;
+    }
+
+    if (result.rows.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Nada para importar',
+        detail:
+          result.skippedUnknownCategory > 0
+            ? `${result.skippedUnknownCategory} filas omitidas por categoría desconocida`
+            : 'El archivo no tiene filas válidas'
+      });
+      return;
+    }
+
+    const duplicates = result.rows.filter((row) => row.isDuplicate);
+    const unique = result.rows.filter((row) => !row.isDuplicate);
+
+    if (duplicates.length === 0) {
+      await this.importRows(unique, result.skippedUnknownCategory);
+      return;
+    }
+
+    this.confirmationService.confirm({
+      header: 'Se encontraron duplicados',
+      message: `${duplicates.length} de ${result.rows.length} filas parecen ya existir (misma fecha, nombre y monto). ¿Importar solo las ${unique.length} filas nuevas, o importar todo igual?`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Solo nuevas',
+      rejectLabel: 'Importar todo',
+      accept: async () => {
+        await this.importRows(unique, result.skippedUnknownCategory);
+      },
+      reject: async () => {
+        await this.importRows(result.rows, result.skippedUnknownCategory);
+      }
+    });
+  }
+
+  private async importRows(rows: ParsedCsvRow[], skippedUnknownCategory: number): Promise<void> {
+    for (const row of rows) {
+      await lastValueFrom(this.transactionService.create(row.transaction));
+    }
+
+    const detailParts = [`${rows.length} transacciones importadas`];
+    if (skippedUnknownCategory > 0) {
+      detailParts.push(`${skippedUnknownCategory} omitidas por categoría desconocida`);
+    }
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Importación completada',
+      detail: detailParts.join(', ')
+    });
   }
 
   openCreateDialog(): void {

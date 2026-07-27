@@ -1,7 +1,25 @@
 <div class="page-container">
   <div class="header">
     <h1>Transacciones</h1>
-    <p-button label="Nueva" icon="pi pi-plus" (onClick)="openCreateDialog()" />
+    <div class="header-actions">
+      <input #csvFileInput type="file" accept=".csv" hidden (change)="onCsvFileSelected($event)" />
+      <p-button
+        label="Importar CSV"
+        icon="pi pi-upload"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="csvFileInput.click()"
+      />
+      <p-button
+        label="Exportar CSV"
+        icon="pi pi-download"
+        severity="secondary"
+        [outlined]="true"
+        [disabled]="filteredTransactions.length === 0"
+        (onClick)="exportToCsv()"
+      />
+      <p-button label="Nueva" icon="pi pi-plus" (onClick)="openCreateDialog()" />
+    </div>
   </div>
 
   <div class="stats">
