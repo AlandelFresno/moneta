@@ -47,17 +47,11 @@ Argentina monotributo tax tracking: monthly billing entries (amount, month/year)
 
 Old files: `src-old/models/billing.model.ts`, `src-old/pages/billing/`, `src-old/services/billing.service.ts`.
 
-## Dashboard / Analytics views
+## xlsx export
 
-Summary dashboard and analytics/charts page (used `chart.js`), built on top of accounts/budgets/multi-currency data. Out of scope until core Transaction+Category flow is rebuilt — may come back in a simpler form once there's data to show.
+Old app also had xlsx (Excel) export/import via `xlsx` package, separate from the CSV path. Only CSV was rebuilt (`CsvService`) — xlsx not brought back.
 
-Old files: `src-old/pages/dashboard/`, `src-old/pages/analytics/`.
-
-## Import/Export
-
-CSV import and xlsx export of transaction data.
-
-Old files: `src-old/services/csv.service.ts`, `src-old/services/export.service.ts`.
+Old files: `src-old/services/export.service.ts`.
 
 ## Data migration framework
 

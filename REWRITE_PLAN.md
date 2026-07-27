@@ -15,6 +15,9 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
   - [x] Category — service done, seeded with 2 defaults (Salario/Almacén). No dedicated Categories page yet — can't add/edit/delete categories from the UI.
   - [x] Transaction — service + `TransactionsPage` (list, filters, stats, dialog form) done, verified working in browser.
 - [x] **Layout** — `LayoutComponent` + `SidebarComponent` + `ThemeService` (dark mode toggle, localStorage-persisted) added, not in original plan but needed once the app had a real page to navigate to.
+- [x] **Theming** — single-source palette in `app/theme.tokens.ts`, consumed by `ThemeService` (writes CSS vars), Tailwind (`tailwind.config.js` named colors), and PrimeNG (`definePreset` in `app.config.ts`, incl. `formField` + `overlay.select/popover/modal` tokens — these are NOT covered by `content`/`formField` alone). Change a hex in one file, it propagates everywhere.
+- [x] **CSV import/export** — `CsvService`: export current filtered transaction list; import with duplicate detection (same date+name+amount = duplicate), confirm dialog to skip-or-import-anyway, skips rows with unmatched category name.
+- [x] **Dashboard** — `DashboardService` (pure aggregation: month filter, category breakdown, monthly trend) + `DashboardPage`: KPI row (income/expense/balance for selected month), income-vs-expense line chart (chart.js, last 6 months), category breakdown horizontal bar chart (income or expense, colored by each category's own color), month picker. Now the default route (`/dashboard`).
 
 ### Scope change (decided during step 4)
 

@@ -17,7 +17,10 @@ interface MenuItem {
   styleUrl: './sidebar.component.scss'
 })
 export class SidebarComponent {
-  readonly menuItems: MenuItem[] = [{ label: 'Transacciones', icon: 'list', route: '/transactions' }];
+  readonly menuItems: MenuItem[] = [
+    { label: 'Dashboard', icon: 'home', route: '/dashboard' },
+    { label: 'Transacciones', icon: 'list', route: '/transactions' }
+  ];
 
   constructor(readonly themeService: ThemeService) {}
 
