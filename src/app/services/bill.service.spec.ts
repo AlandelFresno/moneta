@@ -146,6 +146,17 @@ describe('BillService', () => {
       expect(statuses.length).toBe(1);
       expect(statuses[0].isOverdue).toBeFalse();
     });
+
+    it('excludes a bill whose anchor date is still in the future, even if that day-of-month already passed this month (regression)', () => {
+      // Created "today" (Jul 28) with a future anchor of Aug 5. Without the fix, the monthly
+      // day-of-month pattern (day 5) would be reapplied to the current month (Jul 5, already
+      // passed) and wrongly flag the brand-new bill as overdue.
+      const bill = makeBill({ period: 'monthly', dueDate: new Date(2026, 7, 5) });
+      const now = new Date(2026, 6, 28);
+
+      const statuses = service.dueStatuses([bill], now);
+      expect(statuses.length).toBe(0);
+    });
   });
 
   describe('CRUD + persistence', () => {

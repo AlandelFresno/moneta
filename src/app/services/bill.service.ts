@@ -180,9 +180,13 @@ export class BillService {
   /** Active bills whose current period is due (today or earlier) and not yet paid this period. */
   dueStatuses(bills: Bill[], now: Date): BillDueStatus[] {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
     return bills
       .filter((bill) => bill.active)
+      // Anchor date itself hasn't arrived yet — don't apply the recurring day-of-month/week/year
+      // pattern retroactively to periods before the bill's own first occurrence existed.
+      .filter((bill) => startOfDay(bill.dueDate).getTime() <= today.getTime())
       .map((bill) => {
         const periodDueDate = this.currentPeriodDueDate(bill, now);
         return { bill, periodDueDate };
