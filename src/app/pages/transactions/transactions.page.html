@@ -1,4 +1,22 @@
 <div class="p-6 md:p-8 max-w-5xl mx-auto">
+  @if (dueBills.length > 0) {
+    <div class="flex flex-col gap-2 mb-6">
+      @for (status of dueBills; track status.bill.id) {
+        <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-expense/10 border border-expense/30">
+          <i class="pi pi-exclamation-triangle text-expense"></i>
+          <div class="flex-1 min-w-0">
+            <span class="font-medium text-text-primary">{{ status.bill.name }}</span>
+            <span class="text-sm text-text-secondary ml-2">
+              {{ status.isOverdue ? 'Vencido el' : 'Vence el' }} {{ formatDate(status.periodDueDate) }}
+              · ~{{ status.bill.approxAmount | number: '1.2-2' }}
+            </span>
+          </div>
+          <p-button label="Pagar" size="small" (onClick)="openPayBillDialog(status)" />
+        </div>
+      }
+    </div>
+  }
+
   <div class="flex items-start justify-between gap-4 flex-wrap mb-7">
     <div>
       <h1 class="text-[1.75rem] font-semibold tracking-tight text-text-primary">Transacciones</h1>
@@ -256,5 +274,31 @@
   <ng-template #footer>
     <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="dialogVisible = false" />
     <p-button label="Guardar" (onClick)="saveTransaction()" />
+  </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="payDialogVisible" [modal]="true" [style]="{ width: '24rem' }" header="Registrar pago">
+  @if (payingBill) {
+    <div class="flex flex-col gap-1.5">
+      <p class="text-sm text-text-secondary mb-2">
+        Esto va a crear una transacción de gasto para
+        <strong class="text-text-primary">{{ payingBill.bill.name }}</strong>.
+      </p>
+
+      <label for="bill-pay-amount" class="text-sm font-medium text-text-primary">Monto pagado (ARS)</label>
+      <p-inputnumber
+        inputId="bill-pay-amount"
+        class="w-full"
+        [(ngModel)]="payAmount"
+        mode="decimal"
+        [minFractionDigits]="2"
+        [maxFractionDigits]="2"
+      />
+    </div>
+  }
+
+  <ng-template #footer>
+    <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="payDialogVisible = false" />
+    <p-button label="Confirmar pago" (onClick)="confirmBillPayment()" />
   </ng-template>
 </p-dialog>

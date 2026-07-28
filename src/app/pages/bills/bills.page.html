@@ -1,0 +1,174 @@
+<div class="p-6 md:p-8 max-w-5xl mx-auto">
+  <div class="flex items-start justify-between gap-4 flex-wrap mb-7">
+    <div>
+      <h1 class="text-[1.75rem] font-semibold tracking-tight text-text-primary">Servicios</h1>
+      <p class="text-sm text-text-secondary mt-0.5">
+        {{ bills.length }} {{ bills.length === 1 ? 'servicio' : 'servicios' }}
+        @if (dueStatuses.length > 0) {
+          · {{ dueStatuses.length }} {{ dueStatuses.length === 1 ? 'pendiente' : 'pendientes' }}
+        }
+      </p>
+    </div>
+    <p-button label="Nuevo servicio" icon="pi pi-plus" (onClick)="openCreateDialog()" />
+  </div>
+
+  <div class="flex flex-col gap-2">
+    @if (bills.length === 0) {
+      <div class="flex flex-col items-center justify-center gap-2 py-16 text-sm text-text-secondary">
+        <i class="pi pi-calendar-clock text-3xl opacity-50"></i>
+        <span>No hay servicios registrados todavía.</span>
+      </div>
+    }
+
+    @for (bill of bills; track bill.id) {
+      <div
+        class="flex items-center gap-4 px-4 py-3.5 rounded-xl bg-surface-card border transition-colors duration-150"
+        [ngClass]="isDue(bill) ? 'border-expense' : 'border-border-subtle hover:border-border-strong'"
+      >
+        <div
+          class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base"
+          [style.background-color]="bill.categoryColor + '22'"
+          [style.color]="bill.categoryColor"
+        >
+          <app-icon [name]="bill.categoryIcon" />
+        </div>
+
+        <div class="flex flex-col flex-1 min-w-0 gap-0.5">
+          <span class="font-medium truncate text-text-primary flex items-center gap-2">
+            {{ bill.name }}
+            @if (!bill.active) {
+              <span class="text-xs px-2 py-0.5 rounded-full bg-surface-input text-text-secondary">Inactivo</span>
+            }
+            @if (isDue(bill)) {
+              <span class="text-xs px-2 py-0.5 rounded-full bg-expense/15 text-expense">Pendiente</span>
+            }
+          </span>
+          @if (bill.description) {
+            <span class="text-sm truncate text-text-secondary">{{ bill.description }}</span>
+          }
+        </div>
+
+        <span class="text-xs font-medium px-2.5 py-1 rounded-full hidden md:inline-block flex-shrink-0 bg-surface-input text-text-secondary">
+          {{ periodLabel(bill.period) }}
+        </span>
+
+        <span class="text-sm hidden sm:block flex-shrink-0 w-28 text-text-secondary [font-variant-numeric:tabular-nums]">
+          ~{{ bill.approxAmount | number: '1.2-2' }}
+        </span>
+
+        <div class="flex items-center gap-1 flex-shrink-0">
+          @if (isDue(bill)) {
+            <p-button label="Pagar" size="small" (onClick)="openPayDialog(bill)" />
+          }
+          <button
+            type="button"
+            class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary hover:bg-surface-input hover:text-accent transition-colors duration-150"
+            title="Editar"
+            (click)="openEditDialog(bill)"
+          >
+            <i class="pi pi-pencil"></i>
+          </button>
+          <button
+            type="button"
+            class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary hover:bg-surface-input hover:text-expense transition-colors duration-150"
+            title="Eliminar"
+            (click)="deleteBill(bill)"
+          >
+            <i class="pi pi-trash"></i>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<p-dialog
+  [(visible)]="dialogVisible"
+  [modal]="true"
+  [style]="{ width: '28rem' }"
+  [header]="form.id ? 'Editar servicio' : 'Nuevo servicio'"
+>
+  <div class="flex flex-col gap-1.5">
+    <label for="bill-name" class="text-sm font-medium mt-2 text-text-primary">Nombre</label>
+    <input id="bill-name" type="text" pInputText [(ngModel)]="form.name" placeholder="Ej: Internet, Alquiler" />
+
+    <label for="bill-description" class="text-sm font-medium mt-2 text-text-primary">Descripción</label>
+    <input id="bill-description" type="text" pInputText [(ngModel)]="form.description" placeholder="Opcional" />
+
+    <label for="bill-category" class="text-sm font-medium mt-2 text-text-primary">Categoría</label>
+    <p-select
+      inputId="bill-category"
+      class="w-full"
+      [options]="categories"
+      optionLabel="name"
+      optionValue="id"
+      placeholder="Seleccioná una categoría"
+      [(ngModel)]="form.categoryId"
+    />
+
+    <label for="bill-amount" class="text-sm font-medium mt-2 text-text-primary">Monto aproximado (ARS)</label>
+    <p-inputnumber
+      inputId="bill-amount"
+      class="w-full"
+      [(ngModel)]="form.approxAmount"
+      mode="decimal"
+      [minFractionDigits]="2"
+      [maxFractionDigits]="2"
+      placeholder="0.00"
+    />
+
+    <label for="bill-period" class="text-sm font-medium mt-2 text-text-primary">Frecuencia</label>
+    <p-select
+      inputId="bill-period"
+      class="w-full"
+      [options]="periodOptions"
+      optionLabel="label"
+      optionValue="value"
+      [(ngModel)]="form.period"
+    />
+
+    <label for="bill-date" class="text-sm font-medium mt-2 text-text-primary">
+      @switch (form.period) {
+        @case ('weekly') { Día de vencimiento (referencia) }
+        @case ('yearly') { Fecha de vencimiento (mes y día) }
+        @default { Día de vencimiento del mes }
+      }
+    </label>
+    <p-datepicker inputId="bill-date" class="w-full" [(ngModel)]="form.dueDate" dateFormat="dd/mm/yy" />
+
+    <div class="flex items-center justify-between mt-3">
+      <label for="bill-active" class="text-sm font-medium text-text-primary">Activo</label>
+      <p-toggleswitch inputId="bill-active" [(ngModel)]="form.active" />
+    </div>
+  </div>
+
+  <ng-template #footer>
+    <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="dialogVisible = false" />
+    <p-button label="Guardar" (onClick)="saveBill()" />
+  </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="payDialogVisible" [modal]="true" [style]="{ width: '24rem' }" header="Registrar pago">
+  @if (payingBill) {
+    <div class="flex flex-col gap-1.5">
+      <p class="text-sm text-text-secondary mb-2">
+        Esto va a crear una transacción de gasto para <strong class="text-text-primary">{{ payingBill.name }}</strong>.
+      </p>
+
+      <label for="pay-amount" class="text-sm font-medium text-text-primary">Monto pagado (ARS)</label>
+      <p-inputnumber
+        inputId="pay-amount"
+        class="w-full"
+        [(ngModel)]="payAmount"
+        mode="decimal"
+        [minFractionDigits]="2"
+        [maxFractionDigits]="2"
+      />
+    </div>
+  }
+
+  <ng-template #footer>
+    <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="payDialogVisible = false" />
+    <p-button label="Confirmar pago" (onClick)="confirmPayment()" />
+  </ng-template>
+</p-dialog>

@@ -18,6 +18,7 @@ import { Category } from '../../core/types/category.types';
 import { TransactionService } from '../../services/transaction.service';
 import { CategoryService } from '../../services/category.service';
 import { CsvService, ParsedCsvRow } from '../../services/csv.service';
+import { BillService, BillDueStatus } from '../../services/bill.service';
 import { IconComponent } from '../../shared/icon/icon.component';
 
 interface TransactionWithCategory extends Transaction {
@@ -101,10 +102,16 @@ export class TransactionsPage implements OnInit, OnDestroy {
   dialogVisible = false;
   form: TransactionForm = { ...EMPTY_FORM };
 
+  dueBills: BillDueStatus[] = [];
+  payDialogVisible = false;
+  payingBill: BillDueStatus | null = null;
+  payAmount: number | null = null;
+
   constructor(
     private readonly transactionService: TransactionService,
     private readonly categoryService: CategoryService,
     private readonly csvService: CsvService,
+    private readonly billService: BillService,
     private readonly confirmationService: ConfirmationService,
     private readonly messageService: MessageService,
     private readonly cdr: ChangeDetectorRef
@@ -119,6 +126,14 @@ export class TransactionsPage implements OnInit, OnDestroy {
           .map((txn) => this.withCategory(txn, categories))
           .sort((a, b) => b.date.getTime() - a.date.getTime());
         this.applyFilters();
+        this.cdr.markForCheck();
+      });
+
+    this.billService
+      .getAll()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((bills) => {
+        this.dueBills = this.billService.dueStatuses(bills, new Date());
         this.cdr.markForCheck();
       });
 
@@ -385,5 +400,38 @@ export class TransactionsPage implements OnInit, OnDestroy {
       month: 'short',
       year: 'numeric'
     }).format(date);
+  }
+
+  openPayBillDialog(status: BillDueStatus): void {
+    this.payingBill = status;
+    this.payAmount = status.bill.approxAmount;
+    this.payDialogVisible = true;
+  }
+
+  async confirmBillPayment(): Promise<void> {
+    if (!this.payingBill || this.payAmount === null || this.payAmount <= 0) {
+      this.messageService.add({ severity: 'warn', summary: 'Ingresá un monto válido' });
+      return;
+    }
+
+    const bill = this.payingBill.bill;
+    const paidDate = new Date();
+
+    const transaction = await lastValueFrom(
+      this.transactionService.create({
+        categoryId: bill.categoryId,
+        type: 'expense',
+        name: bill.name,
+        description: bill.description || `Pago de servicio: ${bill.name}`,
+        amount: this.payAmount,
+        date: paidDate
+      })
+    );
+
+    await lastValueFrom(this.billService.recordPayment(bill.id, this.payAmount, transaction.id, paidDate));
+
+    this.messageService.add({ severity: 'success', summary: 'Pago registrado', detail: 'Se creó la transacción correspondiente' });
+    this.payDialogVisible = false;
+    this.payingBill = null;
   }
 }

@@ -20,7 +20,8 @@ export class SidebarComponent {
   readonly menuItems: MenuItem[] = [
     { label: 'Dashboard', icon: 'home', route: '/dashboard' },
     { label: 'Transacciones', icon: 'list', route: '/transactions' },
-    { label: 'Categorías', icon: 'tags', route: '/categories' }
+    { label: 'Categorías', icon: 'tags', route: '/categories' },
+    { label: 'Servicios', icon: 'calendar-clock', route: '/bills' }
   ];
 
   constructor(readonly themeService: ThemeService) {}
