@@ -1,5 +1,5 @@
 {
-  "name": "budget-tracker",
+  "name": "moneta",
   "version": "0.7.0",
   "scripts": {
     "ng": "ng",
@@ -41,7 +41,9 @@
     "@capacitor/cli": "7.4.4",
     "@capacitor/core": "7.4.4",
     "@capacitor/ios": "7.4.4",
+    "@capacitor/preferences": "^7.0.4",
     "@primeuix/styled": "0.7.4",
+    "@primeuix/themes": "^1.2.5",
     "@primeuix/utils": "0.6.2",
     "chart.js": "4.5.1",
     "primeicons": "7.0.0",

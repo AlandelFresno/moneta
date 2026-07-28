@@ -1,4 +1,4 @@
-# Budget Tracker
+# Moneta
 
 Una aplicación moderna de seguimiento de presupuestos construida con Angular, TailwindCSS, PrimeNG y Capacitor.
 

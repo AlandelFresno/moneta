@@ -1,61 +1,35 @@
-import { Component, signal, OnInit } from '@angular/core';
-import { ExchangeRateService } from '../services/exchange-rate.service';
-import { PreferencesService } from '../services/preferences.service';
-import { DataMigrationService } from '../services/data-migration.service';
+import { Component, inject } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ThemeService } from './services/theme.service';
+import { GoogleAuthService } from './services/google-auth.service';
+import { DriveSyncService } from './services/drive-sync.service';
 
 @Component({
   selector: 'app-root',
+  standalone: true,
+  imports: [RouterOutlet, ToastModule, ConfirmDialogModule],
   templateUrl: './app.html',
-  styleUrls: ['./app.scss'],
-  standalone: false
+  styleUrl: './app.scss'
 })
-export class App implements OnInit {
-  protected readonly title = signal('budget-tracker');
+export class App {
+  private readonly themeService = inject(ThemeService);
+  private readonly googleAuth = inject(GoogleAuthService);
+  private readonly driveSync = inject(DriveSyncService);
 
-  constructor(
-    private exchangeRateService: ExchangeRateService,
-    private preferencesService: PreferencesService,
-    private dataMigrationService: DataMigrationService
-  ) {}
-
-  ngOnInit(): void {
-    // Ejecutar migraciones primero, luego inicializar tasas
-    this.initializeApp();
+  constructor() {
+    void this.autoSyncOnStartup();
   }
 
-  private async initializeApp(): Promise<void> {
+  private async autoSyncOnStartup(): Promise<void> {
+    await this.googleAuth.init();
+    if (!this.googleAuth.isSignedIn()) return;
+
     try {
-      // 1. Ejecutar migraciones de datos
-      console.log('=== Iniciando migraciones de datos ===');
-      await this.dataMigrationService.runMigrations();
-
-      // 2. Inicializar tasas de cambio
-      console.log('=== Inicializando tasas de cambio ===');
-      await this.initializeExchangeRates();
-
-      console.log('=== Aplicación inicializada correctamente ===');
+      await this.driveSync.sync();
     } catch (error) {
-      console.error('Error inicializando la aplicación:', error);
-    }
-  }
-
-  private async initializeExchangeRates(): Promise<void> {
-    try {
-      const cacheInfo = this.exchangeRateService.getCacheInfo();
-      const preferredCurrency = this.preferencesService.getPreferredCurrency();
-
-      // Si el caché está expirado (más de 1 día), intentar actualizar automáticamente
-      if (cacheInfo.needsUpdate) {
-        console.log('Cache de tasas de cambio expirado, actualizando...');
-        try {
-          await this.exchangeRateService.getRates(preferredCurrency, true);
-          console.log('Tasas de cambio actualizadas automáticamente');
-        } catch (error) {
-          console.warn('No se pudieron actualizar las tasas de cambio automáticamente:', error);
-        }
-      }
-    } catch (error) {
-      console.error('Error inicializando tasas de cambio:', error);
+      console.error('La sincronización automática con Google Drive falló:', error);
     }
   }
 }

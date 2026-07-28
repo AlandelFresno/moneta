@@ -1,0 +1,136 @@
+<div class="p-6 md:p-8 max-w-5xl mx-auto">
+  <div class="mb-7">
+    <h1 class="text-[1.75rem] font-semibold tracking-tight text-text-primary">Categorías</h1>
+    <p class="text-sm text-text-secondary mt-0.5">
+      {{ categories.length }} {{ categories.length === 1 ? 'categoría' : 'categorías' }}
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-semibold text-text-primary flex items-center gap-2">
+          <i class="pi pi-arrow-down-left text-income"></i> Ingresos
+        </h2>
+        <p-button label="Nueva" icon="pi pi-plus" [text]="true" (onClick)="openCreateDialog('income')" />
+      </div>
+
+      <div class="flex flex-col gap-2">
+        @if (incomeCategories.length === 0) {
+          <div class="text-sm text-text-secondary py-6 text-center">Sin categorías de ingreso todavía.</div>
+        }
+
+        @for (category of incomeCategories; track category.id) {
+          <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border-subtle">
+            <div
+              class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              [style.background-color]="category.color + '22'"
+              [style.color]="category.color"
+            >
+              <app-icon [name]="category.icon" />
+            </div>
+            <span class="flex-1 font-medium text-text-primary truncate">{{ category.name }}</span>
+            <button
+              type="button"
+              class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary hover:bg-surface-input hover:text-accent transition-colors duration-150"
+              title="Editar"
+              (click)="openEditDialog(category)"
+            >
+              <i class="pi pi-pencil"></i>
+            </button>
+            <button
+              type="button"
+              class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary hover:bg-surface-input hover:text-expense transition-colors duration-150"
+              title="Eliminar"
+              (click)="deleteCategory(category)"
+            >
+              <i class="pi pi-trash"></i>
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-semibold text-text-primary flex items-center gap-2">
+          <i class="pi pi-arrow-up-right text-expense"></i> Gastos
+        </h2>
+        <p-button label="Nueva" icon="pi pi-plus" [text]="true" (onClick)="openCreateDialog('expense')" />
+      </div>
+
+      <div class="flex flex-col gap-2">
+        @if (expenseCategories.length === 0) {
+          <div class="text-sm text-text-secondary py-6 text-center">Sin categorías de gasto todavía.</div>
+        }
+
+        @for (category of expenseCategories; track category.id) {
+          <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border-subtle">
+            <div
+              class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              [style.background-color]="category.color + '22'"
+              [style.color]="category.color"
+            >
+              <app-icon [name]="category.icon" />
+            </div>
+            <span class="flex-1 font-medium text-text-primary truncate">{{ category.name }}</span>
+            <button
+              type="button"
+              class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary hover:bg-surface-input hover:text-accent transition-colors duration-150"
+              title="Editar"
+              (click)="openEditDialog(category)"
+            >
+              <i class="pi pi-pencil"></i>
+            </button>
+            <button
+              type="button"
+              class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary hover:bg-surface-input hover:text-expense transition-colors duration-150"
+              title="Eliminar"
+              (click)="deleteCategory(category)"
+            >
+              <i class="pi pi-trash"></i>
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<p-dialog
+  [(visible)]="dialogVisible"
+  [modal]="true"
+  [style]="{ width: '24rem' }"
+  [header]="form.id
+    ? 'Editar categoría'
+    : (form.type === 'income' ? 'Nueva categoría de ingreso' : 'Nueva categoría de gasto')"
+>
+  <div class="flex flex-col gap-1.5">
+    <label for="cat-name" class="text-sm font-medium mt-2 text-text-primary">Nombre</label>
+    <input id="cat-name" type="text" pInputText [(ngModel)]="form.name" placeholder="Ej: Alquiler, Freelance" />
+
+    <label class="text-sm font-medium mt-2 text-text-primary">Color</label>
+    <input type="color" [(ngModel)]="form.color" class="w-full h-10 rounded-lg border border-border-subtle cursor-pointer bg-surface-input" />
+
+    <label class="text-sm font-medium mt-2 text-text-primary">Ícono</label>
+    <div class="grid grid-cols-7 gap-2 mt-1">
+      @for (icon of iconOptions; track icon) {
+        <button
+          type="button"
+          class="w-9 h-9 flex items-center justify-center rounded-lg border cursor-pointer transition-colors duration-150"
+          [ngClass]="form.icon === icon
+            ? 'border-accent bg-accent/15 text-accent'
+            : 'border-border-subtle bg-surface-input text-text-secondary'"
+          (click)="form.icon = icon"
+        >
+          <app-icon [name]="icon" />
+        </button>
+      }
+    </div>
+  </div>
+
+  <ng-template #footer>
+    <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="dialogVisible = false" />
+    <p-button label="Guardar" (onClick)="saveCategory()" />
+  </ng-template>
+</p-dialog>

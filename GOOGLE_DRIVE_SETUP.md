@@ -1,110 +1,38 @@
-# Configuración de Google Drive para Budget Tracker
+# Google Drive sync — cómo funciona
 
-Esta guía explica cómo configurar la integración con Google Drive para guardar automáticamente tus backups de Excel.
+Moneta puede sincronizar tus Transacciones, Categorías y Servicios entre dispositivos usando tu propio Google Drive. No hay backend: cada dispositivo habla directo con la API de Drive usando tu cuenta de Google.
 
-## Paso 1: Crear un Proyecto en Google Cloud Console
+## Qué se sincroniza
 
-1. Ve a [Google Cloud Console](https://console.cloud.google.com/)
-2. Crea un nuevo proyecto o selecciona uno existente
-3. Haz clic en "Crear Proyecto" y dale un nombre (ej: "Budget Tracker")
+Un solo archivo, `moneta-sync.json`, dentro de una carpeta **"Moneta"** que la app crea en la raíz de tu Drive (no dentro de `appDataFolder`, así podés verlo/borrarlo vos mismo si querés). Contiene las tres listas completas (Transacciones, Categorías, Servicios), incluyendo tombstones de elementos borrados (para que un borrado en un dispositivo se propague a los demás en vez de resucitar el registro).
 
-## Paso 2: Habilitar la API de Google Drive
+El scope de permisos es `drive.file`: la app **solo** puede ver/tocar los archivos que ella misma crea, nunca el resto de tu Drive.
 
-1. En el menú lateral, ve a **APIs y servicios** > **Biblioteca**
-2. Busca "Google Drive API"
-3. Haz clic en "Google Drive API"
-4. Presiona el botón **"HABILITAR"**
+## Cómo se resuelven los conflictos
 
-## Paso 3: Crear Credenciales (API Key)
+Por `id` + `updatedAt`: el registro modificado más recientemente gana (empate → gana el local). Un borrado (`deletedAt`) se trata como una modificación más, así que si borrás algo en un dispositivo y lo sincronizás, el borrado se propaga a los demás en la próxima sincronización de cada uno. Tombstones de más de 30 días se purgan automáticamente para que el archivo no crezca sin límite.
 
-1. Ve a **APIs y servicios** > **Credenciales**
-2. Haz clic en **"+ CREAR CREDENCIALES"** > **"Clave de API"**
-3. Copia la **API Key** que se genera
-4. Haz clic en "Restringir clave" (recomendado)
-5. En "Restricciones de API":
-   - Selecciona "Restringir la clave"
-   - Marca solo **"Google Drive API"**
-6. Guarda los cambios
+Es un merge "todo o nada" por registro, no campo por campo: si editás el mismo Servicio en dos dispositivos sin sincronizar entre medio (por ejemplo, registrás un pago en uno y cambiás el monto en el otro), gana la versión con `updatedAt` más reciente completa — no se combinan los cambios de ambos.
 
-## Paso 4: Crear OAuth 2.0 Client ID
+## Cuándo sincroniza
 
-1. Ve a **APIs y servicios** > **Credenciales**
-2. Haz clic en **"+ CREAR CREDENCIALES"** > **"ID de cliente de OAuth"**
-3. Si es la primera vez, te pedirá configurar la **"Pantalla de consentimiento OAuth"**:
-   - Tipo de usuario: **"Externa"** (para uso personal)
-   - Haz clic en **"Crear"**
-   - Completa los campos obligatorios:
-     - Nombre de la aplicación: "Budget Tracker"
-     - Correo electrónico de asistencia: tu email
-     - Correo electrónico del desarrollador: tu email
-   - Guarda y continúa
-   - En "Ámbitos" (Scopes), haz clic en "AGREGAR O QUITAR ÁMBITOS"
-   - Busca y agrega: `https://www.googleapis.com/auth/drive.file`
-   - Guarda y continúa
-   - En "Usuarios de prueba", agrega tu email de Google
-   - Completa y vuelve al panel
+- Manual: botón **"Sincronizar"** en la página *Sincronización* del sidebar.
+- Automático: una vez al abrir la app, si ya estás conectado (silencioso, no bloquea el arranque).
 
-4. Ahora crea el Client ID:
-   - Tipo de aplicación: **"Aplicación web"**
-   - Nombre: "Budget Tracker Web"
-   - En "Orígenes de JavaScript autorizados", agrega:
-     - `http://localhost:4200` (para desarrollo)
-     - Tu dominio de producción si tienes uno (ej: `https://tudominio.com`)
-   - En "URIs de redireccionamiento autorizados", agrega:
-     - `http://localhost:4200` (para desarrollo)
-     - Tu dominio de producción si tienes uno
-   - Haz clic en **"CREAR"**
+No hay sincronización periódica ni en segundo plano.
 
-5. Copia el **Client ID** que se genera (formato: `xxxxx.apps.googleusercontent.com`)
+## Credenciales
 
-## Paso 5: Configurar en la Aplicación
+Las credenciales de OAuth (Client ID web, Client ID + secret "de escritorio" para el flujo nativo, API key) ya están configuradas — viven en variables de entorno (`GOOGLE_CLIENT_ID`, `GOOGLE_API_KEY`, `GOOGLE_MOBILE_CLIENT_ID`, `GOOGLE_MOBILE_CLIENT_SECRET`) que `scripts/generate-env.mjs` vuelca a `src/environments/environment.ts` en cada build (`prebuild`). No hay ningún campo en la UI para pegar credenciales — a diferencia de una versión anterior de esta app, no hace falta tocar Google Cloud Console para usar esta función tal como está.
 
-1. Abre la aplicación Budget Tracker
-2. Ve a **Settings** (Configuración)
-3. Busca la sección **"Integración con Google Drive"**
-4. Pega tu **Client ID** en el campo correspondiente
-5. Pega tu **API Key** en el campo correspondiente
-6. Haz clic en **"Guardar Configuración"**
+Si en algún momento hay que rotar o recrear las credenciales: proyecto en Google Cloud Console con la API de Drive habilitada, pantalla de consentimiento OAuth con el scope `https://www.googleapis.com/auth/drive.file`, un Client ID tipo "Aplicación web" (para el flujo de navegador) y un Client ID tipo "Aplicación de escritorio" (para el flujo PKCE nativo en Android — su ID reversado ya está registrado como esquema de URL en `android/app/src/main/AndroidManifest.xml` para recibir el redirect).
 
-## Paso 6: Autorizar la Aplicación
+## Autenticación por plataforma
 
-1. En el sidebar, haz clic en **"Guardar en Drive"**
-2. Se abrirá una ventana de Google pidiéndote que autorices la aplicación
-3. Selecciona tu cuenta de Google
-4. Acepta los permisos solicitados
-5. Listo! Ahora tus backups se guardarán automáticamente en Google Drive
+- **Web**: Google Identity Services (`accounts.google.com/gsi/client`), flujo implícito — token de acceso de corta duración, se renueva solo (silenciosamente si la sesión de Google sigue activa).
+- **Nativo (Android)**: Authorization Code + PKCE vía navegador del sistema (`@capacitor/browser`), capturando el redirect por deep link (`@capacitor/app`). Pide `access_type=offline` para obtener un refresh token, así no hace falta reabrir el navegador cada hora.
 
-## Ubicación de los Archivos
+## Solución de problemas
 
-Los archivos exportados se guardarán en:
-- **Google Drive** > **Budget Tracker** > `budget_tracker_completo_FECHA.xlsx`
-
-## Seguridad
-
-- La aplicación **solo tiene acceso a los archivos que ella misma crea**
-- **NO** tiene acceso a tus otros archivos de Drive
-- Puedes revocar el acceso en cualquier momento desde tu cuenta de Google: [Seguridad de la cuenta](https://myaccount.google.com/permissions)
-
-## Solución de Problemas
-
-### Error: "API key not valid"
-- Verifica que la API Key esté correctamente copiada
-- Asegúrate de que la API Key tenga permisos para Google Drive API
-
-### Error: "Client ID not valid"
-- Verifica que el Client ID esté correctamente copiado
-- Asegúrate de haber agregado el origen correcto en Google Cloud Console
-
-### Error: "Access denied"
-- Verifica que hayas agregado tu email en "Usuarios de prueba"
-- Asegúrate de haber publicado la app o agregarla como "En producción"
-
-### La ventana de autorización no se abre
-- Verifica que no estés bloqueando popups en tu navegador
-- Intenta en modo incógnito para descartar problemas de caché
-
-## Notas Importantes
-
-- **Modo de prueba**: Si tu app está en modo de prueba, solo los usuarios agregados en "Usuarios de prueba" podrán usarla
-- **Publicación**: Para uso público, necesitarás pasar el proceso de verificación de Google (no necesario para uso personal)
-- **Cuota de API**: Google Drive API tiene límites de uso. Para uso personal, estos límites son más que suficientes.
+- **"La sesión de Google expiró"**: la página de Sincronización va a mostrar un botón "Reconectar" — es esperable si revocaste el acceso desde tu cuenta de Google o pasó mucho tiempo sin usar la app.
+- Podés revocar el acceso en cualquier momento desde [myaccount.google.com/permissions](https://myaccount.google.com/permissions).
