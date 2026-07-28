@@ -221,9 +221,30 @@ export class TransactionsPage implements OnInit, OnDestroy {
     input.value = '';
     if (!file) return;
 
+    let lines: string[];
+    try {
+      lines = await this.csvService.readCsvSections(file);
+    } catch (error) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error al leer el CSV',
+        detail: error instanceof Error ? error.message : 'Formato inválido'
+      });
+      return;
+    }
+
+    const newCategories = this.csvService.parseNewCategories(lines, this.categories);
+    const createdCategories: Category[] = [];
+
+    for (const category of newCategories) {
+      createdCategories.push(await lastValueFrom(this.categoryService.create(category)));
+    }
+
+    const categoriesForMatching = [...this.categories, ...createdCategories];
+
     let result;
     try {
-      result = await this.csvService.parseTransactionsCsv(file, this.categories, this.transactions);
+      result = this.csvService.parseTransactions(lines, categoriesForMatching, this.transactions);
     } catch (error) {
       this.messageService.add({
         severity: 'error',
@@ -249,7 +270,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     const unique = result.rows.filter((row) => !row.isDuplicate);
 
     if (duplicates.length === 0) {
-      await this.importRows(unique, result.skippedUnknownCategory);
+      await this.importRows(unique, result.skippedUnknownCategory, createdCategories.length);
       return;
     }
 
@@ -260,20 +281,23 @@ export class TransactionsPage implements OnInit, OnDestroy {
       acceptLabel: 'Solo nuevas',
       rejectLabel: 'Importar todo',
       accept: async () => {
-        await this.importRows(unique, result.skippedUnknownCategory);
+        await this.importRows(unique, result.skippedUnknownCategory, createdCategories.length);
       },
       reject: async () => {
-        await this.importRows(result.rows, result.skippedUnknownCategory);
+        await this.importRows(result.rows, result.skippedUnknownCategory, createdCategories.length);
       }
     });
   }
 
-  private async importRows(rows: ParsedCsvRow[], skippedUnknownCategory: number): Promise<void> {
+  private async importRows(rows: ParsedCsvRow[], skippedUnknownCategory: number, createdCategoriesCount: number): Promise<void> {
     for (const row of rows) {
       await lastValueFrom(this.transactionService.create(row.transaction));
     }
 
     const detailParts = [`${rows.length} transacciones importadas`];
+    if (createdCategoriesCount > 0) {
+      detailParts.push(`${createdCategoriesCount} categorías nuevas creadas`);
+    }
     if (skippedUnknownCategory > 0) {
       detailParts.push(`${skippedUnknownCategory} omitidas por categoría desconocida`);
     }

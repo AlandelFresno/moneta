@@ -21,88 +21,141 @@ describe('CsvService', () => {
     service = TestBed.inject(CsvService);
   });
 
-  it('parses valid rows into transactions matched by category name', async () => {
-    const csv = [
-      'Date,Type,Category,Name,Amount,Description',
-      '2026-01-15,expense,Almacén,Supermercado,100,"Compra semanal"'
-    ].join('\n');
+  describe('parseTransactions', () => {
+    it('parses valid rows into transactions matched by category name', () => {
+      const lines = [
+        'Date,Type,Category,Name,Amount,Description',
+        '2026-01-15,expense,Almacén,Supermercado,100,"Compra semanal"'
+      ];
 
-    const result = await service.parseTransactionsCsv(makeFile(csv), CATEGORIES, []);
+      const result = service.parseTransactions(lines, CATEGORIES, []);
 
-    expect(result.rows.length).toBe(1);
-    expect(result.rows[0].transaction.categoryId).toBe('cat-1');
-    expect(result.rows[0].transaction.name).toBe('Supermercado');
-    expect(result.rows[0].transaction.amount).toBe(100);
-    expect(result.rows[0].transaction.description).toBe('Compra semanal');
-    expect(result.rows[0].isDuplicate).toBeFalse();
+      expect(result.rows.length).toBe(1);
+      expect(result.rows[0].transaction.categoryId).toBe('cat-1');
+      expect(result.rows[0].transaction.name).toBe('Supermercado');
+      expect(result.rows[0].transaction.amount).toBe(100);
+      expect(result.rows[0].transaction.description).toBe('Compra semanal');
+      expect(result.rows[0].isDuplicate).toBeFalse();
+    });
+
+    it('skips rows with an unknown category and reports the count', () => {
+      const lines = ['Date,Type,Category,Name,Amount,Description', '2026-01-15,expense,NoExiste,Algo,50,""'];
+
+      const result = service.parseTransactions(lines, CATEGORIES, []);
+
+      expect(result.rows.length).toBe(0);
+      expect(result.skippedUnknownCategory).toBe(1);
+    });
+
+    it('flags a row as duplicate when date+name+amount match an existing transaction', () => {
+      const existing: Transaction[] = [
+        {
+          id: 't1',
+          categoryId: 'cat-1',
+          type: 'expense',
+          name: 'Supermercado',
+          description: '',
+          amount: 100,
+          date: new Date(2026, 0, 15),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ];
+
+      const lines = ['Date,Type,Category,Name,Amount,Description', '2026-01-15,expense,Almacén,Supermercado,100,""'];
+
+      const result = service.parseTransactions(lines, CATEGORIES, existing);
+
+      expect(result.rows.length).toBe(1);
+      expect(result.rows[0].isDuplicate).toBeTrue();
+    });
+
+    it('does not flag as duplicate when amount differs', () => {
+      const existing: Transaction[] = [
+        {
+          id: 't1',
+          categoryId: 'cat-1',
+          type: 'expense',
+          name: 'Supermercado',
+          description: '',
+          amount: 100,
+          date: new Date(2026, 0, 15),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ];
+
+      const lines = ['Date,Type,Category,Name,Amount,Description', '2026-01-15,expense,Almacén,Supermercado,999,""'];
+
+      const result = service.parseTransactions(lines, CATEGORIES, existing);
+
+      expect(result.rows[0].isDuplicate).toBeFalse();
+    });
+
+    it('throws when the file has no transactions header', () => {
+      const lines = ['not,a,valid,header'];
+
+      expect(() => service.parseTransactions(lines, CATEGORIES, [])).toThrow();
+    });
+
+    it('reads transactions after a categories section', () => {
+      const lines = [
+        'Name,Type,Color,Icon',
+        'Almacén,expense,#f00,tag',
+        '',
+        'Date,Type,Category,Name,Amount,Description',
+        '2026-01-15,expense,Almacén,Supermercado,100,""'
+      ];
+
+      const result = service.parseTransactions(lines, CATEGORIES, []);
+
+      expect(result.rows.length).toBe(1);
+    });
   });
 
-  it('skips rows with an unknown category and reports the count', async () => {
-    const csv = [
-      'Date,Type,Category,Name,Amount,Description',
-      '2026-01-15,expense,NoExiste,Algo,50,""'
-    ].join('\n');
+  describe('parseNewCategories', () => {
+    it('returns categories from the file that do not already exist locally', () => {
+      const lines = [
+        'Name,Type,Color,Icon',
+        'Almacén,expense,#f00,tag',
+        'Ocio,expense,#00f,star',
+        '',
+        'Date,Type,Category,Name,Amount,Description'
+      ];
 
-    const result = await service.parseTransactionsCsv(makeFile(csv), CATEGORIES, []);
+      const result = service.parseNewCategories(lines, CATEGORIES);
 
-    expect(result.rows.length).toBe(0);
-    expect(result.skippedUnknownCategory).toBe(1);
+      expect(result.length).toBe(1);
+      expect(result[0].name).toBe('Ocio');
+      expect(result[0].type).toBe('expense');
+      expect(result[0].color).toBe('#00f');
+      expect(result[0].icon).toBe('star');
+    });
+
+    it('returns an empty array when the file has no categories section', () => {
+      const lines = ['Date,Type,Category,Name,Amount,Description', '2026-01-15,expense,Almacén,Supermercado,100,""'];
+
+      const result = service.parseNewCategories(lines, CATEGORIES);
+
+      expect(result).toEqual([]);
+    });
+
+    it('deduplicates repeated category names within the file itself', () => {
+      const lines = ['Name,Type,Color,Icon', 'Ocio,expense,#00f,star', 'Ocio,expense,#00f,star', ''];
+
+      const result = service.parseNewCategories(lines, CATEGORIES);
+
+      expect(result.length).toBe(1);
+    });
   });
 
-  it('flags a row as duplicate when date+name+amount match an existing transaction', async () => {
-    const existing: Transaction[] = [
-      {
-        id: 't1',
-        categoryId: 'cat-1',
-        type: 'expense',
-        name: 'Supermercado',
-        description: '',
-        amount: 100,
-        date: new Date('2026-01-15'),
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ];
+  describe('readCsvSections', () => {
+    it('splits a file into lines, stripping trailing carriage returns', async () => {
+      const file = makeFile('a,b\r\nc,d\r\n');
 
-    const csv = [
-      'Date,Type,Category,Name,Amount,Description',
-      '2026-01-15,expense,Almacén,Supermercado,100,""'
-    ].join('\n');
+      const lines = await service.readCsvSections(file);
 
-    const result = await service.parseTransactionsCsv(makeFile(csv), CATEGORIES, existing);
-
-    expect(result.rows.length).toBe(1);
-    expect(result.rows[0].isDuplicate).toBeTrue();
-  });
-
-  it('does not flag as duplicate when amount differs', async () => {
-    const existing: Transaction[] = [
-      {
-        id: 't1',
-        categoryId: 'cat-1',
-        type: 'expense',
-        name: 'Supermercado',
-        description: '',
-        amount: 100,
-        date: new Date('2026-01-15'),
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ];
-
-    const csv = [
-      'Date,Type,Category,Name,Amount,Description',
-      '2026-01-15,expense,Almacén,Supermercado,999,""'
-    ].join('\n');
-
-    const result = await service.parseTransactionsCsv(makeFile(csv), CATEGORIES, existing);
-
-    expect(result.rows[0].isDuplicate).toBeFalse();
-  });
-
-  it('throws when the file has no data rows', async () => {
-    const csv = 'Date,Type,Category,Name,Amount,Description';
-
-    await expectAsync(service.parseTransactionsCsv(makeFile(csv), CATEGORIES, [])).toBeRejected();
+      expect(lines).toEqual(['a,b', 'c,d', '']);
+    });
   });
 });
