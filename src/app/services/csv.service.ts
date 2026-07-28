@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Transaction, TransactionType } from '../core/types/transaction.types';
 import { Category, CategoryType } from '../core/types/category.types';
+import { Bill, BillPeriod } from '../core/types/bill.types';
 
 export interface ParsedCsvRow {
   transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>;
@@ -12,8 +13,14 @@ export interface CsvImportResult {
   skippedUnknownCategory: number;
 }
 
-const TRANSACTIONS_HEADER = 'Date,Type,Category,Name,Amount,Description';
+export interface BillImportResult {
+  bills: Omit<Bill, 'id' | 'payments' | 'createdAt' | 'updatedAt'>[];
+  skippedUnknownCategory: number;
+}
+
 const CATEGORIES_HEADER = 'Name,Type,Color,Icon';
+const BILLS_HEADER = 'Name,Description,Category,ApproxAmount,Period,DueDate,Active';
+const TRANSACTIONS_HEADER = 'Date,Type,Category,Name,Amount,Description';
 
 @Injectable({
   providedIn: 'root'
@@ -28,8 +35,9 @@ export class CsvService {
     const categoriesStart = lines.findIndex((line) => line.trim() === CATEGORIES_HEADER);
     if (categoriesStart === -1) return [];
 
+    const billsStart = lines.findIndex((line) => line.trim() === BILLS_HEADER);
     const transactionsStart = lines.findIndex((line) => line.trim() === TRANSACTIONS_HEADER);
-    const sectionEnd = transactionsStart === -1 ? lines.length : transactionsStart;
+    const sectionEnd = this.nextSectionStart([billsStart, transactionsStart], lines.length);
 
     const result: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>[] = [];
 
@@ -53,6 +61,52 @@ export class CsvService {
     }
 
     return result;
+  }
+
+  parseNewBills(lines: string[], categories: Category[], existing: Bill[]): BillImportResult {
+    const billsStart = lines.findIndex((line) => line.trim() === BILLS_HEADER);
+    if (billsStart === -1) return { bills: [], skippedUnknownCategory: 0 };
+
+    const transactionsStart = lines.findIndex((line) => line.trim() === TRANSACTIONS_HEADER);
+    const sectionEnd = transactionsStart === -1 ? lines.length : transactionsStart;
+
+    const result: Omit<Bill, 'id' | 'payments' | 'createdAt' | 'updatedAt'>[] = [];
+    let skippedUnknownCategory = 0;
+
+    for (const line of lines.slice(billsStart + 1, sectionEnd)) {
+      if (!line.trim()) continue;
+      const values = this.parseCsvLine(line);
+      if (values.length < 7) continue;
+
+      const [name, description, categoryName, approxAmountStr, period, dueDateStr, activeStr] = values;
+      const unescapedName = this.unescapeCsv(name);
+
+      if (existing.some((bill) => bill.name === unescapedName)) continue;
+      if (result.some((bill) => bill.name === unescapedName)) continue;
+
+      const category = categories.find((cat) => cat.name === this.unescapeCsv(categoryName));
+      if (!category) {
+        skippedUnknownCategory++;
+        continue;
+      }
+
+      result.push({
+        name: unescapedName,
+        description: this.unescapeCsv(description),
+        categoryId: category.id,
+        approxAmount: parseFloat(approxAmountStr),
+        period: period.trim() as BillPeriod,
+        dueDate: this.parseLocalDate(dueDateStr),
+        active: activeStr.trim() === 'true'
+      });
+    }
+
+    return { bills: result, skippedUnknownCategory };
+  }
+
+  private nextSectionStart(candidates: number[], fallback: number): number {
+    const valid = candidates.filter((index) => index !== -1);
+    return valid.length ? Math.min(...valid) : fallback;
   }
 
   parseTransactions(lines: string[], categories: Category[], existing: Transaction[]): CsvImportResult {
@@ -154,8 +208,22 @@ export class CsvService {
     });
   }
 
-  exportTransactionsToCsv(transactions: Transaction[], categories: Category[]): void {
+  exportToCsv(transactions: Transaction[], categories: Category[], bills: Bill[]): void {
     const categoryRows = categories.map((cat) => [this.escapeCsv(cat.name), cat.type, cat.color, cat.icon]);
+
+    const billRows = bills.map((bill) => {
+      const category = categories.find((cat) => cat.id === bill.categoryId);
+
+      return [
+        this.escapeCsv(bill.name),
+        this.escapeCsv(bill.description),
+        this.escapeCsv(category?.name ?? 'Sin categoría'),
+        bill.approxAmount.toString(),
+        bill.period,
+        this.formatDate(bill.dueDate),
+        bill.active.toString()
+      ];
+    });
 
     const transactionRows = transactions.map((txn) => {
       const category = categories.find((cat) => cat.id === txn.categoryId);
@@ -174,11 +242,14 @@ export class CsvService {
       CATEGORIES_HEADER,
       ...categoryRows.map((row) => row.join(',')),
       '',
+      BILLS_HEADER,
+      ...billRows.map((row) => row.join(',')),
+      '',
       TRANSACTIONS_HEADER,
       ...transactionRows.map((row) => row.join(','))
     ].join('\n');
 
-    this.downloadCsv(csvContent, `transactions-${this.formatDate(new Date())}.csv`);
+    this.downloadCsv(csvContent, `export-${this.formatDate(new Date())}.csv`);
   }
 
   private escapeCsv(value: string): string {

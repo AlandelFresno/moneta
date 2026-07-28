@@ -15,6 +15,7 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 
 import { Transaction, TransactionType } from '../../core/types/transaction.types';
 import { Category } from '../../core/types/category.types';
+import { Bill } from '../../core/types/bill.types';
 import { TransactionService } from '../../services/transaction.service';
 import { CategoryService } from '../../services/category.service';
 import { CsvService, ParsedCsvRow } from '../../services/csv.service';
@@ -102,6 +103,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
   dialogVisible = false;
   form: TransactionForm = { ...EMPTY_FORM };
 
+  bills: Bill[] = [];
   dueBills: BillDueStatus[] = [];
   payDialogVisible = false;
   payingBill: BillDueStatus | null = null;
@@ -133,6 +135,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       .getAll()
       .pipe(takeUntil(this.destroy$))
       .subscribe((bills) => {
+        this.bills = bills;
         this.dueBills = this.billService.dueStatuses(bills, new Date());
         this.cdr.markForCheck();
       });
@@ -227,7 +230,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   exportToCsv(): void {
-    this.csvService.exportTransactionsToCsv(this.filteredTransactions, this.categories);
+    this.csvService.exportToCsv(this.filteredTransactions, this.categories, this.bills);
   }
 
   async onCsvFileSelected(event: Event): Promise<void> {
@@ -257,6 +260,13 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
     const categoriesForMatching = [...this.categories, ...createdCategories];
 
+    const billResult = this.csvService.parseNewBills(lines, categoriesForMatching, this.bills);
+    let createdBillsCount = 0;
+    for (const bill of billResult.bills) {
+      await lastValueFrom(this.billService.create(bill));
+      createdBillsCount++;
+    }
+
     let result;
     try {
       result = this.csvService.parseTransactions(lines, categoriesForMatching, this.transactions);
@@ -270,6 +280,11 @@ export class TransactionsPage implements OnInit, OnDestroy {
     }
 
     if (result.rows.length === 0) {
+      if (createdBillsCount > 0 || createdCategories.length > 0) {
+        await this.importRows([], result.skippedUnknownCategory, createdCategories.length, createdBillsCount, billResult.skippedUnknownCategory);
+        return;
+      }
+
       this.messageService.add({
         severity: 'warn',
         summary: 'Nada para importar',
@@ -285,7 +300,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     const unique = result.rows.filter((row) => !row.isDuplicate);
 
     if (duplicates.length === 0) {
-      await this.importRows(unique, result.skippedUnknownCategory, createdCategories.length);
+      await this.importRows(unique, result.skippedUnknownCategory, createdCategories.length, createdBillsCount, billResult.skippedUnknownCategory);
       return;
     }
 
@@ -296,25 +311,40 @@ export class TransactionsPage implements OnInit, OnDestroy {
       acceptLabel: 'Solo nuevas',
       rejectLabel: 'Importar todo',
       accept: async () => {
-        await this.importRows(unique, result.skippedUnknownCategory, createdCategories.length);
+        await this.importRows(unique, result.skippedUnknownCategory, createdCategories.length, createdBillsCount, billResult.skippedUnknownCategory);
       },
       reject: async () => {
-        await this.importRows(result.rows, result.skippedUnknownCategory, createdCategories.length);
+        await this.importRows(result.rows, result.skippedUnknownCategory, createdCategories.length, createdBillsCount, billResult.skippedUnknownCategory);
       }
     });
   }
 
-  private async importRows(rows: ParsedCsvRow[], skippedUnknownCategory: number, createdCategoriesCount: number): Promise<void> {
+  private async importRows(
+    rows: ParsedCsvRow[],
+    skippedUnknownCategory: number,
+    createdCategoriesCount: number,
+    createdBillsCount: number,
+    skippedBillsUnknownCategory: number
+  ): Promise<void> {
     for (const row of rows) {
       await lastValueFrom(this.transactionService.create(row.transaction));
     }
 
-    const detailParts = [`${rows.length} transacciones importadas`];
+    const detailParts: string[] = [];
+    if (rows.length > 0) {
+      detailParts.push(`${rows.length} transacciones importadas`);
+    }
     if (createdCategoriesCount > 0) {
       detailParts.push(`${createdCategoriesCount} categorías nuevas creadas`);
     }
+    if (createdBillsCount > 0) {
+      detailParts.push(`${createdBillsCount} servicios nuevos creados`);
+    }
     if (skippedUnknownCategory > 0) {
-      detailParts.push(`${skippedUnknownCategory} omitidas por categoría desconocida`);
+      detailParts.push(`${skippedUnknownCategory} transacciones omitidas por categoría desconocida`);
+    }
+    if (skippedBillsUnknownCategory > 0) {
+      detailParts.push(`${skippedBillsUnknownCategory} servicios omitidos por categoría desconocida`);
     }
 
     this.messageService.add({
