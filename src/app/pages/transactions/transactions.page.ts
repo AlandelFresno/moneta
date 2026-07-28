@@ -21,12 +21,7 @@ import { CategoryService } from '../../services/category.service';
 import { CsvService, ParsedCsvRow } from '../../services/csv.service';
 import { BillService, BillDueStatus } from '../../services/bill.service';
 import { IconComponent } from '../../shared/icon/icon.component';
-
-interface TransactionWithCategory extends Transaction {
-  categoryName: string;
-  categoryColor: string;
-  categoryIcon: string;
-}
+import { TransactionWithCategory, withCategory } from '../../core/utils/transaction-display.util';
 
 interface TransactionGroup {
   key: string;
@@ -125,7 +120,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       .subscribe(([transactions, categories]) => {
         this.categories = categories;
         this.transactions = transactions
-          .map((txn) => this.withCategory(txn, categories))
+          .map((txn) => withCategory(txn, categories))
           .sort((a, b) => b.date.getTime() - a.date.getTime());
         this.applyFilters();
         this.cdr.markForCheck();
@@ -151,16 +146,6 @@ export class TransactionsPage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  private withCategory(txn: Transaction, categories: Category[]): TransactionWithCategory {
-    const category = categories.find((cat) => cat.id === txn.categoryId);
-    return {
-      ...txn,
-      categoryName: category?.name ?? 'Sin categoría',
-      categoryColor: category?.color ?? '#6b7280',
-      categoryIcon: category?.icon ?? 'tag'
-    };
   }
 
   onSearchInput(value: string): void {

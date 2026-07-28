@@ -1,21 +1,34 @@
-<div class="p-6 md:p-8 max-w-5xl mx-auto">
+<div class="p-6 md:p-8 max-w-6xl mx-auto">
   <div class="flex items-start justify-between gap-4 flex-wrap mb-7">
     <div>
       <h1 class="text-[1.75rem] font-semibold tracking-tight text-text-primary">Dashboard</h1>
       <p class="text-sm text-text-secondary mt-0.5">Resumen y análisis de tus movimientos</p>
     </div>
 
-    <p-select
-      class="min-w-[12rem]"
-      [options]="monthOptions"
-      optionLabel="label"
-      optionValue="value"
-      [(ngModel)]="selectedMonth"
-      (onChange)="onMonthChange()"
-    />
+    <div class="flex items-center gap-2 flex-wrap">
+      <p-select
+        class="min-w-[12rem]"
+        [options]="presetOptions"
+        optionLabel="label"
+        optionValue="value"
+        [(ngModel)]="rangePreset"
+        (onChange)="onPresetChange()"
+      />
+
+      @if (rangePreset === 'custom') {
+        <p-datepicker
+          selectionMode="range"
+          [(ngModel)]="customRangeDates"
+          (onSelect)="onCustomRangeChange()"
+          dateFormat="dd/mm/yy"
+          [readonlyInput]="true"
+          placeholder="Seleccionar rango"
+        />
+      }
+    </div>
   </div>
 
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
     <div class="flex items-center gap-3.5 p-4 rounded-2xl bg-surface-card border border-border-subtle">
       <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base text-income bg-income/15">
         <i class="pi pi-arrow-down-left"></i>
@@ -24,6 +37,9 @@
         <span class="text-xs uppercase tracking-wider font-medium text-text-secondary">Ingresos</span>
         <span class="text-xl font-semibold text-income [font-variant-numeric:tabular-nums]">
           {{ stats.income | number: '1.2-2' }}
+        </span>
+        <span class="text-xs font-medium [font-variant-numeric:tabular-nums]" [class]="deltaClass(comparison.incomeChangePct, false)">
+          {{ formatPct(comparison.incomeChangePct) }} vs. período anterior
         </span>
       </div>
     </div>
@@ -36,6 +52,9 @@
         <span class="text-xs uppercase tracking-wider font-medium text-text-secondary">Gastos</span>
         <span class="text-xl font-semibold text-expense [font-variant-numeric:tabular-nums]">
           {{ stats.expense | number: '1.2-2' }}
+        </span>
+        <span class="text-xs font-medium [font-variant-numeric:tabular-nums]" [class]="deltaClass(comparison.expenseChangePct, true)">
+          {{ formatPct(comparison.expenseChangePct) }} vs. período anterior
         </span>
       </div>
     </div>
@@ -53,38 +72,129 @@
         >
           {{ stats.balance | number: '1.2-2' }}
         </span>
+        <span class="text-xs font-medium [font-variant-numeric:tabular-nums]" [class]="deltaClass(comparison.balanceChangePct, false)">
+          {{ formatPct(comparison.balanceChangePct) }} vs. período anterior
+        </span>
       </div>
     </div>
   </div>
 
+  <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+    <div class="flex flex-col gap-0.5 p-3.5 rounded-2xl bg-surface-card border border-border-subtle">
+      <span class="text-xs uppercase tracking-wider font-medium text-text-secondary">Ahorro</span>
+      <span class="text-base font-semibold text-text-primary [font-variant-numeric:tabular-nums]">
+        {{ stats.savingsRate === null ? '—' : (stats.savingsRate | number: '1.0-1') + '%' }}
+      </span>
+    </div>
+
+    <div class="flex flex-col gap-0.5 p-3.5 rounded-2xl bg-surface-card border border-border-subtle">
+      <span class="text-xs uppercase tracking-wider font-medium text-text-secondary">Monto promedio</span>
+      <span class="text-base font-semibold text-text-primary [font-variant-numeric:tabular-nums]">
+        {{ stats.avgTransaction | number: '1.2-2' }}
+      </span>
+    </div>
+
+    <div class="flex flex-col gap-0.5 p-3.5 rounded-2xl bg-surface-card border border-border-subtle">
+      <span class="text-xs uppercase tracking-wider font-medium text-text-secondary">Transacciones</span>
+      <span class="text-base font-semibold text-text-primary [font-variant-numeric:tabular-nums]">
+        {{ stats.transactionCount }}
+      </span>
+    </div>
+
+    <div class="flex flex-col gap-0.5 p-3.5 rounded-2xl bg-surface-card border border-border-subtle min-w-0">
+      <span class="text-xs uppercase tracking-wider font-medium text-text-secondary">Mayor gasto</span>
+      @if (stats.biggestExpense) {
+        <span class="text-base font-semibold text-expense [font-variant-numeric:tabular-nums] truncate">
+          {{ stats.biggestExpense.amount | number: '1.2-2' }}
+        </span>
+        <span class="text-xs text-text-secondary truncate">{{ stats.biggestExpense.name }}</span>
+      } @else {
+        <span class="text-base font-semibold text-text-secondary">—</span>
+      }
+    </div>
+
+    <div class="flex flex-col gap-0.5 p-3.5 rounded-2xl bg-surface-card border border-border-subtle min-w-0">
+      <span class="text-xs uppercase tracking-wider font-medium text-text-secondary">Mayor ingreso</span>
+      @if (stats.biggestIncome) {
+        <span class="text-base font-semibold text-income [font-variant-numeric:tabular-nums] truncate">
+          {{ stats.biggestIncome.amount | number: '1.2-2' }}
+        </span>
+        <span class="text-xs text-text-secondary truncate">{{ stats.biggestIncome.name }}</span>
+      } @else {
+        <span class="text-base font-semibold text-text-secondary">—</span>
+      }
+    </div>
+  </div>
+
   <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle mb-4">
-    <h2 class="text-sm font-semibold text-text-primary mb-4">Ingresos vs. gastos — últimos 6 meses</h2>
+    <h2 class="text-sm font-semibold text-text-primary mb-4">Ingresos vs. gastos</h2>
     <div class="h-64">
       <canvas #trendCanvas></canvas>
     </div>
   </div>
 
-  <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-sm font-semibold text-text-primary">Por categoría</h2>
-      <p-select
-        class="min-w-[8rem]"
-        [options]="breakdownTypeOptions"
-        optionLabel="label"
-        optionValue="value"
-        [(ngModel)]="breakdownType"
-        (onChange)="onBreakdownTypeChange()"
-      />
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+    <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle">
+      <h2 class="text-sm font-semibold text-text-primary mb-4">Gastos por categoría</h2>
+      @if (hasExpenseBreakdown) {
+        <div class="h-64">
+          <canvas #expenseBreakdownCanvas></canvas>
+        </div>
+      } @else {
+        <div class="flex flex-col items-center justify-center gap-2 py-16 text-sm text-text-secondary">
+          <i class="pi pi-chart-bar text-3xl opacity-50"></i>
+          <span>No hay gastos en este período.</span>
+        </div>
+      }
     </div>
 
-    @if (hasBreakdownData) {
-      <div class="h-64">
-        <canvas #breakdownCanvas></canvas>
+    <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle">
+      <h2 class="text-sm font-semibold text-text-primary mb-4">Ingresos por categoría</h2>
+      @if (hasIncomeBreakdown) {
+        <div class="h-64">
+          <canvas #incomeBreakdownCanvas></canvas>
+        </div>
+      } @else {
+        <div class="flex flex-col items-center justify-center gap-2 py-16 text-sm text-text-secondary">
+          <i class="pi pi-chart-bar text-3xl opacity-50"></i>
+          <span>No hay ingresos en este período.</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle">
+    <h2 class="text-sm font-semibold text-text-primary mb-4">Mayores transacciones</h2>
+
+    @if (topTransactions.length > 0) {
+      <div class="flex flex-col gap-1">
+        @for (txn of topTransactions; track txn.id) {
+          <div class="flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-surface-input transition-colors duration-150">
+            <div
+              class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm"
+              [style.color]="txn.categoryColor"
+              [style.background-color]="txn.categoryColor + '26'"
+            >
+              <i class="pi pi-{{ txn.categoryIcon }}"></i>
+            </div>
+            <div class="flex flex-col min-w-0 flex-1">
+              <span class="text-sm font-medium text-text-primary truncate">{{ txn.name }}</span>
+              <span class="text-xs text-text-secondary truncate">{{ txn.categoryName }} · {{ formatDate(txn.date) }}</span>
+            </div>
+            <span
+              class="text-sm font-semibold [font-variant-numeric:tabular-nums] flex-shrink-0"
+              [class.text-income]="txn.type === 'income'"
+              [class.text-expense]="txn.type === 'expense'"
+            >
+              {{ txn.type === 'income' ? '+' : '-' }}{{ txn.amount | number: '1.2-2' }}
+            </span>
+          </div>
+        }
       </div>
     } @else {
       <div class="flex flex-col items-center justify-center gap-2 py-16 text-sm text-text-secondary">
-        <i class="pi pi-chart-bar text-3xl opacity-50"></i>
-        <span>No hay {{ breakdownType === 'expense' ? 'gastos' : 'ingresos' }} en este mes.</span>
+        <i class="pi pi-list text-3xl opacity-50"></i>
+        <span>No hay transacciones en este período.</span>
       </div>
     }
   </div>
