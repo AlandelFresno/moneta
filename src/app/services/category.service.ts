@@ -1,11 +1,29 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, map } from 'rxjs';
 import { Category, CategoryType } from '../core/types/category.types';
 
-interface StoredCategory extends Omit<Category, 'createdAt' | 'updatedAt' | 'deletedAt'> {
+export interface StoredCategory extends Omit<Category, 'createdAt' | 'updatedAt' | 'deletedAt'> {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
+}
+
+export function toCategory(stored: StoredCategory): Category {
+  return {
+    ...stored,
+    createdAt: new Date(stored.createdAt),
+    updatedAt: new Date(stored.updatedAt),
+    deletedAt: stored.deletedAt ? new Date(stored.deletedAt) : undefined
+  };
+}
+
+export function fromCategory(cat: Category): StoredCategory {
+  return {
+    ...cat,
+    createdAt: cat.createdAt.toISOString(),
+    updatedAt: cat.updatedAt.toISOString(),
+    deletedAt: cat.deletedAt ? cat.deletedAt.toISOString() : undefined
+  };
 }
 
 @Injectable({
@@ -13,46 +31,46 @@ interface StoredCategory extends Omit<Category, 'createdAt' | 'updatedAt' | 'del
 })
 export class CategoryService {
   private readonly storageKey = 'categories';
-  private readonly categoriesSubject = new BehaviorSubject<Category[]>(this.loadFromStorage());
-  readonly categories$: Observable<Category[]> = this.categoriesSubject.asObservable();
+  private readonly allSubject = new BehaviorSubject<Category[]>(this.loadAll());
+  readonly categories$: Observable<Category[]> = this.allSubject.pipe(
+    map((categories) => categories.filter((cat) => !cat.deletedAt))
+  );
 
-  private loadFromStorage(): Category[] {
+  private loadAll(): Category[] {
     const raw = localStorage.getItem(this.storageKey);
     if (!raw) {
       return this.seedDefaults();
     }
 
     const stored: StoredCategory[] = JSON.parse(raw);
-    return stored
-      .filter((cat) => !cat.deletedAt)
-      .map((cat) => this.toCategory(cat));
-  }
-
-  private toCategory(stored: StoredCategory): Category {
-    return {
-      ...stored,
-      createdAt: new Date(stored.createdAt),
-      updatedAt: new Date(stored.updatedAt),
-      deletedAt: stored.deletedAt ? new Date(stored.deletedAt) : undefined
-    };
+    return stored.map((cat) => toCategory(cat));
   }
 
   private seedDefaults(): Category[] {
     const now = new Date();
     const defaults: Category[] = [
-      { id: this.generateId(), name: 'Salario', type: 'income', color: '#10b981', icon: 'briefcase', createdAt: now, updatedAt: now },
-      { id: this.generateId(), name: 'Almacén', type: 'expense', color: '#f59e0b', icon: 'shopping-cart', createdAt: now, updatedAt: now }
+      { id: 'seed-income-default', name: 'Salario', type: 'income', color: '#10b981', icon: 'briefcase', createdAt: now, updatedAt: now },
+      { id: 'seed-expense-default', name: 'Almacén', type: 'expense', color: '#f59e0b', icon: 'shopping-cart', createdAt: now, updatedAt: now }
     ];
     this.persist(defaults);
     return defaults;
   }
 
   private persist(categories: Category[]): void {
-    localStorage.setItem(this.storageKey, JSON.stringify(categories));
+    localStorage.setItem(this.storageKey, JSON.stringify(categories.map((cat) => fromCategory(cat))));
   }
 
   getAll(): Observable<Category[]> {
     return this.categories$;
+  }
+
+  getAllIncludingDeleted(): Category[] {
+    return this.allSubject.value;
+  }
+
+  replaceAll(categories: Category[]): void {
+    this.persist(categories);
+    this.allSubject.next(categories);
   }
 
   getByType(type: CategoryType): Observable<Category[]> {
@@ -72,9 +90,9 @@ export class CategoryService {
       updatedAt: now
     };
 
-    const categories = [...this.categoriesSubject.value, newCategory];
+    const categories = [...this.allSubject.value, newCategory];
     this.persist(categories);
-    this.categoriesSubject.next(categories);
+    this.allSubject.next(categories);
 
     return new Observable((subscriber) => {
       subscriber.next(newCategory);
@@ -83,11 +101,11 @@ export class CategoryService {
   }
 
   update(id: string, updates: Partial<Omit<Category, 'id' | 'createdAt'>>): Observable<void> {
-    const categories = this.categoriesSubject.value.map((cat) =>
+    const categories = this.allSubject.value.map((cat) =>
       cat.id === id ? { ...cat, ...updates, updatedAt: new Date() } : cat
     );
     this.persist(categories);
-    this.categoriesSubject.next(categories);
+    this.allSubject.next(categories);
 
     return new Observable((subscriber) => {
       subscriber.next();
@@ -96,12 +114,12 @@ export class CategoryService {
   }
 
   delete(id: string): Observable<void> {
-    const raw = localStorage.getItem(this.storageKey);
-    const stored: StoredCategory[] = raw ? JSON.parse(raw) : [];
-    const now = new Date().toISOString();
-    const updated = stored.map((cat) => (cat.id === id ? { ...cat, deletedAt: now, updatedAt: now } : cat));
-    localStorage.setItem(this.storageKey, JSON.stringify(updated));
-    this.categoriesSubject.next(this.categoriesSubject.value.filter((cat) => cat.id !== id));
+    const now = new Date();
+    const categories = this.allSubject.value.map((cat) =>
+      cat.id === id ? { ...cat, deletedAt: now, updatedAt: now } : cat
+    );
+    this.persist(categories);
+    this.allSubject.next(categories);
 
     return new Observable((subscriber) => {
       subscriber.next();

@@ -39,8 +39,10 @@ One component per folder: `.ts` + `.html` + `.scss`. No component logic outside 
 
 ## Domain scope (post-rewrite)
 
-In scope: **Transactions, Categories** only. Transactions are plain ARS amounts — no multi-currency, no rate conversion.
+In scope: **Transactions, Categories, Bills (recurring), Dashboard/Analytics, Google Drive sync**. Transactions are plain ARS amounts — no multi-currency, no rate conversion.
 
-Out of scope — do not resurrect without explicit request: Accounts, Budgets, Exchange rates/multi-currency, Google Drive sync, Fuel log, Vehicle, Billing/Monotributo (AR tax bracket), Dashboard/Analytics views.
+Google Drive sync (`GoogleAuthService` + `DriveSyncService`) is a manual "Sync now" action plus one automatic pull-merge on app startup — not continuous background sync. It merges by `id` + `updatedAt` (newest wins, ties go to local) across Transactions/Categories/Bills, treating soft-deletes (`deletedAt`) as just another mutation so deletions propagate across devices instead of resurrecting. Every domain service exposes `getAllIncludingDeleted()` (sync reads this) and `replaceAll()` (sync writes through this) alongside the normal filtered `getAll()`.
+
+Out of scope — do not resurrect without explicit request: Accounts, Budgets, Exchange rates/multi-currency, Fuel log, Vehicle, Billing/Monotributo (AR tax bracket).
 
 See `REWRITE_PLAN.md` for the active rewrite steps and status.

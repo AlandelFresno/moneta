@@ -22,4 +22,5 @@ export interface Bill {
   payments: BillPayment[];
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date;
 }

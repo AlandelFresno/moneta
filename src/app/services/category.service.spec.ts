@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { CategoryService } from './category.service';
+import { Category } from '../core/types/category.types';
 
 describe('CategoryService', () => {
   let service: CategoryService;
@@ -91,5 +92,56 @@ describe('CategoryService', () => {
     const fresh = new CategoryService();
     const all = await firstValueFrom(fresh.getAll());
     expect(all.some((c) => c.name === 'Persistente')).toBeTrue();
+  });
+
+  it('seeds default categories with stable ids (so two fresh installs merge, not duplicate)', async () => {
+    const categories = await firstValueFrom(service.getAll());
+    const ids = categories.map((c) => c.id).sort();
+    expect(ids).toEqual(['seed-expense-default', 'seed-income-default']);
+  });
+
+  it('keeps a soft-deleted tombstone in storage after a subsequent create (regression)', async () => {
+    const created = await firstValueFrom(
+      service.create({ name: 'Temporal', type: 'expense', color: '#333', icon: 'tag' })
+    );
+    await firstValueFrom(service.delete(created.id));
+
+    await firstValueFrom(service.create({ name: 'Otra', type: 'expense', color: '#444', icon: 'tag' }));
+
+    const raw = JSON.parse(localStorage.getItem('categories')!);
+    const tombstone = raw.find((c: { id: string }) => c.id === created.id);
+    expect(tombstone).toBeTruthy();
+    expect(tombstone.deletedAt).toBeTruthy();
+  });
+
+  it('exposes tombstones via getAllIncludingDeleted but not via getAll', async () => {
+    const created = await firstValueFrom(
+      service.create({ name: 'Temporal', type: 'expense', color: '#333', icon: 'tag' })
+    );
+    await firstValueFrom(service.delete(created.id));
+
+    const active = await firstValueFrom(service.getAll());
+    expect(active.find((c) => c.id === created.id)).toBeUndefined();
+
+    const all = service.getAllIncludingDeleted();
+    const tombstone = all.find((c) => c.id === created.id);
+    expect(tombstone?.deletedAt).toEqual(jasmine.any(Date));
+  });
+
+  it('replaceAll persists and emits exactly what is passed', async () => {
+    const created = await firstValueFrom(
+      service.create({ name: 'Original', type: 'expense', color: '#333', icon: 'tag' })
+    );
+    const replacement: Category = { ...created, name: 'Reemplazado' };
+
+    service.replaceAll([replacement]);
+
+    const all = await firstValueFrom(service.getAll());
+    expect(all.length).toBe(1);
+    expect(all[0].name).toBe('Reemplazado');
+
+    const raw = JSON.parse(localStorage.getItem('categories')!);
+    expect(raw.length).toBe(1);
+    expect(raw[0].name).toBe('Reemplazado');
   });
 });

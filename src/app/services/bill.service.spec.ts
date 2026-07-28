@@ -229,5 +229,107 @@ describe('BillService', () => {
       const all = await firstValueFrom(fresh.getAll());
       expect(all.some((b) => b.name === 'Persistente')).toBeTrue();
     });
+
+    it('soft-deletes a bill, removing it from getAll but keeping it in storage', async () => {
+      const created = await firstValueFrom(
+        service.create({
+          name: 'Temporal',
+          description: '',
+          categoryId: 'cat-1',
+          approxAmount: 1000,
+          period: 'monthly',
+          dueDate: new Date(2026, 0, 5),
+          active: true
+        })
+      );
+
+      await firstValueFrom(service.delete(created.id));
+
+      const all = await firstValueFrom(service.getAll());
+      expect(all.find((b) => b.id === created.id)).toBeUndefined();
+
+      const raw = JSON.parse(localStorage.getItem('bills')!);
+      const stored = raw.find((b: { id: string }) => b.id === created.id);
+      expect(stored.deletedAt).toBeTruthy();
+    });
+
+    it('keeps a soft-deleted tombstone in storage after a subsequent create (regression)', async () => {
+      const created = await firstValueFrom(
+        service.create({
+          name: 'Temporal',
+          description: '',
+          categoryId: 'cat-1',
+          approxAmount: 1000,
+          period: 'monthly',
+          dueDate: new Date(2026, 0, 5),
+          active: true
+        })
+      );
+      await firstValueFrom(service.delete(created.id));
+
+      await firstValueFrom(
+        service.create({
+          name: 'Otra',
+          description: '',
+          categoryId: 'cat-1',
+          approxAmount: 2000,
+          period: 'monthly',
+          dueDate: new Date(2026, 0, 5),
+          active: true
+        })
+      );
+
+      const raw = JSON.parse(localStorage.getItem('bills')!);
+      const tombstone = raw.find((b: { id: string }) => b.id === created.id);
+      expect(tombstone).toBeTruthy();
+      expect(tombstone.deletedAt).toBeTruthy();
+    });
+
+    it('exposes tombstones via getAllIncludingDeleted but not via getAll', async () => {
+      const created = await firstValueFrom(
+        service.create({
+          name: 'Temporal',
+          description: '',
+          categoryId: 'cat-1',
+          approxAmount: 1000,
+          period: 'monthly',
+          dueDate: new Date(2026, 0, 5),
+          active: true
+        })
+      );
+      await firstValueFrom(service.delete(created.id));
+
+      const active = await firstValueFrom(service.getAll());
+      expect(active.find((b) => b.id === created.id)).toBeUndefined();
+
+      const all = service.getAllIncludingDeleted();
+      const tombstone = all.find((b) => b.id === created.id);
+      expect(tombstone?.deletedAt).toEqual(jasmine.any(Date));
+    });
+
+    it('replaceAll persists and emits exactly what is passed', async () => {
+      const created = await firstValueFrom(
+        service.create({
+          name: 'Original',
+          description: '',
+          categoryId: 'cat-1',
+          approxAmount: 1000,
+          period: 'monthly',
+          dueDate: new Date(2026, 0, 5),
+          active: true
+        })
+      );
+      const replacement: Bill = { ...created, name: 'Reemplazado' };
+
+      service.replaceAll([replacement]);
+
+      const all = await firstValueFrom(service.getAll());
+      expect(all.length).toBe(1);
+      expect(all[0].name).toBe('Reemplazado');
+
+      const raw = JSON.parse(localStorage.getItem('bills')!);
+      expect(raw.length).toBe(1);
+      expect(raw[0].name).toBe('Reemplazado');
+    });
   });
 });

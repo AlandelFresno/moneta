@@ -21,7 +21,8 @@ export class SidebarComponent {
     { label: 'Dashboard', icon: 'home', route: '/dashboard' },
     { label: 'Transacciones', icon: 'list', route: '/transactions' },
     { label: 'Categorías', icon: 'tags', route: '/categories' },
-    { label: 'Servicios', icon: 'calendar-clock', route: '/bills' }
+    { label: 'Servicios', icon: 'calendar-clock', route: '/bills' },
+    { label: 'Sincronización', icon: 'cloud', route: '/sync' }
   ];
 
   constructor(readonly themeService: ThemeService) {}

@@ -1,16 +1,39 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, map } from 'rxjs';
 import { Bill, BillPayment, BillPeriod } from '../core/types/bill.types';
 
 interface StoredBillPayment extends Omit<BillPayment, 'paidDate'> {
   paidDate: string;
 }
 
-interface StoredBill extends Omit<Bill, 'dueDate' | 'payments' | 'createdAt' | 'updatedAt'> {
+export interface StoredBill extends Omit<Bill, 'dueDate' | 'payments' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
   dueDate: string;
   payments: StoredBillPayment[];
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string;
+}
+
+export function toBill(stored: StoredBill): Bill {
+  return {
+    ...stored,
+    dueDate: new Date(stored.dueDate),
+    payments: stored.payments.map((p) => ({ ...p, paidDate: new Date(p.paidDate) })),
+    createdAt: new Date(stored.createdAt),
+    updatedAt: new Date(stored.updatedAt),
+    deletedAt: stored.deletedAt ? new Date(stored.deletedAt) : undefined
+  };
+}
+
+export function fromBill(bill: Bill): StoredBill {
+  return {
+    ...bill,
+    dueDate: bill.dueDate.toISOString(),
+    payments: bill.payments.map((p) => ({ ...p, paidDate: p.paidDate.toISOString() })),
+    createdAt: bill.createdAt.toISOString(),
+    updatedAt: bill.updatedAt.toISOString(),
+    deletedAt: bill.deletedAt ? bill.deletedAt.toISOString() : undefined
+  };
 }
 
 export interface BillDueStatus {
@@ -24,33 +47,32 @@ export interface BillDueStatus {
 })
 export class BillService {
   private readonly storageKey = 'bills';
-  private readonly billsSubject = new BehaviorSubject<Bill[]>(this.loadFromStorage());
-  readonly bills$: Observable<Bill[]> = this.billsSubject.asObservable();
+  private readonly allSubject = new BehaviorSubject<Bill[]>(this.loadAll());
+  readonly bills$: Observable<Bill[]> = this.allSubject.pipe(map((bills) => bills.filter((bill) => !bill.deletedAt)));
 
-  private loadFromStorage(): Bill[] {
+  private loadAll(): Bill[] {
     const raw = localStorage.getItem(this.storageKey);
     if (!raw) return [];
 
     const stored: StoredBill[] = JSON.parse(raw);
-    return stored.map((bill) => this.toBill(bill));
-  }
-
-  private toBill(stored: StoredBill): Bill {
-    return {
-      ...stored,
-      dueDate: new Date(stored.dueDate),
-      payments: stored.payments.map((p) => ({ ...p, paidDate: new Date(p.paidDate) })),
-      createdAt: new Date(stored.createdAt),
-      updatedAt: new Date(stored.updatedAt)
-    };
+    return stored.map((bill) => toBill(bill));
   }
 
   private persist(bills: Bill[]): void {
-    localStorage.setItem(this.storageKey, JSON.stringify(bills));
+    localStorage.setItem(this.storageKey, JSON.stringify(bills.map((bill) => fromBill(bill))));
   }
 
   getAll(): Observable<Bill[]> {
     return this.bills$;
+  }
+
+  getAllIncludingDeleted(): Bill[] {
+    return this.allSubject.value;
+  }
+
+  replaceAll(bills: Bill[]): void {
+    this.persist(bills);
+    this.allSubject.next(bills);
   }
 
   create(bill: Omit<Bill, 'id' | 'payments' | 'createdAt' | 'updatedAt'>): Observable<Bill> {
@@ -63,9 +85,9 @@ export class BillService {
       updatedAt: now
     };
 
-    const bills = [...this.billsSubject.value, newBill];
+    const bills = [...this.allSubject.value, newBill];
     this.persist(bills);
-    this.billsSubject.next(bills);
+    this.allSubject.next(bills);
 
     return new Observable((subscriber) => {
       subscriber.next(newBill);
@@ -74,11 +96,11 @@ export class BillService {
   }
 
   update(id: string, updates: Partial<Omit<Bill, 'id' | 'payments' | 'createdAt'>>): Observable<void> {
-    const bills = this.billsSubject.value.map((bill) =>
+    const bills = this.allSubject.value.map((bill) =>
       bill.id === id ? { ...bill, ...updates, updatedAt: new Date() } : bill
     );
     this.persist(bills);
-    this.billsSubject.next(bills);
+    this.allSubject.next(bills);
 
     return new Observable((subscriber) => {
       subscriber.next();
@@ -87,9 +109,12 @@ export class BillService {
   }
 
   delete(id: string): Observable<void> {
-    const bills = this.billsSubject.value.filter((bill) => bill.id !== id);
+    const now = new Date();
+    const bills = this.allSubject.value.map((bill) =>
+      bill.id === id ? { ...bill, deletedAt: now, updatedAt: now } : bill
+    );
     this.persist(bills);
-    this.billsSubject.next(bills);
+    this.allSubject.next(bills);
 
     return new Observable((subscriber) => {
       subscriber.next();
@@ -105,11 +130,11 @@ export class BillService {
       transactionId
     };
 
-    const bills = this.billsSubject.value.map((bill) =>
+    const bills = this.allSubject.value.map((bill) =>
       bill.id === id ? { ...bill, payments: [...bill.payments, payment], updatedAt: new Date() } : bill
     );
     this.persist(bills);
-    this.billsSubject.next(bills);
+    this.allSubject.next(bills);
 
     return new Observable((subscriber) => {
       subscriber.next();

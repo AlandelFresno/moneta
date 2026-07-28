@@ -140,4 +140,43 @@ describe('TransactionService', () => {
     expect(all[0].createdAt).toEqual(jasmine.any(Date));
     expect(all[0].updatedAt).toEqual(jasmine.any(Date));
   });
+
+  it('keeps a soft-deleted tombstone in storage after a subsequent create (regression)', async () => {
+    const created = await firstValueFrom(service.create(txnInput()));
+    await firstValueFrom(service.delete(created.id));
+
+    await firstValueFrom(service.create(txnInput({ name: 'Otra compra' })));
+
+    const raw = JSON.parse(localStorage.getItem('transactions')!);
+    const tombstone = raw.find((t: { id: string }) => t.id === created.id);
+    expect(tombstone).toBeTruthy();
+    expect(tombstone.deletedAt).toBeTruthy();
+  });
+
+  it('exposes tombstones via getAllIncludingDeleted but not via getAll', async () => {
+    const created = await firstValueFrom(service.create(txnInput()));
+    await firstValueFrom(service.delete(created.id));
+
+    const active = await firstValueFrom(service.getAll());
+    expect(active.find((t) => t.id === created.id)).toBeUndefined();
+
+    const all = service.getAllIncludingDeleted();
+    const tombstone = all.find((t) => t.id === created.id);
+    expect(tombstone?.deletedAt).toEqual(jasmine.any(Date));
+  });
+
+  it('replaceAll persists and emits exactly what is passed', async () => {
+    const created = await firstValueFrom(service.create(txnInput()));
+    const replacement: Transaction = { ...created, amount: 999 };
+
+    service.replaceAll([replacement]);
+
+    const all = await firstValueFrom(service.getAll());
+    expect(all.length).toBe(1);
+    expect(all[0].amount).toBe(999);
+
+    const raw = JSON.parse(localStorage.getItem('transactions')!);
+    expect(raw.length).toBe(1);
+    expect(raw[0].amount).toBe(999);
+  });
 });
