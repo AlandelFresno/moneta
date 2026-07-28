@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "budget-tracker": {
+    "moneta": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -57,10 +57,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "budget-tracker:build:production"
+              "buildTarget": "moneta:build:production"
             },
             "development": {
-              "buildTarget": "budget-tracker:build:development"
+              "buildTarget": "moneta:build:development"
             }
           },
           "defaultConfiguration": "development"

@@ -4,7 +4,7 @@ Guidance for Claude Code working in this repo.
 
 ## Project
 
-Budget Tracker — Angular + Capacitor personal finance app (accounts, transactions, categories, budgets, multi-currency, Google Drive sync). Mobile via Capacitor (Android/iOS).
+Moneta — Angular + Capacitor personal finance app (accounts, transactions, categories, budgets, multi-currency, Google Drive sync). Mobile via Capacitor (Android/iOS).
 
 ## Stack
 

@@ -10,7 +10,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { routes } from './app.routes';
 import { palette } from './theme.tokens';
 
-const BudgetTrackerPreset = definePreset(Aura, {
+const MonetaPreset = definePreset(Aura, {
   semantic: {
     primary: {
       50: '#eff6ff',
@@ -96,7 +96,7 @@ export const appConfig: ApplicationConfig = {
     provideAnimations(),
     providePrimeNG({
       theme: {
-        preset: BudgetTrackerPreset,
+        preset: MonetaPreset,
         options: {
           darkModeSelector: '.dark'
         }

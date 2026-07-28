@@ -1,9 +1,9 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.budgettracker.app',
-  appName: 'Budget Tracker',
-  webDir: 'dist/budget-tracker/browser'
+  appId: 'com.moneta.app',
+  appName: 'Moneta',
+  webDir: 'dist/moneta/browser'
 };
 
 export default config;
