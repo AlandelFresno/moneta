@@ -123,64 +123,70 @@
       </div>
     }
 
-    @for (txn of filteredTransactions; track txn.id) {
-      <div
-        class="flex items-center gap-4 px-4 py-3.5 rounded-xl bg-surface-card border border-border-subtle transition-colors duration-150 hover:border-border-strong"
-      >
+    @for (group of groupedTransactions; track group.key) {
+      <h2 class="text-sm font-semibold text-text-secondary uppercase tracking-wider mt-4 mb-1 first:mt-0">
+        {{ group.label }}
+      </h2>
+
+      @for (txn of group.transactions; track txn.id) {
         <div
-          class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base"
-          [style.background-color]="txn.categoryColor + '22'"
-          [style.color]="txn.categoryColor"
+          class="flex items-center gap-4 px-4 py-3.5 rounded-xl bg-surface-card border border-border-subtle transition-colors duration-150 hover:border-border-strong"
         >
-          <i class="pi pi-{{ txn.categoryIcon }}"></i>
-        </div>
-
-        <div class="flex flex-col flex-1 min-w-0 gap-0.5">
-          <span class="font-medium truncate text-text-primary">{{ txn.name }}</span>
-          @if (txn.description) {
-            <span class="text-sm truncate text-text-secondary">{{ txn.description }}</span>
-          }
-        </div>
-
-        <span
-          class="text-xs font-medium px-2.5 py-1 rounded-full hidden md:inline-block flex-shrink-0"
-          [style.background-color]="txn.categoryColor + '1a'"
-          [style.color]="txn.categoryColor"
-        >
-          {{ txn.categoryName }}
-        </span>
-
-        <span class="text-sm hidden sm:block flex-shrink-0 w-24 text-text-secondary [font-variant-numeric:tabular-nums]">
-          {{ formatDate(txn.date) }}
-        </span>
-
-        <span
-          class="font-semibold w-28 text-right flex-shrink-0 [font-variant-numeric:tabular-nums]"
-          [class.text-income]="txn.type === 'income'"
-          [class.text-expense]="txn.type === 'expense'"
-        >
-          {{ txn.type === 'income' ? '+' : '−' }}{{ txn.amount | number: '1.2-2' }}
-        </span>
-
-        <div class="flex items-center gap-1 flex-shrink-0">
-          <button
-            type="button"
-            class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-input hover:text-accent"
-            title="Editar"
-            (click)="openEditDialog(txn)"
+          <div
+            class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base"
+            [style.background-color]="txn.categoryColor + '22'"
+            [style.color]="txn.categoryColor"
           >
-            <i class="pi pi-pencil"></i>
-          </button>
-          <button
-            type="button"
-            class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-input hover:text-expense"
-            title="Eliminar"
-            (click)="deleteTransaction(txn)"
+            <app-icon [name]="txn.categoryIcon" />
+          </div>
+
+          <div class="flex flex-col flex-1 min-w-0 gap-0.5">
+            <span class="font-medium truncate text-text-primary">{{ txn.name }}</span>
+            @if (txn.description) {
+              <span class="text-sm truncate text-text-secondary">{{ txn.description }}</span>
+            }
+          </div>
+
+          <span
+            class="text-xs font-medium px-2.5 py-1 rounded-full hidden md:inline-block flex-shrink-0"
+            [style.background-color]="txn.categoryColor + '1a'"
+            [style.color]="txn.categoryColor"
           >
-            <i class="pi pi-trash"></i>
-          </button>
+            {{ txn.categoryName }}
+          </span>
+
+          <span class="text-sm hidden sm:block flex-shrink-0 w-24 text-text-secondary [font-variant-numeric:tabular-nums]">
+            {{ formatDate(txn.date) }}
+          </span>
+
+          <span
+            class="font-semibold w-28 text-right flex-shrink-0 [font-variant-numeric:tabular-nums]"
+            [class.text-income]="txn.type === 'income'"
+            [class.text-expense]="txn.type === 'expense'"
+          >
+            {{ txn.type === 'income' ? '+' : '−' }}{{ txn.amount | number: '1.2-2' }}
+          </span>
+
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <button
+              type="button"
+              class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-input hover:text-accent"
+              title="Editar"
+              (click)="openEditDialog(txn)"
+            >
+              <i class="pi pi-pencil"></i>
+            </button>
+            <button
+              type="button"
+              class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-input hover:text-expense"
+              title="Eliminar"
+              (click)="deleteTransaction(txn)"
+            >
+              <i class="pi pi-trash"></i>
+            </button>
+          </div>
         </div>
-      </div>
+      }
     }
   </div>
 </div>

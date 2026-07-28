@@ -11,8 +11,8 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - [x] **3. Drop out-of-scope domains** — n/a now: fresh `src/` starts empty, so fuel/vehicle/billing are simply never ported from `src-old/`.
 - [x] **4. Redesign + write models** — scope simplified hard during rewrite (see Scope change below). Written to `src/app/core/types/`: `category.types.ts`, `transaction.types.ts`. Dead code found: `src-old/app/core/models/*` and `src-old/app/core/services/budget.service.ts` were unused duplicates (confirmed via import grep) — not ported.
 - [x] **6. Rebuild services** — `CategoryService` and `TransactionService` written in `services/`, `providedIn: 'root'`, typed `Observable<T>`, no `any`, localStorage-backed, soft delete. No account-balance/currency/transfer logic (dropped with scope).
-- [~] **7. Port order**:
-  - [x] Category — service done, seeded with 2 defaults (Salario/Almacén). No dedicated Categories page yet — can't add/edit/delete categories from the UI.
+- [x] **7. Port order**:
+  - [x] Category — service + `CategoriesPage` (income/expense columns, create dialog with name/color/icon, delete with confirm). No edit yet — only create/delete.
   - [x] Transaction — service + `TransactionsPage` (list, filters, stats, dialog form) done, verified working in browser.
 - [x] **Layout** — `LayoutComponent` + `SidebarComponent` + `ThemeService` (dark mode toggle, localStorage-persisted) added, not in original plan but needed once the app had a real page to navigate to.
 - [x] **Theming** — single-source palette in `app/theme.tokens.ts`, consumed by `ThemeService` (writes CSS vars), Tailwind (`tailwind.config.js` named colors), and PrimeNG (`definePreset` in `app.config.ts`, incl. `formField` + `overlay.select/popover/modal` tokens — these are NOT covered by `content`/`formField` alone). Change a hex in one file, it propagates everywhere.

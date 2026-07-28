@@ -18,11 +18,18 @@ import { Category } from '../../core/types/category.types';
 import { TransactionService } from '../../services/transaction.service';
 import { CategoryService } from '../../services/category.service';
 import { CsvService, ParsedCsvRow } from '../../services/csv.service';
+import { IconComponent } from '../../shared/icon/icon.component';
 
 interface TransactionWithCategory extends Transaction {
   categoryName: string;
   categoryColor: string;
   categoryIcon: string;
+}
+
+interface TransactionGroup {
+  key: string;
+  label: string;
+  transactions: TransactionWithCategory[];
 }
 
 interface TransactionForm {
@@ -58,7 +65,8 @@ const EMPTY_FORM: TransactionForm = {
     InputGroupModule,
     InputGroupAddonModule,
     SelectModule,
-    DatePickerModule
+    DatePickerModule,
+    IconComponent
   ],
   templateUrl: './transactions.page.html',
   styleUrl: './transactions.page.scss'
@@ -180,6 +188,27 @@ export class TransactionsPage implements OnInit, OnDestroy {
   clearFilters(): void {
     this.filters = { type: 'all', categoryId: 'all', searchText: '' };
     this.applyFilters();
+  }
+
+  get groupedTransactions(): TransactionGroup[] {
+    const groups = new Map<string, TransactionGroup>();
+
+    for (const txn of this.filteredTransactions) {
+      const key = `${txn.date.getFullYear()}-${txn.date.getMonth()}`;
+      let group = groups.get(key);
+      if (!group) {
+        group = { key, label: this.monthYearLabel(txn.date), transactions: [] };
+        groups.set(key, group);
+      }
+      group.transactions.push(txn);
+    }
+
+    return Array.from(groups.values());
+  }
+
+  private monthYearLabel(date: Date): string {
+    const label = new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric' }).format(date);
+    return label.charAt(0).toUpperCase() + label.slice(1);
   }
 
   exportToCsv(): void {
