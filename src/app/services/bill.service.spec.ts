@@ -147,15 +147,22 @@ describe('BillService', () => {
       expect(statuses[0].isOverdue).toBeFalse();
     });
 
-    it('excludes a bill whose anchor date is still in the future, even if that day-of-month already passed this month (regression)', () => {
-      // Created "today" (Jul 28) with a future anchor of Aug 5. Without the fix, the monthly
-      // day-of-month pattern (day 5) would be reapplied to the current month (Jul 5, already
-      // passed) and wrongly flag the brand-new bill as overdue.
+    it('excludes a bill whose anchor due date was just moved to the future, even if the day-of-month has already passed this month', () => {
+      // regression: editing a bill from a past due-day to a future one must not
+      // still read as overdue via "same day-of-month, current month" recurrence
       const bill = makeBill({ period: 'monthly', dueDate: new Date(2026, 7, 5) });
-      const now = new Date(2026, 6, 28);
+      const now = new Date(2026, 6, 10); // July 10 — day 5 already passed in July, but anchor is August 5
 
       const statuses = service.dueStatuses([bill], now);
       expect(statuses.length).toBe(0);
+    });
+
+    it('currentPeriodDueDate returns the anchor itself when it has not happened yet', () => {
+      const bill = makeBill({ period: 'monthly', dueDate: new Date(2026, 7, 5) });
+      const now = new Date(2026, 6, 10);
+
+      const result = service.currentPeriodDueDate(bill, now);
+      expect(result).toEqual(new Date(2026, 7, 5));
     });
   });
 
