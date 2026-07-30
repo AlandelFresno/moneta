@@ -1,0 +1,79 @@
+<div class="min-h-screen bg-surface-page text-text-primary">
+  <header class="flex items-center justify-between px-6 md:px-10 py-5 max-w-6xl mx-auto">
+    <div class="flex items-center gap-2 font-semibold text-lg">
+      <i class="pi pi-wallet text-accent"></i>
+      <span>Moneta</span>
+    </div>
+    <a
+      routerLink="/dashboard"
+      class="px-4 py-2 rounded-lg text-sm font-medium bg-accent text-white hover:bg-accent-strong transition-colors duration-150"
+    >
+      Abrir la app
+    </a>
+  </header>
+
+  <section class="px-6 md:px-10 pt-12 pb-16 max-w-4xl mx-auto text-center">
+    <h1 class="text-4xl md:text-5xl font-semibold tracking-tight text-balance">
+      Tus finanzas, sin vueltas.
+    </h1>
+    <p class="text-lg text-text-secondary mt-4 max-w-2xl mx-auto text-balance">
+      Registrá ingresos y gastos, organizalos por categoría y mirá para dónde va tu plata —
+      sin cuentas bancarias que conectar ni monedas que convertir.
+    </p>
+    <div class="flex items-center justify-center gap-3 mt-8 flex-wrap">
+      <a
+        routerLink="/dashboard"
+        class="px-5 py-3 rounded-lg text-sm font-semibold bg-accent text-white hover:bg-accent-strong transition-colors duration-150"
+      >
+        Empezar ahora
+      </a>
+      <a
+        routerLink="/transactions"
+        class="px-5 py-3 rounded-lg text-sm font-semibold bg-surface-card border border-border-subtle hover:border-border-strong transition-colors duration-150"
+      >
+        Ver transacciones
+      </a>
+    </div>
+  </section>
+
+  <section class="px-6 md:px-10 pb-16 max-w-5xl mx-auto">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="p-6 rounded-2xl bg-surface-card border border-border-subtle">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center text-accent bg-accent/15 mb-4">
+          <i class="pi pi-list"></i>
+        </div>
+        <h3 class="font-semibold mb-1.5">Transacciones al toque</h3>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          Cargá un gasto o ingreso en segundos, agrupado por mes, con búsqueda y filtros por
+          categoría. Importá o exportá todo en CSV cuando quieras.
+        </p>
+      </div>
+
+      <div class="p-6 rounded-2xl bg-surface-card border border-border-subtle">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center text-income bg-income/15 mb-4">
+          <i class="pi pi-chart-line"></i>
+        </div>
+        <h3 class="font-semibold mb-1.5">Un dashboard que compara</h3>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          Ingresos vs. gastos, tasa de ahorro, mayor gasto del período y cómo veniste
+          contra el período anterior — no solo el total del mes.
+        </p>
+      </div>
+
+      <div class="p-6 rounded-2xl bg-surface-card border border-border-subtle">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center text-expense bg-expense/15 mb-4">
+          <i class="pi pi-calendar-clock"></i>
+        </div>
+        <h3 class="font-semibold mb-1.5">Servicios que no se olvidan</h3>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          Alquiler, internet, streaming — cargalos una vez con su frecuencia y el día de
+          vencimiento. Cuando llega la fecha, te avisa; cuando pagás, se registra solo.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="px-6 md:px-10 py-8 max-w-6xl mx-auto text-center text-sm text-text-secondary border-t border-border-subtle">
+    Moneta
+  </footer>
+</div>

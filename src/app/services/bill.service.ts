@@ -142,8 +142,17 @@ export class BillService {
     });
   }
 
-  /** The due date for the period containing `now`, derived from the bill's anchor `dueDate`. */
+  /**
+   * The due date for the period containing `now`, derived from the bill's anchor `dueDate`.
+   * If the anchor's first occurrence hasn't happened yet (anchor is still in the future),
+   * that first occurrence is returned as-is — recurrence only starts once it's passed.
+   */
   currentPeriodDueDate(bill: Bill, now: Date): Date {
+    const anchor = new Date(bill.dueDate.getFullYear(), bill.dueDate.getMonth(), bill.dueDate.getDate());
+    if (anchor.getTime() > now.getTime()) {
+      return anchor;
+    }
+
     if (bill.period === 'weekly') {
       const targetDay = bill.dueDate.getDay();
       const diff = now.getDay() - targetDay;
@@ -180,9 +189,13 @@ export class BillService {
   /** Active bills whose current period is due (today or earlier) and not yet paid this period. */
   dueStatuses(bills: Bill[], now: Date): BillDueStatus[] {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
     return bills
       .filter((bill) => bill.active)
+      // Anchor date itself hasn't arrived yet — don't apply the recurring day-of-month/week/year
+      // pattern retroactively to periods before the bill's own first occurrence existed.
+      .filter((bill) => startOfDay(bill.dueDate).getTime() <= today.getTime())
       .map((bill) => {
         const periodDueDate = this.currentPeriodDueDate(bill, now);
         return { bill, periodDueDate };

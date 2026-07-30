@@ -146,6 +146,24 @@ describe('BillService', () => {
       expect(statuses.length).toBe(1);
       expect(statuses[0].isOverdue).toBeFalse();
     });
+
+    it('excludes a bill whose anchor due date was just moved to the future, even if the day-of-month has already passed this month', () => {
+      // regression: editing a bill from a past due-day to a future one must not
+      // still read as overdue via "same day-of-month, current month" recurrence
+      const bill = makeBill({ period: 'monthly', dueDate: new Date(2026, 7, 5) });
+      const now = new Date(2026, 6, 10); // July 10 — day 5 already passed in July, but anchor is August 5
+
+      const statuses = service.dueStatuses([bill], now);
+      expect(statuses.length).toBe(0);
+    });
+
+    it('currentPeriodDueDate returns the anchor itself when it has not happened yet', () => {
+      const bill = makeBill({ period: 'monthly', dueDate: new Date(2026, 7, 5) });
+      const now = new Date(2026, 6, 10);
+
+      const result = service.currentPeriodDueDate(bill, now);
+      expect(result).toEqual(new Date(2026, 7, 5));
+    });
   });
 
   describe('CRUD + persistence', () => {
