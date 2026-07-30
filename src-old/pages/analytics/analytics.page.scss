@@ -1,0 +1,272 @@
+// Period Selector - button sizing
+.period-selector {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+
+  button {
+    min-width: 80px;
+    font-weight: 500;
+  }
+}
+
+// Custom Date Picker Overlay - fixed positioning + animation
+.custom-date-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
+// Custom Date Picker - slideUp animation
+.custom-date-picker {
+  animation: slideUp 0.3s ease;
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+}
+
+// Stats Grid - auto-fit layout
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+// Stat Icon - gradient backgrounds
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  i {
+    font-size: 1.125rem;
+    color: white;
+  }
+
+  &.income-icon {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  }
+
+  &.expense-icon {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  }
+
+  &.balance-icon {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  }
+
+  &.transactions-icon {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  }
+}
+
+// Positive / Negative color classes
+.positive {
+  color: #10b981;
+}
+
+.negative {
+  color: #ef4444;
+}
+
+// Top Category Card - gradient background
+.top-category-card {
+  background: linear-gradient(135deg, #b18518 0%, #f59e0b 100%);
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2);
+}
+
+// Stat card hover transform
+.stat-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+// Charts Row - grid layout
+.charts-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+// Chart Card - full-width spanning
+.chart-card {
+  &.full-width {
+    grid-column: 1 / -1;
+  }
+}
+
+// Chart Body - min-height for canvas sizing
+.chart-body {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.trend-chart,
+  &.comparison-chart {
+    min-height: 350px;
+  }
+
+  canvas {
+    max-height: 400px;
+  }
+}
+
+// Tables Section - grid layout
+.tables-section {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+// Table Body - scrollbar styles
+.table-body {
+  max-height: 500px;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f9fafb;
+
+    :host-context(.dark) & {
+      background: #374151;
+    }
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 4px;
+
+    :host-context(.dark) & {
+      background: #4b5563;
+    }
+  }
+}
+
+// Responsive Design - grid columns only
+@media (max-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .charts-row {
+    grid-template-columns: 1fr;
+  }
+
+  .tables-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 1rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .page-title {
+    font-size: 1.75rem;
+  }
+
+  .period-selector {
+    justify-content: stretch;
+
+    button {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    .stat-header {
+      .stat-content {
+        .stat-value {
+          font-size: 1.25rem;
+        }
+      }
+    }
+  }
+
+  .charts-section {
+    gap: 1rem;
+  }
+
+  .chart-body {
+    padding: 1rem;
+    min-height: 250px;
+
+    &.trend-chart,
+    &.comparison-chart {
+      min-height: 280px;
+    }
+  }
+
+  .tables-section {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .period-selector {
+    button {
+      font-size: 0.8125rem;
+      padding: 0.5rem 0.75rem;
+    }
+  }
+
+  .top-category-card {
+    padding: 1rem 1.25rem;
+
+    .top-category-content {
+      h3 {
+        font-size: 1.125rem;
+      }
+
+      p {
+        font-size: 1.25rem;
+      }
+    }
+  }
+}

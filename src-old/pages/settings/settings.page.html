@@ -1,0 +1,440 @@
+<div class="p-8 min-h-screen">
+  <div class="mb-8">
+    <h1 class="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-2">Configuración</h1>
+    <p class="text-base text-gray-500 dark:text-gray-400">Configura tus preferencias</p>
+  </div>
+
+  <div class="flex flex-col gap-6 max-w-[900px] min-w-fit">
+    <!-- Currency Settings Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden">
+      <div class="flex items-start gap-4 p-6 border-b border-gray-200 dark:border-gray-700">
+        <div class="header-icon">
+          <i class="pi pi-money-bill"></i>
+        </div>
+        <div>
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-1">Moneda Preferida</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 m-0">Selecciona tu moneda principal para visualizar los montos</p>
+        </div>
+      </div>
+
+      <div class="p-6">
+        <div class="flex flex-col gap-2">
+          <label for="currency" class="text-sm font-medium text-gray-700 dark:text-gray-200">Moneda</label>
+          <select
+            id="currency"
+            [(ngModel)]="preferredCurrency"
+            (ngModelChange)="onPreferredCurrencyChange()"
+            class="macos-select"
+          >
+            <option *ngFor="let currency of currencies" [value]="currency.code">
+              {{ currency.symbol }} {{ currency.name }} ({{ currency.code }})
+            </option>
+          </select>
+          <small class="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-snug">
+            Los montos se mostrarán en {{ preferredCurrency }} con el valor original en texto pequeño
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tipo de Dólar Settings Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden">
+      <div class="flex items-start gap-4 p-6 border-b border-gray-200 dark:border-gray-700">
+        <div class="header-icon">
+          <i class="pi pi-flag"></i>
+        </div>
+        <div>
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-1">Tipo de Dólar (Argentina)</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 m-0">Selecciona qué tipo de dólar usar para las tasas de cambio</p>
+        </div>
+      </div>
+
+      <div class="p-6">
+        <div class="flex flex-col gap-2">
+          <label for="dollarType" class="text-sm font-medium text-gray-700 dark:text-gray-200">Tipo de Dólar</label>
+          <select
+            id="dollarType"
+            [(ngModel)]="dollarType"
+            (ngModelChange)="onDollarTypeChange()"
+            class="macos-select"
+          >
+            <option value="oficial">Oficial</option>
+            <option value="blue">Blue</option>
+            <option value="mep">MEP (Bolsa)</option>
+            <option value="ccl">Contado con Liquidación (CCL)</option>
+            <option value="mayorista">Mayorista</option>
+          </select>
+          <small class="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-snug">
+            Este tipo de dólar se usará al obtener tasas desde la API de DolarApi.com. La tasa seleccionada afecta la conversión USD-ARS.
+          </small>
+        </div>
+
+        <div class="info-note flex items-start gap-3 p-4 mt-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+          <i class="pi pi-info-circle text-lg text-blue-500 shrink-0 mt-0.5"></i>
+          <p class="text-sm text-gray-500 dark:text-gray-400 m-0 leading-relaxed"><strong class="text-gray-800 dark:text-gray-100 font-semibold">Nota:</strong> Esta configuración solo afecta las tasas de Argentina (ARS). Para otras monedas se usa la API internacional. Debes actualizar las tasas desde la API para que este cambio tenga efecto.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gestión de Tasas de Cambio -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden exchange-rates-card">
+      <div class="flex items-start gap-4 p-6 border-b border-gray-200 dark:border-gray-700">
+        <div class="header-icon">
+          <i class="pi pi-dollar"></i>
+        </div>
+        <div>
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-1">Gestión de Tasas de Cambio</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 m-0">Actualiza, edita manualmente y consulta las tasas de conversión (USD como moneda universal)</p>
+        </div>
+      </div>
+
+      <div>
+        <!-- Estado y Actualización -->
+        <div class="p-6">
+          <div class="flex items-center gap-3 mb-5">
+            <i class="pi pi-refresh text-xl text-blue-500"></i>
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 m-0">Estado y Actualización</h3>
+          </div>
+
+          <div class="rate-update-indicator" [ngClass]="getCacheStatusClass()">
+            <i [class]="'pi ' + getCacheStatusIcon()"></i>
+            <div class="status-info">
+              <span class="status-text">{{ getCacheStatusText() }}</span>
+              <small class="last-update">Última actualización: {{ formatLastUpdateDate() }}</small>
+            </div>
+          </div>
+
+          <div class="info-box" *ngIf="cacheInfo?.needsUpdate">
+            <i class="pi pi-info-circle"></i>
+            <div>
+              <strong>Actualización Requerida</strong>
+              <p>Las tasas tienen más de 1 día. Actualiza para obtener valores precisos.</p>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <button
+              pButton
+              label="Actualizar Tasas desde API"
+              icon="pi pi-refresh"
+              class="btn-primary"
+              [loading]="isUpdatingRates"
+              (click)="updateExchangeRates()"
+              [disabled]="isUpdatingRates"
+            ></button>
+            <small class="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-snug">
+              Actualiza las tasas desde la API. Obligatorio si tienen más de 1 día
+            </small>
+          </div>
+
+          <!-- Success/Error Messages -->
+          <div class="message success" *ngIf="updateSuccess">
+            <i class="pi pi-check-circle"></i>
+            <span>Tasas actualizadas exitosamente</span>
+          </div>
+          <div class="message error" *ngIf="updateError">
+            <i class="pi pi-exclamation-triangle"></i>
+            <span>{{ updateError }}</span>
+          </div>
+        </div>
+
+        <!-- Divisor -->
+        <div class="section-divider"></div>
+
+        <!-- Edición Manual de Tasas -->
+        <div class="p-6">
+          <div class="flex items-center gap-3 mb-5">
+            <i class="pi pi-pencil text-xl text-blue-500"></i>
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 m-0">Edición Manual de Tasas</h3>
+          </div>
+
+          <div class="rates-table border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <div class="rate-row header-row bg-gray-50 dark:bg-gray-700 font-semibold text-gray-800 dark:text-gray-100 text-sm">
+              <div class="rate-cell">Moneda</div>
+              <div class="rate-cell">Tasa (1 USD =)</div>
+              <div class="rate-cell">Acciones</div>
+            </div>
+
+            <div class="rate-row border-b border-gray-200 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" *ngFor="let currency of currencyRates">
+              <div class="rate-cell currency-info">
+                <span class="currency-symbol">{{ currency.symbol }}</span>
+                <div>
+                  <strong class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ currency.code }}</strong>
+                  <small class="text-xs text-gray-500 dark:text-gray-400">{{ currency.name }}</small>
+                </div>
+              </div>
+
+              <div class="rate-cell rate-value text-sm font-medium text-gray-800 dark:text-gray-100">
+                <span *ngIf="!currency.isEditing">{{ currency.rate | number:'1.2-6' }}</span>
+                <input
+                  *ngIf="currency.isEditing"
+                  type="number"
+                  [(ngModel)]="currency.editValue"
+                  class="rate-input"
+                  step="0.000001"
+                  (keyup.enter)="saveEditRate(currency)"
+                  (keyup.escape)="cancelEditRate(currency)"
+                />
+              </div>
+
+              <div class="rate-cell rate-actions">
+                <button
+                  *ngIf="!currency.isEditing"
+                  pButton
+                  icon="pi pi-pencil"
+                  class="p-button-text p-button-rounded p-button-sm"
+                  (click)="startEditRate(currency)"
+                  pTooltip="Editar manualmente"
+                ></button>
+                <button
+                  *ngIf="currency.isEditing"
+                  pButton
+                  icon="pi pi-check"
+                  class="p-button-text p-button-rounded p-button-sm p-button-success"
+                  (click)="saveEditRate(currency)"
+                  pTooltip="Guardar"
+                ></button>
+                <button
+                  *ngIf="currency.isEditing"
+                  pButton
+                  icon="pi pi-times"
+                  class="p-button-text p-button-rounded p-button-sm p-button-danger"
+                  (click)="cancelEditRate(currency)"
+                  pTooltip="Cancelar"
+                ></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-note flex items-start gap-3 p-4 mt-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+            <i class="pi pi-info-circle text-lg text-blue-500 shrink-0 mt-0.5"></i>
+            <p class="text-sm text-gray-500 dark:text-gray-400 m-0 leading-relaxed"><strong class="text-gray-800 dark:text-gray-100 font-semibold">Nota:</strong> USD es la moneda universal. Las tasas muestran cuántas unidades equivalen a 1 USD. Las ediciones manuales se guardan localmente y se sobrescribirán al actualizar desde la API.</p>
+          </div>
+        </div>
+
+        <!-- Divisor -->
+        <div class="section-divider"></div>
+
+        <!-- Calculadora de Conversión -->
+        <div class="p-6">
+          <div class="flex items-center gap-3 mb-5">
+            <i class="pi pi-calculator text-xl text-blue-500"></i>
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 m-0">Calculadora de Conversión</h3>
+          </div>
+
+          <div class="flex flex-col gap-6">
+            <div class="conversion-inputs">
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-200">Cantidad</label>
+                <input
+                  type="number"
+                  [(ngModel)]="exampleAmount"
+                  (ngModelChange)="onExampleAmountChange()"
+                  class="macos-input"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-200">De</label>
+                <select
+                  [(ngModel)]="exampleFromCurrency"
+                  (ngModelChange)="onExampleFromCurrencyChange()"
+                  class="macos-select"
+                >
+                  <option *ngFor="let currency of currencies" [value]="currency.code">
+                    {{ currency.code }} - {{ currency.name }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="conversion-arrow flex items-center justify-center pb-2">
+                <i class="pi pi-arrow-right text-xl text-blue-500"></i>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-200">A</label>
+                <select
+                  [(ngModel)]="exampleToCurrency"
+                  (ngModelChange)="onExampleToCurrencyChange()"
+                  class="macos-select"
+                >
+                  <option *ngFor="let currency of currencies" [value]="currency.code">
+                    {{ currency.code }} - {{ currency.name }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div class="conversion-result">
+              <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Resultado</div>
+              <div class="result-value">
+                {{ formatCurrency(exampleResult, exampleToCurrency) }} {{ exampleToCurrency }}
+              </div>
+              <div class="result-details">
+                <p><strong>Cálculo detallado:</strong></p>
+                <p>1. Monto original: {{ formatCurrency(exampleAmount, exampleFromCurrency) }} {{ exampleFromCurrency }}</p>
+                <p>2. Tasa: 1 {{ exampleFromCurrency }} = {{ exchangeRateService.getExchangeRate(exampleFromCurrency, exampleToCurrency) | number:'1.2-6' }} {{ exampleToCurrency }}</p>
+                <p>3. Resultado: {{ exampleAmount }} × {{ exchangeRateService.getExchangeRate(exampleFromCurrency, exampleToCurrency) | number:'1.2-6' }} = {{ formatCurrency(exampleResult, exampleToCurrency) }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import/Export/Backup Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden">
+      <div class="flex items-start gap-4 p-6 border-b border-gray-200 dark:border-gray-700">
+        <div class="header-icon">
+          <i class="pi pi-cloud"></i>
+        </div>
+        <div>
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-1">Importar / Exportar / Backup</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 m-0">Gestiona tus datos: importa, exporta o haz backup en Google Drive</p>
+        </div>
+      </div>
+
+      <div class="p-6">
+        <div class="action-buttons-grid">
+          <!-- Importar Excel -->
+          <div class="action-card flex flex-col gap-4 p-6 border-2 border-gray-200 dark:border-gray-700 rounded-xl transition-all hover:border-blue-500 hover:shadow-md">
+            <div class="action-icon import">
+              <i class="pi pi-upload"></i>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Importar desde Excel</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Importa transacciones, vehículos, combustible y más desde un archivo Excel</p>
+            </div>
+            <input
+              type="file"
+              #fileInput
+              accept=".xls,.xlsx"
+              (change)="importFromExcel($event)"
+              style="display: none" />
+            <button
+              pButton
+              label="Importar"
+              icon="pi pi-upload"
+              class="btn-primary w-full"
+              (click)="fileInput.click()">
+            </button>
+          </div>
+
+          <!-- Exportar Excel -->
+          <div class="action-card flex flex-col gap-4 p-6 border-2 border-gray-200 dark:border-gray-700 rounded-xl transition-all hover:border-blue-500 hover:shadow-md">
+            <div class="action-icon export">
+              <i class="pi pi-download"></i>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Exportar a Excel</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Descarga todos tus datos en un archivo Excel para respaldo local</p>
+            </div>
+            <button
+              pButton
+              label="Exportar"
+              icon="pi pi-download"
+              class="btn-secondary w-full"
+              (click)="exportAllData()">
+            </button>
+          </div>
+
+          <!-- Backup a Drive -->
+          <div class="action-card flex flex-col gap-4 p-6 border-2 border-gray-200 dark:border-gray-700 rounded-xl transition-all hover:border-blue-500 hover:shadow-md">
+            <div class="action-icon backup">
+              <i class="pi pi-google"></i>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Backup a Google Drive</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Guarda una copia de seguridad de todos tus datos en Google Drive</p>
+            </div>
+            <button
+              pButton
+              label="Backup a Drive"
+              icon="pi pi-google"
+              class="btn-success w-full"
+              (click)="exportToGoogleDrive()">
+            </button>
+          </div>
+        </div>
+
+        <div class="info-note flex items-start gap-3 p-4 mt-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+          <i class="pi pi-info-circle text-lg text-blue-500 shrink-0 mt-0.5"></i>
+          <p class="text-sm text-gray-500 dark:text-gray-400 m-0 leading-relaxed"><strong class="text-gray-800 dark:text-gray-100 font-semibold">Nota:</strong> La importación desde Excel combina los datos nuevos con los existentes. Los registros duplicados (mismo ID) se ignoran.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Information Card -->
+    <div class="settings-card info-card rounded-2xl shadow-md overflow-hidden">
+      <div class="card-header flex items-start gap-4 p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div class="header-icon">
+          <i class="pi pi-info-circle"></i>
+        </div>
+        <div>
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 m-0">Información</h2>
+        </div>
+      </div>
+
+      <div class="p-6">
+        <div class="flex flex-col gap-5">
+          <div class="flex items-start gap-4">
+            <i class="pi pi-calendar text-xl text-blue-500 shrink-0 mt-0.5"></i>
+            <div>
+              <strong class="block text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">Caché de Tasas</strong>
+              <p class="text-sm text-gray-500 dark:text-gray-400 m-0 leading-relaxed">Las tasas se almacenan localmente por un máximo de 1 día (día actual o anterior)</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-4">
+            <i class="pi pi-eye text-xl text-blue-500 shrink-0 mt-0.5"></i>
+            <div>
+              <strong class="block text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">Display de Moneda</strong>
+              <p class="text-sm text-gray-500 dark:text-gray-400 m-0 leading-relaxed">Los montos se muestran en tu moneda preferida ({{ preferredCurrency }}), con el valor original en texto pequeño si la moneda es diferente</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-4">
+            <i class="pi pi-sync text-xl text-blue-500 shrink-0 mt-0.5"></i>
+            <div>
+              <strong class="block text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">Actualización Manual</strong>
+              <p class="text-sm text-gray-500 dark:text-gray-400 m-0 leading-relaxed">Puedes actualizar las tasas cuando quieras, pero es requerido si el caché tiene más de 1 día</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Import Confirmation Dialog -->
+<p-dialog
+  [(visible)]="showImportDialog"
+  [modal]="true"
+  [closable]="true"
+  styleClass="macos-dialog"
+  [style]="{ width: '500px' }"
+  (onHide)="closeImportDialog()">
+  <ng-template pTemplate="header">
+    <h3 class="text-gray-800 dark:text-gray-100">Confirmar importación</h3>
+  </ng-template>
+
+  <div class="p-4">
+    <p class="text-gray-700 dark:text-gray-200">¿Deseas importar datos desde este archivo Excel? Esto agregará los datos al sistema actual.</p>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      label="Cancelar"
+      class="p-button-text"
+      (click)="closeImportDialog()">
+    </button>
+    <button
+      pButton
+      label="Sí, importar"
+      (click)="confirmImport()">
+    </button>
+  </ng-template>
+</p-dialog>

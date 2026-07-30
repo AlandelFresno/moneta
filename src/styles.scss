@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Color values live in app/theme.tokens.ts (single source of truth).
+   ThemeService writes these same values onto :root as inline custom
+   properties at startup and on every toggle — see setCssVariables().
+   The defaults below are only a pre-paint fallback (light theme) so
+   nothing is undefined before ThemeService runs. */
+:root {
+  --surface-page: #f4f5f7;
+  --surface-card: #ffffff;
+  --surface-input: #f4f5f7;
+  --border-subtle: #e2e4e9;
+  --border-strong: #d1d5db;
+  --text-primary: #12141c;
+  --text-secondary: #6b7280;
+  --accent: #3b82f6;
+  --accent-strong: #2563eb;
+  --income: #10b981;
+  --expense: #ef4444;
+}
+
+html, body {
+  @apply overflow-x-auto min-w-fit;
+  background: var(--surface-page);
+  color: var(--text-primary);
+}
+
+
+/* PrimeIcons */
+@import "primeicons/primeicons.css";
+
+/* Global scrollbar */
+::-webkit-scrollbar {
+  @apply w-2 h-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply rounded-xl;
+  background: var(--surface-input);
+}
+
+::-webkit-scrollbar-thumb {
+  @apply rounded-xl;
+  background: var(--border-strong);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}

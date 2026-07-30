@@ -1,0 +1,235 @@
+<div class="p-8 max-w-[1400px] mx-auto min-w-fit max-md:p-4">
+  <!-- Header -->
+  <div class="flex justify-between items-start mb-8 gap-8 max-md:flex-col max-md:items-stretch max-md:gap-4 max-md:mb-6">
+    <div class="flex-1">
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 tracking-tight mb-2">Categories</h1>
+      <p class="text-[0.9375rem] text-gray-500 dark:text-gray-400">Manage your income and expense categories</p>
+    </div>
+    <div class="flex gap-3 max-md:flex-wrap">
+      <button
+        pButton
+        label="Export CSV"
+        icon="pi pi-download"
+        class="btn-secondary"
+        (click)="exportToCSV()">
+      </button>
+      <button
+        pButton
+        label="New Category"
+        icon="pi pi-plus"
+        class="btn-primary"
+        (click)="openCreateDialog()">
+      </button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="flex flex-col gap-10">
+    <!-- Income Categories -->
+    <div>
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-9 h-9 rounded-[10px] flex items-center justify-center text-base text-white"
+             style="background: linear-gradient(135deg, #10b981 0%, #059669 100%)">
+          <i class="pi pi-arrow-down"></i>
+        </div>
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Income Categories</h2>
+        <span class="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-2.5 py-1 rounded-xl text-[0.8125rem] font-semibold">{{ incomeCategories.length }}</span>
+      </div>
+
+      <div class="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4 max-md:grid-cols-1">
+        <div
+          *ngFor="let category of incomeCategories"
+          class="bg-white dark:bg-gray-800 rounded-xl p-5 flex items-center gap-4
+                 border border-gray-200 dark:border-gray-700 border-l-4 shadow-sm
+                 hover:shadow-md hover:-translate-y-0.5 transition-all"
+          [style.border-left-color]="category.color">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+               [style.background-color]="category.color">
+            <i class="text-xl text-white" [ngClass]="getCategoryIconClass(category.icon)"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h3 class="text-[0.9375rem] font-semibold text-gray-800 dark:text-gray-100 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">{{ category.name }}</h3>
+            <span class="text-[0.8125rem] text-gray-500 dark:text-gray-400">Income</span>
+          </div>
+          <div class="flex gap-1 flex-shrink-0">
+            <button
+              pButton
+              icon="pi pi-pencil"
+              [text]="true"
+              [rounded]="true"
+              class="btn-icon text-gray-500 dark:text-gray-400 hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+              (click)="openEditDialog(category)">
+            </button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              [text]="true"
+              [rounded]="true"
+              class="btn-icon text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+              (click)="deleteCategory(category)">
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="incomeCategories.length === 0"
+             class="col-span-full text-center py-12 px-8 text-gray-400 dark:text-gray-500">
+          <i class="pi pi-inbox text-5xl opacity-50 mb-4 block"></i>
+          <p class="text-[0.9375rem]">No income categories yet</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expense Categories -->
+    <div>
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-9 h-9 rounded-[10px] flex items-center justify-center text-base text-white"
+             style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%)">
+          <i class="pi pi-arrow-up"></i>
+        </div>
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Expense Categories</h2>
+        <span class="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-2.5 py-1 rounded-xl text-[0.8125rem] font-semibold">{{ expenseCategories.length }}</span>
+      </div>
+
+      <div class="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4 max-md:grid-cols-1">
+        <div
+          *ngFor="let category of expenseCategories"
+          class="bg-white dark:bg-gray-800 rounded-xl p-5 flex items-center gap-4
+                 border border-gray-200 dark:border-gray-700 border-l-4 shadow-sm
+                 hover:shadow-md hover:-translate-y-0.5 transition-all"
+          [style.border-left-color]="category.color">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+               [style.background-color]="category.color">
+            <i class="text-xl text-white" [ngClass]="getCategoryIconClass(category.icon)"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h3 class="text-[0.9375rem] font-semibold text-gray-800 dark:text-gray-100 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">{{ category.name }}</h3>
+            <span class="text-[0.8125rem] text-gray-500 dark:text-gray-400">Expense</span>
+          </div>
+          <div class="flex gap-1 flex-shrink-0">
+            <button
+              pButton
+              icon="pi pi-pencil"
+              [text]="true"
+              [rounded]="true"
+              class="btn-icon text-gray-500 dark:text-gray-400 hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+              (click)="openEditDialog(category)">
+            </button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              [text]="true"
+              [rounded]="true"
+              class="btn-icon text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+              (click)="deleteCategory(category)">
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="expenseCategories.length === 0"
+             class="col-span-full text-center py-12 px-8 text-gray-400 dark:text-gray-500">
+          <i class="pi pi-inbox text-5xl opacity-50 mb-4 block"></i>
+          <p class="text-[0.9375rem]">No expense categories yet</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create/Edit Dialog -->
+<p-dialog
+  [(visible)]="showDialog"
+  [modal]="true"
+  [closable]="true"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="macos-dialog"
+  [style]="{ width: '500px' }"
+  (onHide)="closeDialog()">
+
+  <ng-template pTemplate="header">
+    <h3>{{ editingCategory ? 'Edit Category' : 'Create New Category' }}</h3>
+  </ng-template>
+
+  <div class="dialog-content flex flex-col gap-5">
+    <!-- Name -->
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">Category Name</label>
+      <input
+        type="text"
+        pInputText
+        [(ngModel)]="formData.name"
+        placeholder="Enter category name"
+        class="macos-input" />
+    </div>
+
+    <!-- Type -->
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">Type</label>
+      <div class="type-selector">
+        <button
+          type="button"
+          class="type-btn"
+          [class.active]="formData.type === 'income'"
+          (click)="formData.type = 'income'">
+          <i class="pi pi-arrow-down"></i>
+          Income
+        </button>
+        <button
+          type="button"
+          class="type-btn"
+          [class.active]="formData.type === 'expense'"
+          (click)="formData.type = 'expense'">
+          <i class="pi pi-arrow-up"></i>
+          Expense
+        </button>
+      </div>
+    </div>
+
+    <!-- Color -->
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">Color</label>
+      <div class="color-picker">
+        <button
+          *ngFor="let color of availableColors"
+          type="button"
+          class="color-option"
+          [class.selected]="formData.color === color"
+          [style.background-color]="color"
+          (click)="formData.color = color">
+          <i class="pi pi-check" *ngIf="formData.color === color"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Icon -->
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">Icon</label>
+      <div class="icon-picker">
+        <button
+          *ngFor="let icon of availableIcons"
+          type="button"
+          class="icon-option"
+          [class.selected]="formData.icon === icon"
+          (click)="formData.icon = icon">
+          <i [class]="'pi pi-' + icon"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      label="Cancel"
+      class="btn-secondary"
+      (click)="closeDialog()">
+    </button>
+    <button
+      pButton
+      [label]="editingCategory ? 'Save Changes' : 'Create Category'"
+      class="btn-primary"
+      (click)="saveCategory()"
+      [disabled]="!formData.name.trim()">
+    </button>
+  </ng-template>
+</p-dialog>

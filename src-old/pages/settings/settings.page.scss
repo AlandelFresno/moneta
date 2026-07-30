@@ -1,0 +1,417 @@
+// Header icon gradient backgrounds
+.header-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  i {
+    font-size: 1.5rem;
+    color: white;
+  }
+}
+
+// Action icon gradient backgrounds
+.action-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+
+  &.import {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+  }
+
+  &.export {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    color: white;
+  }
+
+  &.backup {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+  }
+}
+
+// Rate update indicator status colors
+.rate-update-indicator {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+
+  i {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .status-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .status-text {
+      font-weight: 500;
+    }
+
+    .last-update {
+      font-size: 0.75rem;
+      opacity: 0.8;
+    }
+  }
+
+  &.expired {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+  }
+
+  &.yesterday {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+  }
+
+  &.today {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+  }
+}
+
+:host-context(.dark) .rate-update-indicator {
+  &.expired {
+    background-color: rgba(254, 226, 226, 0.1);
+    color: #fca5a5;
+    border-color: rgba(252, 165, 165, 0.3);
+  }
+
+  &.yesterday {
+    background-color: rgba(254, 243, 199, 0.1);
+    color: #fcd34d;
+    border-color: rgba(252, 211, 77, 0.3);
+  }
+
+  &.today {
+    background-color: rgba(209, 250, 229, 0.1);
+    color: #6ee7b7;
+    border-color: rgba(110, 231, 183, 0.3);
+  }
+}
+
+// Message success/error status colors
+.message {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  margin-top: 1rem;
+
+  i {
+    font-size: 1.125rem;
+  }
+
+  &.success {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+  }
+
+  &.error {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+  }
+}
+
+:host-context(.dark) .message {
+  &.success {
+    background-color: rgba(209, 250, 229, 0.1);
+    color: #6ee7b7;
+    border-color: rgba(110, 231, 183, 0.3);
+  }
+
+  &.error {
+    background-color: rgba(254, 226, 226, 0.1);
+    color: #fca5a5;
+    border-color: rgba(252, 165, 165, 0.3);
+  }
+}
+
+// Info box status colors
+.info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background-color: #fef3c7;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  margin-bottom: 1rem;
+
+  i {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  strong {
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  p {
+    font-size: 0.875rem;
+    margin: 0;
+    opacity: 0.9;
+  }
+
+  &.info {
+    background-color: #dbeafe;
+    border-color: #93c5fd;
+    color: #1e40af;
+  }
+}
+
+:host-context(.dark) .info-box {
+  background-color: rgba(254, 243, 199, 0.1);
+  color: #fcd34d;
+  border-color: rgba(252, 211, 77, 0.3);
+
+  &.info {
+    background-color: rgba(219, 234, 254, 0.1);
+    color: #93c5fd;
+    border-color: rgba(147, 197, 253, 0.3);
+  }
+}
+
+// Conversion result gradient background
+.conversion-result {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  border: 1px solid #93c5fd;
+
+  .result-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e40af;
+    margin-bottom: 1rem;
+  }
+
+  .result-details {
+    padding-top: 1rem;
+    border-top: 1px solid #93c5fd;
+
+    p {
+      font-size: 0.875rem;
+      color: #374151;
+      margin: 0.5rem 0;
+      line-height: 1.6;
+
+      &:first-child {
+        margin-top: 0;
+      }
+
+      strong {
+        color: #1f2937;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+:host-context(.dark) .conversion-result {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.15) 100%);
+  border-color: rgba(147, 197, 253, 0.3);
+
+  .result-value {
+    color: #93c5fd;
+  }
+
+  .result-details {
+    border-top-color: rgba(147, 197, 253, 0.3);
+
+    p {
+      color: #d1d5db;
+
+      strong {
+        color: #f3f4f6;
+      }
+    }
+  }
+}
+
+// Section divider gradient
+.section-divider {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    #e5e7eb 20%,
+    #e5e7eb 80%,
+    transparent
+  );
+  margin: 0;
+}
+
+:host-context(.dark) .section-divider {
+  background: linear-gradient(
+    to right,
+    transparent,
+    #374151 20%,
+    #374151 80%,
+    transparent
+  );
+}
+
+// Rates table structural grid layout
+.rates-table {
+  .rate-row {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1fr;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .rate-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    &.currency-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      div {
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+      }
+    }
+
+    &.rate-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
+  }
+}
+
+// Currency symbol gradient background
+.currency-symbol {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.125rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+// Rate input focus styles
+.rate-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: #1f2937;
+  background: white;
+  border: 2px solid #3b82f6;
+  border-radius: 0.375rem;
+  outline: none;
+  font-weight: 500;
+
+  &:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+}
+
+:host-context(.dark) .rate-input {
+  color: #f3f4f6;
+  background: #374151;
+  border-color: #60a5fa;
+
+  &:focus {
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+  }
+}
+
+// Conversion inputs grid layout
+.conversion-inputs {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  gap: 1rem;
+  align-items: end;
+}
+
+// Info card gradient background
+.info-card {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+:host-context(.dark) .info-card {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.15) 100%);
+}
+
+// Action buttons grid layout
+.action-buttons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+// Responsive media queries for layout ONLY
+@media (max-width: 768px) {
+  .conversion-inputs {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+
+    .conversion-arrow {
+      display: none;
+    }
+  }
+
+  .rates-table {
+    .rate-row {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+
+      &.header-row {
+        display: none;
+      }
+
+      .rate-cell {
+        &.currency-info,
+        &.rate-value,
+        &.rate-actions {
+          justify-content: space-between;
+
+          &::before {
+            content: attr(data-label);
+            font-weight: 600;
+            font-size: 0.75rem;
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,13 +1,36 @@
 import { Routes } from '@angular/router';
+import { LayoutComponent } from './shared/layout/layout.component';
 
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: '/dashboard',
-    pathMatch: 'full'
-  },
-  {
-    path: 'dashboard',
-    loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
+    component: LayoutComponent,
+    children: [
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full'
+      },
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./pages/dashboard/dashboard.page').then((m) => m.DashboardPage)
+      },
+      {
+        path: 'transactions',
+        loadComponent: () => import('./pages/transactions/transactions.page').then((m) => m.TransactionsPage)
+      },
+      {
+        path: 'categories',
+        loadComponent: () => import('./pages/categories/categories.page').then((m) => m.CategoriesPage)
+      },
+      {
+        path: 'bills',
+        loadComponent: () => import('./pages/bills/bills.page').then((m) => m.BillsPage)
+      },
+      {
+        path: 'sync',
+        loadComponent: () => import('./pages/sync/sync.page').then((m) => m.SyncPage)
+      }
+    ]
   }
 ];

@@ -1,0 +1,29 @@
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  @apply bg-gray-200 dark:bg-gray-600 rounded;
+  overflow: hidden;
+  margin-bottom: 0.25rem;
+
+  .progress-fill {
+    height: 100%;
+    transition: width 0.3s;
+  }
+}
+
+.status-badge {
+  @apply inline-block py-1 px-3 rounded-md text-xs font-semibold
+         bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300;
+
+  &.suggested {
+    @apply bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300;
+  }
+
+  &.available {
+    @apply bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300;
+  }
+
+  &.exceeded {
+    @apply bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300;
+  }
+}

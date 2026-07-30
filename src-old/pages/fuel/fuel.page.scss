@@ -1,0 +1,212 @@
+// Scoped under .fuel-page because this component uses ViewEncapsulation.None
+.fuel-page {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-width: fit-content;
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+      font-weight: 600;
+    }
+  }
+
+  // Vehicle Section
+  .vehicle-section {
+    margin-bottom: 2rem;
+
+    h2 {
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .vehicle-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+  }
+
+  // Vehicle card selected state
+  .vehicle-card.selected {
+    @apply border-blue-500 dark:border-blue-400;
+    box-shadow: 0 0 0 1px theme('colors.blue.500');
+
+    .dark & {
+      box-shadow: 0 0 0 1px theme('colors.blue.400');
+    }
+  }
+
+  // Vehicle header (dynamic bg-color is inline)
+  .vehicle-header {
+    padding: 1rem;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h3 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+  }
+
+  .fuel-type-badge {
+    background: rgba(255, 255, 255, 0.3);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  // Fuel Logs Section
+  .fuel-logs-section {
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+
+      h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+      }
+    }
+
+    .stats-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    // Table structural layout - colors are in Tailwind
+    .fuel-logs-table {
+      table {
+        width: 100%;
+        border-collapse: collapse;
+
+        thead tr th {
+          padding: 1rem;
+          text-align: left;
+          font-weight: 600;
+          font-size: 0.875rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        tbody tr td {
+          padding: 1rem;
+          font-size: 0.9375rem;
+        }
+      }
+    }
+  }
+}
+
+// Forms in dialogs - outside .fuel-page because dialogs render in overlay
+.vehicle-form,
+.fuel-log-form {
+  .form-group {
+    margin-bottom: 1.25rem;
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      font-size: 0.9375rem;
+
+      input[type="checkbox"] {
+        margin-right: 0.5rem;
+      }
+    }
+
+    .form-control {
+      @apply w-full rounded-md border border-gray-200 dark:border-gray-700
+             bg-gray-50 dark:bg-gray-900
+             text-gray-800 dark:text-gray-100
+             focus:border-blue-500 dark:focus:border-blue-400
+             disabled:bg-gray-100 dark:disabled:bg-gray-700
+             disabled:text-gray-500 dark:disabled:text-gray-400
+             disabled:cursor-not-allowed;
+      padding: 0.75rem;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+
+      &:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+    }
+
+    textarea.form-control {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .color-input {
+      height: 50px;
+      cursor: pointer;
+    }
+
+    select.form-control {
+      cursor: pointer;
+    }
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .fuel-page {
+    padding: 1rem;
+
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .vehicle-section .vehicle-cards {
+      grid-template-columns: 1fr;
+    }
+
+    .stats-cards {
+      grid-template-columns: 1fr !important;
+    }
+
+    .fuel-logs-table {
+      overflow-x: auto;
+
+      table {
+        min-width: 800px;
+      }
+    }
+  }
+
+  .vehicle-form,
+  .fuel-log-form {
+    .form-row {
+      grid-template-columns: 1fr !important;
+    }
+  }
+}

@@ -1,0 +1,23 @@
+<div class="flex min-h-screen bg-gray-50 dark:bg-gray-900 min-w-fit">
+  <app-sidebar></app-sidebar>
+
+  <!-- Mobile Menu Button -->
+  <button
+    class="hidden max-md:flex fixed top-3 left-3 z-[1001] w-11 h-11 rounded-xl cursor-pointer
+           border border-gray-200 dark:border-gray-600
+           bg-white dark:bg-gray-800 shadow-md
+           text-gray-700 dark:text-gray-100
+           active:scale-95 transition-all duration-200 items-center justify-center"
+    (click)="openMobileMenu()"
+    type="button"
+    aria-label="Abrir menú">
+    <i class="pi pi-bars text-xl"></i>
+  </button>
+
+  <main class="flex-1 ml-[280px] transition-[margin-left] duration-300 min-h-screen overflow-x-auto min-w-0
+               max-md:ml-0"
+        [class.!ml-20]="sidebarCollapsed"
+        [class.max-md:!ml-0]="sidebarCollapsed">
+    <router-outlet></router-outlet>
+  </main>
+</div>
