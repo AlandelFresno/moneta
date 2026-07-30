@@ -3,6 +3,10 @@ import { LayoutComponent } from './shared/layout/layout.component';
 
 export const routes: Routes = [
   {
+    path: 'welcome',
+    loadComponent: () => import('./pages/welcome/welcome.page').then((m) => m.WelcomePage)
+  },
+  {
     path: '',
     component: LayoutComponent,
     children: [
