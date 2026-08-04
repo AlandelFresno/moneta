@@ -8,6 +8,7 @@ import { TransactionService, StoredTransaction, toTransaction, fromTransaction }
 import { CategoryService, StoredCategory, toCategory, fromCategory } from './category.service';
 import { BillService, StoredBill, toBill, fromBill } from './bill.service';
 import { mergeEntities, purgeOldTombstones } from '../core/utils/sync-merge.util';
+import { dedupeCategories } from '../core/utils/category-dedupe.util';
 
 export interface EntitySyncStats {
   added: number;
@@ -68,23 +69,26 @@ export class DriveSyncService {
       remotePayload.transactions.map(toTransaction)
     );
     const mergedTransactions = purgeOldTombstones(transactionsResult.merged, now);
-    this.transactionService.replaceAll(mergedTransactions);
 
     const categoriesResult = mergeEntities(
       this.categoryService.getAllIncludingDeleted(),
       remotePayload.categories.map(toCategory)
     );
     const mergedCategories = purgeOldTombstones(categoriesResult.merged, now);
-    this.categoryService.replaceAll(mergedCategories);
 
     const billsResult = mergeEntities(this.billService.getAllIncludingDeleted(), remotePayload.bills.map(toBill));
     const mergedBills = purgeOldTombstones(billsResult.merged, now);
-    this.billService.replaceAll(mergedBills);
+
+    const deduped = dedupeCategories(mergedCategories, mergedTransactions, mergedBills, now);
+
+    this.transactionService.replaceAll(deduped.transactions);
+    this.categoryService.replaceAll(deduped.categories);
+    this.billService.replaceAll(deduped.bills);
 
     const outgoingPayload: DriveSyncPayload = {
-      transactions: mergedTransactions.map(fromTransaction),
-      categories: mergedCategories.map(fromCategory),
-      bills: mergedBills.map(fromBill)
+      transactions: deduped.transactions.map(fromTransaction),
+      categories: deduped.categories.map(fromCategory),
+      bills: deduped.bills.map(fromBill)
     };
 
     await this.uploadPayload(folderId, existingFile?.id ?? null, outgoingPayload);

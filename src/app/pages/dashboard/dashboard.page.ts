@@ -16,6 +16,7 @@ import Chart from 'chart.js/auto';
 
 import { TransactionService } from '../../services/transaction.service';
 import { CategoryService } from '../../services/category.service';
+import { BillService } from '../../services/bill.service';
 import {
   DashboardService,
   CategoryBreakdownEntry,
@@ -27,8 +28,20 @@ import {
 import { ThemeService } from '../../services/theme.service';
 import { Transaction } from '../../core/types/transaction.types';
 import { Category } from '../../core/types/category.types';
+import { Bill } from '../../core/types/bill.types';
 import { TransactionWithCategory, withCategory } from '../../core/utils/transaction-display.util';
 import { palette } from '../../theme.tokens';
+
+export interface UpcomingBillDisplay {
+  billId: string;
+  name: string;
+  categoryName: string;
+  categoryColor: string;
+  categoryIcon: string;
+  amount: number;
+  dueDate: Date;
+  isOverdue: boolean;
+}
 
 const EMPTY_STATS: PeriodStats = {
   income: 0,
@@ -60,14 +73,19 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('trendCanvas') trendCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('expenseBreakdownCanvas') expenseBreakdownCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('incomeBreakdownCanvas') incomeBreakdownCanvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('categoryTrendCanvas') categoryTrendCanvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('weekdayCanvas') weekdayCanvasRef!: ElementRef<HTMLCanvasElement>;
 
   private trendChart: Chart | null = null;
   private expenseBreakdownChart: Chart | null = null;
   private incomeBreakdownChart: Chart | null = null;
+  private categoryTrendChart: Chart | null = null;
+  private weekdayChart: Chart | null = null;
   private viewReady = false;
 
   private allTransactions: Transaction[] = [];
   private categories: Category[] = [];
+  private allBills: Bill[] = [];
 
   readonly presetOptions: { label: string; value: RangePreset }[] = [
     { label: 'Este mes', value: 'thisMonth' },
@@ -92,10 +110,13 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   hasIncomeBreakdown = false;
 
   topTransactions: TransactionWithCategory[] = [];
+  upcomingBills: UpcomingBillDisplay[] = [];
+  hasCategoryTrend = false;
 
   constructor(
     private readonly transactionService: TransactionService,
     private readonly categoryService: CategoryService,
+    private readonly billService: BillService,
     private readonly dashboardService: DashboardService,
     private readonly themeService: ThemeService
   ) {
@@ -108,11 +129,12 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    combineLatest([this.transactionService.getAll(), this.categoryService.getAll()])
+    combineLatest([this.transactionService.getAll(), this.categoryService.getAll(), this.billService.getAll()])
       .pipe(takeUntil(this.destroy$))
-      .subscribe(([transactions, categories]) => {
+      .subscribe(([transactions, categories, bills]) => {
         this.allTransactions = transactions;
         this.categories = categories;
+        this.allBills = bills;
         this.recompute();
       });
   }
@@ -128,6 +150,8 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     this.trendChart?.destroy();
     this.expenseBreakdownChart?.destroy();
     this.incomeBreakdownChart?.destroy();
+    this.categoryTrendChart?.destroy();
+    this.weekdayChart?.destroy();
   }
 
   onPresetChange(): void {
@@ -191,6 +215,22 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
       .topTransactionsByAmount(inRange, 10)
       .map((txn) => withCategory(txn, this.categories));
 
+    this.hasCategoryTrend = this.dashboardService.categoryBreakdown(inRange, this.categories, 'expense').length > 0;
+
+    this.upcomingBills = this.billService.upcomingBills(this.allBills, reference, 14).map((status) => {
+      const category = this.categories.find((cat) => cat.id === status.bill.categoryId);
+      return {
+        billId: status.bill.id,
+        name: status.bill.name,
+        categoryName: category?.name ?? 'Sin categoría',
+        categoryColor: category?.color ?? '#6b7280',
+        categoryIcon: category?.icon ?? 'tag',
+        amount: status.bill.approxAmount,
+        dueDate: status.periodDueDate,
+        isOverdue: status.isOverdue
+      };
+    });
+
     this.renderCharts();
   }
 
@@ -198,11 +238,16 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     if (!this.viewReady || !this.currentRange) return;
     this.renderTrendChart(this.currentRange);
     this.renderBreakdownCharts();
+    this.renderCategoryTrendChart(this.currentRange);
+    this.renderWeekdayChart(this.currentRange);
   }
 
   private renderTrendChart(range: DateRange): void {
-    const trend = this.dashboardService.monthlyTrendInRange(this.allTransactions, range);
+    const today = new Date();
+    const trendRange: DateRange = { start: range.start, end: range.end > today ? today : range.end };
+    const trend = this.dashboardService.trendInRange(this.allTransactions, trendRange);
     const colors = palette[this.themeService.theme()];
+    const pointRadius = trend.length > 15 ? 0 : 4;
 
     this.trendChart?.destroy();
     this.trendChart = new Chart(this.trendCanvasRef.nativeElement, {
@@ -216,7 +261,8 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
             borderColor: colors.income,
             backgroundColor: `${colors.income}1a`,
             borderWidth: 2,
-            pointRadius: 4,
+            pointRadius,
+            pointHoverRadius: 4,
             pointBackgroundColor: colors.income,
             pointBorderColor: colors.surfaceCard,
             pointBorderWidth: 2,
@@ -229,7 +275,8 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
             borderColor: colors.expense,
             backgroundColor: `${colors.expense}1a`,
             borderWidth: 2,
-            pointRadius: 4,
+            pointRadius,
+            pointHoverRadius: 4,
             pointBackgroundColor: colors.expense,
             pointBorderColor: colors.surfaceCard,
             pointBorderWidth: 2,
@@ -324,6 +371,116 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
           y: {
             grid: { display: false },
             ticks: { color: colors.textPrimary }
+          }
+        }
+      }
+    });
+  }
+
+  private renderCategoryTrendChart(range: DateRange): void {
+    this.categoryTrendChart?.destroy();
+    if (!this.hasCategoryTrend) {
+      this.categoryTrendChart = null;
+      return;
+    }
+
+    const today = new Date();
+    const trendRange: DateRange = { start: range.start, end: range.end > today ? today : range.end };
+    const trend = this.dashboardService.categoryTrendInRange(this.allTransactions, this.categories, trendRange, 5);
+    const colors = palette[this.themeService.theme()];
+
+    this.categoryTrendChart = new Chart(this.categoryTrendCanvasRef.nativeElement, {
+      type: 'line',
+      data: {
+        labels: trend.monthLabels,
+        datasets: trend.series.map((s) => ({
+          label: s.categoryName,
+          data: s.totals,
+          borderColor: s.categoryColor,
+          backgroundColor: `${s.categoryColor}1a`,
+          borderWidth: 2,
+          pointRadius: trend.monthLabels.length > 15 ? 0 : 3,
+          pointHoverRadius: 4,
+          pointBackgroundColor: s.categoryColor,
+          tension: 0.3
+        }))
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            position: 'top',
+            align: 'end',
+            labels: { color: colors.textSecondary, usePointStyle: true, boxWidth: 8 }
+          },
+          tooltip: {
+            backgroundColor: colors.surfaceCard,
+            titleColor: colors.textPrimary,
+            bodyColor: colors.textPrimary,
+            borderColor: colors.borderSubtle,
+            borderWidth: 1,
+            padding: 10
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: colors.textSecondary }
+          },
+          y: {
+            grid: { color: colors.borderSubtle },
+            ticks: { color: colors.textSecondary },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  private renderWeekdayChart(range: DateRange): void {
+    const inRange = this.dashboardService.transactionsInRange(this.allTransactions, range);
+    const weekdaySpend = this.dashboardService.weekdaySpendInRange(inRange);
+    const colors = palette[this.themeService.theme()];
+
+    this.weekdayChart?.destroy();
+    this.weekdayChart = new Chart(this.weekdayCanvasRef.nativeElement, {
+      type: 'bar',
+      data: {
+        labels: weekdaySpend.map((w) => w.weekdayLabel),
+        datasets: [
+          {
+            data: weekdaySpend.map((w) => w.total),
+            backgroundColor: colors.expense,
+            borderRadius: 4,
+            barThickness: 28
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: colors.surfaceCard,
+            titleColor: colors.textPrimary,
+            bodyColor: colors.textPrimary,
+            borderColor: colors.borderSubtle,
+            borderWidth: 1,
+            padding: 10
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: colors.textSecondary }
+          },
+          y: {
+            grid: { color: colors.borderSubtle },
+            ticks: { color: colors.textSecondary },
+            beginAtZero: true
           }
         }
       }

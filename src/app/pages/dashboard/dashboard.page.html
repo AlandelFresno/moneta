@@ -163,6 +163,62 @@
     </div>
   </div>
 
+  <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle mb-4">
+    <h2 class="text-sm font-semibold text-text-primary mb-4">Gastos por categoría en el tiempo</h2>
+    @if (hasCategoryTrend) {
+      <div class="h-64">
+        <canvas #categoryTrendCanvas></canvas>
+      </div>
+    } @else {
+      <div class="flex flex-col items-center justify-center gap-2 py-16 text-sm text-text-secondary">
+        <i class="pi pi-chart-line text-3xl opacity-50"></i>
+        <span>No hay gastos en este período.</span>
+      </div>
+    }
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+    <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle">
+      <h2 class="text-sm font-semibold text-text-primary mb-4">Gastos por día de la semana</h2>
+      <div class="h-64">
+        <canvas #weekdayCanvas></canvas>
+      </div>
+    </div>
+
+    <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle">
+      <h2 class="text-sm font-semibold text-text-primary mb-4">Próximos vencimientos (14 días)</h2>
+      @if (upcomingBills.length > 0) {
+        <div class="flex flex-col gap-1">
+          @for (bill of upcomingBills; track bill.billId) {
+            <div class="flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-surface-input transition-colors duration-150">
+              <div
+                class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm"
+                [style.color]="bill.categoryColor"
+                [style.background-color]="bill.categoryColor + '26'"
+              >
+                <i class="pi pi-{{ bill.categoryIcon }}"></i>
+              </div>
+              <div class="flex flex-col min-w-0 flex-1">
+                <span class="text-sm font-medium text-text-primary truncate">{{ bill.name }}</span>
+                <span class="text-xs truncate" [class.text-expense]="bill.isOverdue" [class.text-text-secondary]="!bill.isOverdue">
+                  {{ bill.isOverdue ? 'Vencido' : formatDate(bill.dueDate) }}
+                </span>
+              </div>
+              <span class="text-sm font-semibold text-text-primary [font-variant-numeric:tabular-nums] flex-shrink-0">
+                {{ bill.amount | number: '1.2-2' }}
+              </span>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="flex flex-col items-center justify-center gap-2 py-16 text-sm text-text-secondary">
+          <i class="pi pi-calendar text-3xl opacity-50"></i>
+          <span>No hay vencimientos próximos.</span>
+        </div>
+      }
+    </div>
+  </div>
+
   <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle">
     <h2 class="text-sm font-semibold text-text-primary mb-4">Mayores transacciones</h2>
 
