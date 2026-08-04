@@ -22,6 +22,23 @@ export interface CategoryBreakdownEntry {
   total: number;
 }
 
+export interface CategoryTrendSeries {
+  categoryId: string;
+  categoryName: string;
+  categoryColor: string;
+  totals: number[];
+}
+
+export interface CategoryTrend {
+  monthLabels: string[];
+  series: CategoryTrendSeries[];
+}
+
+export interface WeekdaySpend {
+  weekdayLabel: string;
+  total: number;
+}
+
 export interface PeriodStats {
   income: number;
   expense: number;
@@ -108,23 +125,71 @@ export class DashboardService {
   }
 
   monthlyTrendInRange(transactions: Transaction[], range: DateRange): MonthlyTotals[] {
-    const months: { year: number; month: number }[] = [];
-    let cursor = new Date(range.start.getFullYear(), range.start.getMonth(), 1);
-    const last = new Date(range.end.getFullYear(), range.end.getMonth(), 1);
-
-    while (cursor.getTime() <= last.getTime()) {
-      months.push({ year: cursor.getFullYear(), month: cursor.getMonth() });
-      cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
-    }
-
-    return months.map(({ year, month }) => {
-      const inMonth = transactions.filter((txn) => txn.date.getFullYear() === year && txn.date.getMonth() === month);
+    return this.monthlyBuckets(range).map(({ label, matches }) => {
+      const inBucket = transactions.filter((txn) => matches(txn.date));
       return {
-        monthLabel: new Intl.DateTimeFormat('es-AR', { month: 'short', year: '2-digit' }).format(new Date(year, month, 1)),
-        income: inMonth.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0),
-        expense: inMonth.filter((t) => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
+        monthLabel: label,
+        income: inBucket.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0),
+        expense: inBucket.filter((t) => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
       };
     });
+  }
+
+  dailyTrendInRange(transactions: Transaction[], range: DateRange): MonthlyTotals[] {
+    return this.dailyBuckets(range).map(({ label, matches }) => {
+      const inBucket = transactions.filter((txn) => matches(txn.date));
+      return {
+        monthLabel: label,
+        income: inBucket.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0),
+        expense: inBucket.filter((t) => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
+      };
+    });
+  }
+
+  /** Daily granularity reads better for short ranges; monthly avoids overcrowding for long ones. */
+  trendInRange(transactions: Transaction[], range: DateRange): MonthlyTotals[] {
+    return this.isShortRange(range) ? this.dailyTrendInRange(transactions, range) : this.monthlyTrendInRange(transactions, range);
+  }
+
+  /** Spend per category over the range (daily or monthly buckets depending on span), limited to the top `limit` categories by total. */
+  categoryTrendInRange(transactions: Transaction[], categories: Category[], range: DateRange, limit: number): CategoryTrend {
+    const buckets = this.isShortRange(range) ? this.dailyBuckets(range) : this.monthlyBuckets(range);
+    const monthLabels = buckets.map((b) => b.label);
+
+    const expenses = transactions.filter((t) => t.type === 'expense');
+    const topCategoryIds = this.categoryBreakdown(expenses, categories, 'expense')
+      .slice(0, limit)
+      .map((entry) => entry.categoryId);
+
+    const series = topCategoryIds.map((categoryId) => {
+      const category = categories.find((cat) => cat.id === categoryId);
+      const totals = buckets.map(({ matches }) =>
+        expenses.filter((t) => t.categoryId === categoryId && matches(t.date)).reduce((sum, t) => sum + t.amount, 0)
+      );
+      return {
+        categoryId,
+        categoryName: category?.name ?? 'Sin categoría',
+        categoryColor: category?.color ?? '#6b7280',
+        totals
+      };
+    });
+
+    return { monthLabels, series };
+  }
+
+  /** Total expense per weekday (Monday-first) across the range. */
+  weekdaySpendInRange(transactions: Transaction[]): WeekdaySpend[] {
+    const labels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    const totals = new Array<number>(7).fill(0);
+
+    for (const txn of transactions) {
+      if (txn.type !== 'expense') continue;
+      const jsDay = txn.date.getDay();
+      const mondayFirst = (jsDay + 6) % 7;
+      totals[mondayFirst] += txn.amount;
+    }
+
+    return labels.map((weekdayLabel, i) => ({ weekdayLabel, total: totals[i] }));
   }
 
   periodStats(transactions: Transaction[]): PeriodStats {
@@ -170,5 +235,47 @@ export class DashboardService {
 
   private endOfDay(date: Date): Date {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+  }
+
+  private isShortRange(range: DateRange): boolean {
+    const spanDays = (this.startOfDay(range.end).getTime() - this.startOfDay(range.start).getTime()) / 86_400_000;
+    return spanDays <= 62;
+  }
+
+  private monthlyBuckets(range: DateRange): { label: string; matches: (date: Date) => boolean }[] {
+    const buckets: { label: string; matches: (date: Date) => boolean }[] = [];
+    let cursor = new Date(range.start.getFullYear(), range.start.getMonth(), 1);
+    const last = new Date(range.end.getFullYear(), range.end.getMonth(), 1);
+
+    while (cursor.getTime() <= last.getTime()) {
+      const year = cursor.getFullYear();
+      const month = cursor.getMonth();
+      buckets.push({
+        label: new Intl.DateTimeFormat('es-AR', { month: 'short', year: '2-digit' }).format(new Date(year, month, 1)),
+        matches: (date) => date.getFullYear() === year && date.getMonth() === month
+      });
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+    }
+
+    return buckets;
+  }
+
+  private dailyBuckets(range: DateRange): { label: string; matches: (date: Date) => boolean }[] {
+    const buckets: { label: string; matches: (date: Date) => boolean }[] = [];
+    const end = this.startOfDay(range.end);
+    let cursor = this.startOfDay(range.start);
+
+    while (cursor.getTime() <= end.getTime()) {
+      const year = cursor.getFullYear();
+      const month = cursor.getMonth();
+      const day = cursor.getDate();
+      buckets.push({
+        label: new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' }).format(new Date(year, month, day)),
+        matches: (date) => date.getFullYear() === year && date.getMonth() === month && date.getDate() === day
+      });
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1);
+    }
+
+    return buckets;
   }
 }

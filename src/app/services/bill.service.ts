@@ -171,6 +171,33 @@ export class BillService {
     return new Date(now.getFullYear(), bill.dueDate.getMonth(), bill.dueDate.getDate());
   }
 
+  /** Next unpaid due date at or after `now` — the current period's date if still unpaid, otherwise the following period. */
+  nextDueDate(bill: Bill, now: Date): Date {
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const current = this.currentPeriodDueDate(bill, now);
+
+    if (current.getTime() >= today.getTime() && !this.isPaidForPeriod(bill, current)) {
+      return current;
+    }
+    if (!this.isPaidForPeriod(bill, current) && current.getTime() < today.getTime()) {
+      return current;
+    }
+
+    return this.advancePeriod(bill, current);
+  }
+
+  private advancePeriod(bill: Bill, from: Date): Date {
+    if (bill.period === 'weekly') {
+      return new Date(from.getFullYear(), from.getMonth(), from.getDate() + 7);
+    }
+    if (bill.period === 'monthly') {
+      const daysInNextMonth = new Date(from.getFullYear(), from.getMonth() + 2, 0).getDate();
+      const day = Math.min(bill.dueDate.getDate(), daysInNextMonth);
+      return new Date(from.getFullYear(), from.getMonth() + 1, day);
+    }
+    return new Date(from.getFullYear() + 1, from.getMonth(), from.getDate());
+  }
+
   isPaidForPeriod(bill: Bill, periodDueDate: Date): boolean {
     return bill.payments.some((payment) => this.isSamePeriod(bill.period, payment.paidDate, periodDueDate));
   }
@@ -206,6 +233,23 @@ export class BillService {
         periodDueDate,
         isOverdue: periodDueDate.getTime() < today.getTime()
       }));
+  }
+
+  /** Active bills with a next unpaid due date within `days` from now (inclusive), soonest first. */
+  upcomingBills(bills: Bill[], now: Date, days: number): BillDueStatus[] {
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const horizon = new Date(today.getFullYear(), today.getMonth(), today.getDate() + days);
+
+    return bills
+      .filter((bill) => bill.active)
+      .map((bill) => ({ bill, periodDueDate: this.nextDueDate(bill, now) }))
+      .filter(({ periodDueDate }) => periodDueDate.getTime() <= horizon.getTime())
+      .map(({ bill, periodDueDate }) => ({
+        bill,
+        periodDueDate,
+        isOverdue: periodDueDate.getTime() < today.getTime()
+      }))
+      .sort((a, b) => a.periodDueDate.getTime() - b.periodDueDate.getTime());
   }
 
   private generateId(): string {
