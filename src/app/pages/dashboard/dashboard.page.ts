@@ -5,6 +5,7 @@ import {
   AfterViewInit,
   ViewChild,
   ElementRef,
+  ChangeDetectorRef,
   effect
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -118,7 +119,8 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     private readonly categoryService: CategoryService,
     private readonly billService: BillService,
     private readonly dashboardService: DashboardService,
-    private readonly themeService: ThemeService
+    private readonly themeService: ThemeService,
+    private readonly cdr: ChangeDetectorRef
   ) {
     effect(() => {
       this.themeService.theme();
@@ -231,6 +233,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
       };
     });
 
+    this.cdr.detectChanges();
     this.renderCharts();
   }
 
