@@ -27,7 +27,7 @@ export class App {
     if (!this.googleAuth.isSignedIn()) return;
 
     try {
-      await this.driveSync.sync();
+      await this.driveSync.pull();
     } catch (error) {
       console.error('La sincronización automática con Google Drive falló:', error);
     }

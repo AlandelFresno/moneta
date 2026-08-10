@@ -15,21 +15,55 @@
         (onChange)="onPresetChange()"
       />
 
-      @if (rangePreset === 'custom') {
-        <p-datepicker
-          selectionMode="range"
-          [(ngModel)]="customRangeDates"
-          (onSelect)="onCustomRangeChange()"
-          dateFormat="dd/mm/yy"
-          [readonlyInput]="true"
-          placeholder="Seleccionar rango"
-        />
-      }
+      <p-datepicker
+        selectionMode="range"
+        [(ngModel)]="customRangeDates"
+        (onSelect)="onCustomRangeChange()"
+        dateFormat="dd/mm/yy"
+        [readonlyInput]="true"
+        placeholder="Rango personalizado"
+        (onFocus)="rangePreset = 'custom'"
+      />
     </div>
   </div>
 
+  <div class="flex items-center gap-3 flex-wrap mb-5 p-3.5 rounded-2xl bg-surface-card border border-border-subtle">
+    <div class="flex items-center gap-2.5">
+      <p-toggleswitch [(ngModel)]="compareEnabled" (onChange)="onCompareToggle()" />
+      <span class="text-sm font-medium text-text-primary">Comparar con otro período</span>
+    </div>
+
+    @if (compareEnabled) {
+      <p-select
+        class="min-w-[12rem]"
+        [options]="presetOptions"
+        optionLabel="label"
+        optionValue="value"
+        [(ngModel)]="comparePreset"
+        (onChange)="onComparePresetChange()"
+      />
+
+      @if (comparePreset === 'custom') {
+        <p-datepicker
+          selectionMode="range"
+          [(ngModel)]="compareRangeDates"
+          (onSelect)="onCompareRangeChange()"
+          dateFormat="dd/mm/yy"
+          [readonlyInput]="true"
+          placeholder="Seleccionar rango a comparar"
+        />
+      }
+
+      <span class="text-xs text-text-secondary ml-auto">{{ formatRange(compareRange) }}</span>
+    }
+  </div>
+
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-    <div class="flex items-center gap-3.5 p-4 rounded-2xl bg-surface-card border border-border-subtle">
+    <button
+      type="button"
+      class="flex items-center gap-3.5 p-4 rounded-2xl bg-surface-card border border-border-subtle text-left cursor-pointer hover:border-income/40 transition-colors duration-150"
+      (click)="newTransaction('income')"
+    >
       <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base text-income bg-income/15">
         <i class="pi pi-arrow-down-left"></i>
       </div>
@@ -39,12 +73,16 @@
           {{ stats.income | number: '1.2-2' }}
         </span>
         <span class="text-xs font-medium [font-variant-numeric:tabular-nums]" [class]="deltaClass(comparison.incomeChangePct, false)">
-          {{ formatPct(comparison.incomeChangePct) }} vs. período anterior
+          {{ formatPct(comparison.incomeChangePct) }} {{ compareLabel() }}
         </span>
       </div>
-    </div>
+    </button>
 
-    <div class="flex items-center gap-3.5 p-4 rounded-2xl bg-surface-card border border-border-subtle">
+    <button
+      type="button"
+      class="flex items-center gap-3.5 p-4 rounded-2xl bg-surface-card border border-border-subtle text-left cursor-pointer hover:border-expense/40 transition-colors duration-150"
+      (click)="newTransaction('expense')"
+    >
       <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base text-expense bg-expense/15">
         <i class="pi pi-arrow-up-right"></i>
       </div>
@@ -54,10 +92,10 @@
           {{ stats.expense | number: '1.2-2' }}
         </span>
         <span class="text-xs font-medium [font-variant-numeric:tabular-nums]" [class]="deltaClass(comparison.expenseChangePct, true)">
-          {{ formatPct(comparison.expenseChangePct) }} vs. período anterior
+          {{ formatPct(comparison.expenseChangePct) }} {{ compareLabel() }}
         </span>
       </div>
-    </div>
+    </button>
 
     <div class="flex items-center gap-3.5 p-4 rounded-2xl bg-surface-card border border-border-subtle">
       <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base text-accent bg-accent/15">
@@ -73,7 +111,7 @@
           {{ stats.balance | number: '1.2-2' }}
         </span>
         <span class="text-xs font-medium [font-variant-numeric:tabular-nums]" [class]="deltaClass(comparison.balanceChangePct, false)">
-          {{ formatPct(comparison.balanceChangePct) }} vs. período anterior
+          {{ formatPct(comparison.balanceChangePct) }} {{ compareLabel() }}
         </span>
       </div>
     </div>

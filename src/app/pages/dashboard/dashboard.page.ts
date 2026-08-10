@@ -10,9 +10,11 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Subject, takeUntil, combineLatest } from 'rxjs';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import Chart from 'chart.js/auto';
 
 import { TransactionService } from '../../services/transaction.service';
@@ -64,7 +66,7 @@ const EMPTY_COMPARISON: PeriodComparison = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, SelectModule, DatePickerModule],
+  imports: [CommonModule, FormsModule, SelectModule, DatePickerModule, ToggleSwitchModule],
   templateUrl: './dashboard.page.html',
   styleUrl: './dashboard.page.scss'
 })
@@ -102,6 +104,12 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   customRangeDates: Date[] | null = null;
   currentRange: DateRange | null = null;
 
+  compareEnabled = false;
+  comparePreset: RangePreset = 'last3';
+  compareRangeDates: Date[] | null = null;
+  compareRange: DateRange | null = null;
+  compareStats: PeriodStats = EMPTY_STATS;
+
   stats: PeriodStats = EMPTY_STATS;
   comparison: PeriodComparison = EMPTY_COMPARISON;
 
@@ -120,6 +128,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     private readonly billService: BillService,
     private readonly dashboardService: DashboardService,
     private readonly themeService: ThemeService,
+    private readonly router: Router,
     private readonly cdr: ChangeDetectorRef
   ) {
     effect(() => {
@@ -172,6 +181,26 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  onCompareToggle(): void {
+    this.recompute();
+  }
+
+  onComparePresetChange(): void {
+    if (this.comparePreset !== 'custom') {
+      this.recompute();
+      return;
+    }
+    if (this.compareRangeDates?.length === 2 && this.compareRangeDates[1]) {
+      this.recompute();
+    }
+  }
+
+  onCompareRangeChange(): void {
+    if (this.compareRangeDates?.length === 2 && this.compareRangeDates[1]) {
+      this.recompute();
+    }
+  }
+
   formatPct(pct: number | null): string {
     if (pct === null) return '—';
     const sign = pct > 0 ? '+' : '';
@@ -186,6 +215,19 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
 
   formatDate(date: Date): string {
     return new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+  }
+
+  formatRange(range: DateRange | null): string {
+    if (!range) return '—';
+    return `${this.formatDate(range.start)} – ${this.formatDate(range.end)}`;
+  }
+
+  compareLabel(): string {
+    return this.compareEnabled ? `vs. ${this.formatRange(this.compareRange)}` : 'vs. período anterior';
+  }
+
+  newTransaction(type: 'income' | 'expense'): void {
+    void this.router.navigate(['/transactions'], { queryParams: { type } });
   }
 
   private recompute(): void {
@@ -204,9 +246,29 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
 
     this.stats = this.dashboardService.periodStats(inRange);
 
-    const previousRange = this.dashboardService.previousRange(this.currentRange);
-    const inPreviousRange = this.dashboardService.transactionsInRange(this.allTransactions, previousRange);
-    this.comparison = this.dashboardService.comparePeriods(this.stats, this.dashboardService.periodStats(inPreviousRange));
+    if (this.compareEnabled) {
+      const compareCustom =
+        this.comparePreset === 'custom' && this.compareRangeDates?.length === 2 && this.compareRangeDates[1]
+          ? { start: this.compareRangeDates[0], end: this.compareRangeDates[1] }
+          : null;
+
+      if (this.comparePreset !== 'custom' || compareCustom) {
+        this.compareRange = this.dashboardService.rangeForPreset(
+          this.comparePreset,
+          reference,
+          this.allTransactions,
+          compareCustom
+        );
+      }
+    } else {
+      this.compareRange = this.dashboardService.previousRange(this.currentRange);
+    }
+
+    const inCompareRange = this.compareRange
+      ? this.dashboardService.transactionsInRange(this.allTransactions, this.compareRange)
+      : [];
+    this.compareStats = this.dashboardService.periodStats(inCompareRange);
+    this.comparison = this.dashboardService.comparePeriods(this.stats, this.compareStats);
 
     this.expenseBreakdown = this.dashboardService.categoryBreakdown(inRange, this.categories, 'expense');
     this.incomeBreakdown = this.dashboardService.categoryBreakdown(inRange, this.categories, 'income');

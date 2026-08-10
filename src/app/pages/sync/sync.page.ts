@@ -18,11 +18,13 @@ export class SyncPage implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
 
   signedIn = false;
-  syncing = false;
+  pulling = false;
+  pushing = false;
   lastSyncedAt: Date | null = null;
   lastError: string | null = null;
   requiresReauth = false;
   lastResult: SyncResult | null = null;
+  lastAction: 'pull' | 'push' | null = null;
 
   constructor(
     private readonly googleAuth: GoogleAuthService,
@@ -83,19 +85,29 @@ export class SyncPage implements OnInit, OnDestroy {
     });
   }
 
-  async syncNow(): Promise<void> {
-    this.syncing = true;
+  async pull(): Promise<void> {
+    await this.runSync('pull', () => this.driveSync.pull());
+  }
+
+  async push(): Promise<void> {
+    await this.runSync('push', () => this.driveSync.push());
+  }
+
+  private async runSync(action: 'pull' | 'push', run: () => Promise<SyncResult>): Promise<void> {
+    if (action === 'pull') this.pulling = true;
+    else this.pushing = true;
     this.lastError = null;
     this.requiresReauth = false;
     this.cdr.markForCheck();
 
     try {
-      const result = await this.driveSync.sync();
+      const result = await run();
       this.lastResult = result;
+      this.lastAction = action;
       this.lastSyncedAt = result.syncedAt;
       this.messageService.add({
         severity: 'success',
-        summary: 'Sincronización completada',
+        summary: action === 'pull' ? 'Datos traídos' : 'Datos subidos',
         detail: this.formatSummary(result)
       });
     } catch (error) {
@@ -105,7 +117,8 @@ export class SyncPage implements OnInit, OnDestroy {
       this.messageService.add({ severity: 'error', summary: 'Error al sincronizar', detail: message });
     }
 
-    this.syncing = false;
+    this.pulling = false;
+    this.pushing = false;
     this.cdr.markForCheck();
   }
 
