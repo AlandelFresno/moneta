@@ -57,11 +57,44 @@ export class DriveSyncService {
     private readonly billService: BillService
   ) {}
 
-  async sync(): Promise<SyncResult> {
+  /** Downloads remote data, merges it into local storage, and writes the merged result locally. Does not upload. */
+  async pull(): Promise<SyncResult> {
     const folderId = await this.findOrCreateFolder(this.SYNC_FOLDER_NAME);
     const existingFile = await this.findSyncFile(folderId);
     const remotePayload = existingFile ? await this.downloadPayload(existingFile.id) : EMPTY_PAYLOAD;
 
+    const { deduped, stats } = this.mergeWithLocal(remotePayload);
+
+    this.transactionService.replaceAll(deduped.transactions);
+    this.categoryService.replaceAll(deduped.categories);
+    this.billService.replaceAll(deduped.bills);
+
+    return this.finalizeResult(stats);
+  }
+
+  /** Merges remote data with local (without persisting it locally), then uploads the merged result to Drive. */
+  async push(): Promise<SyncResult> {
+    const folderId = await this.findOrCreateFolder(this.SYNC_FOLDER_NAME);
+    const existingFile = await this.findSyncFile(folderId);
+    const remotePayload = existingFile ? await this.downloadPayload(existingFile.id) : EMPTY_PAYLOAD;
+
+    const { deduped, stats } = this.mergeWithLocal(remotePayload);
+
+    const outgoingPayload: DriveSyncPayload = {
+      transactions: deduped.transactions.map(fromTransaction),
+      categories: deduped.categories.map(fromCategory),
+      bills: deduped.bills.map(fromBill)
+    };
+
+    await this.uploadPayload(folderId, existingFile?.id ?? null, outgoingPayload);
+
+    return this.finalizeResult(stats);
+  }
+
+  private mergeWithLocal(remotePayload: DriveSyncPayload): {
+    deduped: ReturnType<typeof dedupeCategories>;
+    stats: { transactions: EntitySyncStats; categories: EntitySyncStats; bills: EntitySyncStats };
+  } {
     const now = new Date();
 
     const transactionsResult = mergeEntities(
@@ -81,27 +114,25 @@ export class DriveSyncService {
 
     const deduped = dedupeCategories(mergedCategories, mergedTransactions, mergedBills, now);
 
-    this.transactionService.replaceAll(deduped.transactions);
-    this.categoryService.replaceAll(deduped.categories);
-    this.billService.replaceAll(deduped.bills);
-
-    const outgoingPayload: DriveSyncPayload = {
-      transactions: deduped.transactions.map(fromTransaction),
-      categories: deduped.categories.map(fromCategory),
-      bills: deduped.bills.map(fromBill)
+    return {
+      deduped,
+      stats: {
+        transactions: { added: transactionsResult.added, updated: transactionsResult.updated },
+        categories: { added: categoriesResult.added, updated: categoriesResult.updated },
+        bills: { added: billsResult.added, updated: billsResult.updated }
+      }
     };
+  }
 
-    await this.uploadPayload(folderId, existingFile?.id ?? null, outgoingPayload);
-
+  private async finalizeResult(stats: {
+    transactions: EntitySyncStats;
+    categories: EntitySyncStats;
+    bills: EntitySyncStats;
+  }): Promise<SyncResult> {
     const syncedAt = new Date();
     await Preferences.set({ key: this.LAST_SYNCED_KEY, value: syncedAt.toISOString() });
 
-    return {
-      syncedAt,
-      transactions: { added: transactionsResult.added, updated: transactionsResult.updated },
-      categories: { added: categoriesResult.added, updated: categoriesResult.updated },
-      bills: { added: billsResult.added, updated: billsResult.updated }
-    };
+    return { syncedAt, ...stats };
   }
 
   async getLastSyncedAt(): Promise<Date | null> {

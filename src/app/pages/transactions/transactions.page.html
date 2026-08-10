@@ -240,15 +240,25 @@
     </div>
 
     <label for="txn-category" class="text-sm font-medium mt-2 text-text-primary">Categoría</label>
-    <p-select
-      class="w-full"
-      inputId="txn-category"
-      [options]="categoriesForType(form.type)"
-      optionLabel="name"
-      optionValue="id"
-      placeholder="Seleccioná una categoría"
-      [(ngModel)]="form.categoryId"
-    />
+    <div class="flex gap-2">
+      <p-select
+        class="w-full flex-1"
+        inputId="txn-category"
+        [options]="categoriesForType(form.type)"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Seleccioná una categoría"
+        [(ngModel)]="form.categoryId"
+      />
+      <button
+        type="button"
+        class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-lg border border-border-subtle bg-surface-input text-text-secondary cursor-pointer transition-colors duration-150 hover:bg-surface-card hover:text-accent"
+        title="Nueva categoría"
+        (click)="openCreateCategoryDialog()"
+      >
+        <i class="pi pi-plus"></i>
+      </button>
+    </div>
 
     <label for="txn-name" class="text-sm font-medium mt-2 text-text-primary">Nombre</label>
     <input id="txn-name" type="text" pInputText [(ngModel)]="form.name" placeholder="Ej: Sueldo, Supermercado" />
@@ -274,6 +284,46 @@
   <ng-template #footer>
     <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="dialogVisible = false" />
     <p-button label="Guardar" (onClick)="saveTransaction()" />
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="categoryDialogVisible"
+  [modal]="true"
+  [style]="{ width: '24rem' }"
+  [header]="form.type === 'income' ? 'Nueva categoría de ingreso' : 'Nueva categoría de gasto'"
+>
+  <div class="flex flex-col gap-1.5">
+    <label for="quick-cat-name" class="text-sm font-medium mt-2 text-text-primary">Nombre</label>
+    <input id="quick-cat-name" type="text" pInputText [(ngModel)]="categoryForm.name" placeholder="Ej: Alquiler, Freelance" />
+
+    <label class="text-sm font-medium mt-2 text-text-primary">Color</label>
+    <input
+      type="color"
+      [(ngModel)]="categoryForm.color"
+      class="w-full h-10 rounded-lg border border-border-subtle cursor-pointer bg-surface-input"
+    />
+
+    <label class="text-sm font-medium mt-2 text-text-primary">Ícono</label>
+    <div class="grid grid-cols-7 gap-2 mt-1">
+      @for (icon of categoryIconOptions; track icon) {
+        <button
+          type="button"
+          class="w-9 h-9 flex items-center justify-center rounded-lg border cursor-pointer transition-colors duration-150"
+          [ngClass]="categoryForm.icon === icon
+            ? 'border-accent bg-accent/15 text-accent'
+            : 'border-border-subtle bg-surface-input text-text-secondary'"
+          (click)="categoryForm.icon = icon"
+        >
+          <app-icon [name]="icon" />
+        </button>
+      }
+    </div>
+  </div>
+
+  <ng-template #footer>
+    <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="categoryDialogVisible = false" />
+    <p-button label="Guardar" (onClick)="saveQuickCategory()" />
   </ng-template>
 </p-dialog>
 

@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil, combineLatest, debounceTime, distinctUntilChanged } from 'rxjs';
 import { lastValueFrom } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
@@ -14,7 +15,7 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
 import { Transaction, TransactionType } from '../../core/types/transaction.types';
-import { Category } from '../../core/types/category.types';
+import { Category, CategoryType } from '../../core/types/category.types';
 import { Bill } from '../../core/types/bill.types';
 import { TransactionService } from '../../services/transaction.service';
 import { CategoryService } from '../../services/category.service';
@@ -22,6 +23,7 @@ import { CsvService, ParsedCsvRow } from '../../services/csv.service';
 import { BillService, BillDueStatus } from '../../services/bill.service';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { TransactionWithCategory, withCategory } from '../../core/utils/transaction-display.util';
+import { CATEGORY_ICON_OPTIONS } from '../../core/utils/category-icons.util';
 
 interface TransactionGroup {
   key: string;
@@ -47,6 +49,18 @@ const EMPTY_FORM: TransactionForm = {
   description: '',
   amount: null,
   date: new Date()
+};
+
+interface CategoryQuickForm {
+  name: string;
+  color: string;
+  icon: string;
+}
+
+const EMPTY_CATEGORY_FORM: CategoryQuickForm = {
+  name: '',
+  color: '#3b82f6',
+  icon: 'tag'
 };
 
 @Component({
@@ -98,6 +112,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
   dialogVisible = false;
   form: TransactionForm = { ...EMPTY_FORM };
 
+  categoryDialogVisible = false;
+  categoryForm: CategoryQuickForm = { ...EMPTY_CATEGORY_FORM };
+  readonly categoryIconOptions = CATEGORY_ICON_OPTIONS;
+
   bills: Bill[] = [];
   dueBills: BillDueStatus[] = [];
   payDialogVisible = false;
@@ -111,6 +129,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     private readonly billService: BillService,
     private readonly confirmationService: ConfirmationService,
     private readonly messageService: MessageService,
+    private readonly route: ActivatedRoute,
     private readonly cdr: ChangeDetectorRef
   ) {}
 
@@ -125,6 +144,11 @@ export class TransactionsPage implements OnInit, OnDestroy {
         this.applyFilters();
         this.cdr.markForCheck();
       });
+
+    const queryType = this.route.snapshot.queryParamMap.get('type');
+    if (queryType === 'income' || queryType === 'expense') {
+      this.openCreateDialog(queryType);
+    }
 
     this.billService
       .getAll()
@@ -339,8 +363,8 @@ export class TransactionsPage implements OnInit, OnDestroy {
     });
   }
 
-  openCreateDialog(): void {
-    this.form = { ...EMPTY_FORM, date: new Date() };
+  openCreateDialog(type: TransactionType = 'expense'): void {
+    this.form = { ...EMPTY_FORM, type, date: new Date() };
     this.dialogVisible = true;
   }
 
@@ -359,6 +383,32 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   categoriesForType(type: TransactionType): Category[] {
     return this.categories.filter((cat) => cat.type === type);
+  }
+
+  openCreateCategoryDialog(): void {
+    this.categoryForm = { ...EMPTY_CATEGORY_FORM };
+    this.categoryDialogVisible = true;
+  }
+
+  async saveQuickCategory(): Promise<void> {
+    if (!this.categoryForm.name.trim()) {
+      this.messageService.add({ severity: 'warn', summary: 'Falta el nombre', detail: 'Ingresá un nombre para la categoría' });
+      return;
+    }
+
+    const type: CategoryType = this.form.type;
+    const created = await lastValueFrom(
+      this.categoryService.create({
+        name: this.categoryForm.name.trim(),
+        type,
+        color: this.categoryForm.color,
+        icon: this.categoryForm.icon
+      })
+    );
+
+    this.form.categoryId = created.id;
+    this.categoryDialogVisible = false;
+    this.messageService.add({ severity: 'success', summary: 'Categoría creada' });
   }
 
   get categoryFilterOptions(): { label: string; value: string }[] {
