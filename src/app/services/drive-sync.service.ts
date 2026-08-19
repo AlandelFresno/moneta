@@ -7,6 +7,7 @@ import { GoogleAuthService, GoogleAuthError } from './google-auth.service';
 import { TransactionService, StoredTransaction, toTransaction, fromTransaction } from './transaction.service';
 import { CategoryService, StoredCategory, toCategory, fromCategory } from './category.service';
 import { BillService, StoredBill, toBill, fromBill } from './bill.service';
+import { BudgetService, StoredBudget, toBudget, fromBudget } from './budget.service';
 import { mergeEntities, purgeOldTombstones } from '../core/utils/sync-merge.util';
 import { dedupeCategories } from '../core/utils/category-dedupe.util';
 
@@ -20,6 +21,7 @@ export interface SyncResult {
   transactions: EntitySyncStats;
   categories: EntitySyncStats;
   bills: EntitySyncStats;
+  budgets: EntitySyncStats;
 }
 
 interface DriveFile {
@@ -35,9 +37,10 @@ interface DriveSyncPayload {
   transactions: StoredTransaction[];
   categories: StoredCategory[];
   bills: StoredBill[];
+  budgets: StoredBudget[];
 }
 
-const EMPTY_PAYLOAD: DriveSyncPayload = { transactions: [], categories: [], bills: [] };
+const EMPTY_PAYLOAD: DriveSyncPayload = { transactions: [], categories: [], bills: [], budgets: [] };
 
 @Injectable({
   providedIn: 'root'
@@ -54,7 +57,8 @@ export class DriveSyncService {
     private readonly auth: GoogleAuthService,
     private readonly transactionService: TransactionService,
     private readonly categoryService: CategoryService,
-    private readonly billService: BillService
+    private readonly billService: BillService,
+    private readonly budgetService: BudgetService
   ) {}
 
   /** Downloads remote data, merges it into local storage, and writes the merged result locally. Does not upload. */
@@ -68,6 +72,7 @@ export class DriveSyncService {
     this.transactionService.replaceAll(deduped.transactions);
     this.categoryService.replaceAll(deduped.categories);
     this.billService.replaceAll(deduped.bills);
+    this.budgetService.replaceAll(deduped.budgets);
 
     return this.finalizeResult(stats);
   }
@@ -83,7 +88,8 @@ export class DriveSyncService {
     const outgoingPayload: DriveSyncPayload = {
       transactions: deduped.transactions.map(fromTransaction),
       categories: deduped.categories.map(fromCategory),
-      bills: deduped.bills.map(fromBill)
+      bills: deduped.bills.map(fromBill),
+      budgets: deduped.budgets.map(fromBudget)
     };
 
     await this.uploadPayload(folderId, existingFile?.id ?? null, outgoingPayload);
@@ -93,7 +99,7 @@ export class DriveSyncService {
 
   private mergeWithLocal(remotePayload: DriveSyncPayload): {
     deduped: ReturnType<typeof dedupeCategories>;
-    stats: { transactions: EntitySyncStats; categories: EntitySyncStats; bills: EntitySyncStats };
+    stats: { transactions: EntitySyncStats; categories: EntitySyncStats; bills: EntitySyncStats; budgets: EntitySyncStats };
   } {
     const now = new Date();
 
@@ -112,14 +118,18 @@ export class DriveSyncService {
     const billsResult = mergeEntities(this.billService.getAllIncludingDeleted(), remotePayload.bills.map(toBill));
     const mergedBills = purgeOldTombstones(billsResult.merged, now);
 
-    const deduped = dedupeCategories(mergedCategories, mergedTransactions, mergedBills, now);
+    const budgetsResult = mergeEntities(this.budgetService.getAllIncludingDeleted(), remotePayload.budgets.map(toBudget));
+    const mergedBudgets = purgeOldTombstones(budgetsResult.merged, now);
+
+    const deduped = dedupeCategories(mergedCategories, mergedTransactions, mergedBills, mergedBudgets, now);
 
     return {
       deduped,
       stats: {
         transactions: { added: transactionsResult.added, updated: transactionsResult.updated },
         categories: { added: categoriesResult.added, updated: categoriesResult.updated },
-        bills: { added: billsResult.added, updated: billsResult.updated }
+        bills: { added: billsResult.added, updated: billsResult.updated },
+        budgets: { added: budgetsResult.added, updated: budgetsResult.updated }
       }
     };
   }
@@ -128,6 +138,7 @@ export class DriveSyncService {
     transactions: EntitySyncStats;
     categories: EntitySyncStats;
     bills: EntitySyncStats;
+    budgets: EntitySyncStats;
   }): Promise<SyncResult> {
     const syncedAt = new Date();
     await Preferences.set({ key: this.LAST_SYNCED_KEY, value: syncedAt.toISOString() });

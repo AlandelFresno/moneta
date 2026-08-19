@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { ThemeService } from '../../services/theme.service';
@@ -17,11 +17,15 @@ interface MenuItem {
   styleUrl: './sidebar.component.scss'
 })
 export class SidebarComponent {
+  @Input() open = false;
+  @Output() closeRequested = new EventEmitter<void>();
+
   readonly menuItems: MenuItem[] = [
     { label: 'Dashboard', icon: 'home', route: '/dashboard' },
     { label: 'Transacciones', icon: 'list', route: '/transactions' },
     { label: 'Categorías', icon: 'tags', route: '/categories' },
     { label: 'Servicios', icon: 'calendar-clock', route: '/bills' },
+    { label: 'Presupuesto', icon: 'wallet', route: '/budgets' },
     { label: 'Sincronización', icon: 'cloud', route: '/sync' }
   ];
 

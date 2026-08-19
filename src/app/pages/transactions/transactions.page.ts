@@ -21,9 +21,13 @@ import { TransactionService } from '../../services/transaction.service';
 import { CategoryService } from '../../services/category.service';
 import { CsvService, ParsedCsvRow } from '../../services/csv.service';
 import { BillService, BillDueStatus } from '../../services/bill.service';
+import { BudgetService } from '../../services/budget.service';
+import { DashboardService } from '../../services/dashboard.service';
 import { IconComponent } from '../../shared/icon/icon.component';
+import { BudgetProgressComponent } from '../../shared/budget-progress/budget-progress.component';
 import { TransactionWithCategory, withCategory } from '../../core/utils/transaction-display.util';
 import { CATEGORY_ICON_OPTIONS } from '../../core/utils/category-icons.util';
+import { Budget, BudgetProgress } from '../../core/types/budget.types';
 
 interface TransactionGroup {
   key: string;
@@ -77,7 +81,8 @@ const EMPTY_CATEGORY_FORM: CategoryQuickForm = {
     InputGroupAddonModule,
     SelectModule,
     DatePickerModule,
-    IconComponent
+    IconComponent,
+    BudgetProgressComponent
   ],
   templateUrl: './transactions.page.html',
   styleUrl: './transactions.page.scss'
@@ -122,11 +127,16 @@ export class TransactionsPage implements OnInit, OnDestroy {
   payingBill: BillDueStatus | null = null;
   payAmount: number | null = null;
 
+  activeBudget: Budget | null = null;
+  budgetProgress: BudgetProgress | null = null;
+
   constructor(
     private readonly transactionService: TransactionService,
     private readonly categoryService: CategoryService,
     private readonly csvService: CsvService,
     private readonly billService: BillService,
+    private readonly budgetService: BudgetService,
+    private readonly dashboardService: DashboardService,
     private readonly confirmationService: ConfirmationService,
     private readonly messageService: MessageService,
     private readonly route: ActivatedRoute,
@@ -164,6 +174,20 @@ export class TransactionsPage implements OnInit, OnDestroy {
       .subscribe((text) => {
         this.filters.searchText = text;
         this.applyFilters();
+      });
+
+    combineLatest([this.budgetService.getCurrent(), this.transactionService.getAll()])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(([budget, transactions]) => {
+        this.activeBudget = budget;
+        if (budget) {
+          const range = this.dashboardService.rangeForPreset('thisMonth', new Date(), transactions, null);
+          const thisMonth = this.dashboardService.transactionsInRange(transactions, range);
+          this.budgetProgress = this.budgetService.budgetProgress(budget, thisMonth);
+        } else {
+          this.budgetProgress = null;
+        }
+        this.cdr.markForCheck();
       });
   }
 

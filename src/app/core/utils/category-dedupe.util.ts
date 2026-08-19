@@ -1,11 +1,13 @@
 import { Category } from '../types/category.types';
 import { Transaction } from '../types/transaction.types';
 import { Bill } from '../types/bill.types';
+import { Budget } from '../types/budget.types';
 
 export interface CategoryDedupeResult {
   categories: Category[];
   transactions: Transaction[];
   bills: Bill[];
+  budgets: Budget[];
   duplicatesRemoved: number;
 }
 
@@ -19,6 +21,7 @@ export function dedupeCategories(
   categories: Category[],
   transactions: Transaction[],
   bills: Bill[],
+  budgets: Budget[],
   now: Date
 ): CategoryDedupeResult {
   const active = categories.filter((cat) => !cat.deletedAt);
@@ -48,7 +51,7 @@ export function dedupeCategories(
   }
 
   if (removedIds.size === 0) {
-    return { categories, transactions, bills, duplicatesRemoved: 0 };
+    return { categories, transactions, bills, budgets, duplicatesRemoved: 0 };
   }
 
   const mergedCategories = categories.map((cat) =>
@@ -65,10 +68,23 @@ export function dedupeCategories(
     idRemap.has(bill.categoryId) ? { ...bill, categoryId: remapId(bill.categoryId), updatedAt: now } : bill
   );
 
+  const mergedBudgets = budgets.map((budget) =>
+    budget.allocations.some((allocation) => idRemap.has(allocation.categoryId))
+      ? {
+          ...budget,
+          allocations: budget.allocations.map((allocation) =>
+            idRemap.has(allocation.categoryId) ? { ...allocation, categoryId: remapId(allocation.categoryId) } : allocation
+          ),
+          updatedAt: now
+        }
+      : budget
+  );
+
   return {
     categories: mergedCategories,
     transactions: mergedTransactions,
     bills: mergedBills,
+    budgets: mergedBudgets,
     duplicatesRemoved: removedIds.size
   };
 }

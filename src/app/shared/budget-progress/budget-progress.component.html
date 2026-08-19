@@ -1,0 +1,61 @@
+@if (budget && progress) {
+  <div class="p-4 rounded-2xl bg-surface-card border border-border-subtle">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-sm font-medium text-text-primary">Presupuesto del mes</span>
+      <span
+        class="text-sm [font-variant-numeric:tabular-nums]"
+        [class.text-expense]="(progress.totalPct ?? 0) > 100"
+        [class.text-text-secondary]="(progress.totalPct ?? 0) <= 100"
+      >
+        {{ progress.totalSpent | number: '1.2-2' }} / {{ budget.totalAmount | number: '1.2-2' }}
+      </span>
+    </div>
+    <div class="h-2 rounded-full bg-surface-input overflow-hidden">
+      <div
+        class="h-full rounded-full transition-all duration-200"
+        [ngClass]="barColor(progress.totalPct)"
+        [style.width.%]="widthPct(progress.totalPct)"
+      ></div>
+    </div>
+
+    @if (variant === 'full') {
+      <div class="flex flex-col gap-2 mt-4">
+        @for (cat of progress.categories; track cat.categoryId) {
+          <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-page border border-border-subtle">
+            <div
+              class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm"
+              [style.background-color]="(categoryFor(cat.categoryId)?.color ?? '#6b7280') + '22'"
+              [style.color]="categoryFor(cat.categoryId)?.color ?? '#6b7280'"
+            >
+              <app-icon [name]="categoryFor(cat.categoryId)?.icon ?? 'tag'" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between mb-1 gap-2">
+                <span class="text-sm font-medium text-text-primary truncate">
+                  {{ categoryFor(cat.categoryId)?.name ?? 'Sin categoría' }}
+                </span>
+                <span
+                  class="text-xs flex-shrink-0 [font-variant-numeric:tabular-nums]"
+                  [class.text-expense]="(cat.pct ?? 0) > 100"
+                  [class.text-text-secondary]="(cat.pct ?? 0) <= 100"
+                >
+                  {{ cat.spent | number: '1.2-2' }} / {{ cat.allocated | number: '1.2-2' }}
+                </span>
+              </div>
+              <div class="h-1.5 rounded-full bg-surface-input overflow-hidden">
+                <div class="h-full rounded-full" [ngClass]="barColor(cat.pct)" [style.width.%]="widthPct(cat.pct)"></div>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (progress.unallocated > 0) {
+          <div class="flex items-center justify-between px-4 py-3 rounded-xl bg-surface-page text-sm text-text-secondary">
+            <span>Sin asignar</span>
+            <span class="[font-variant-numeric:tabular-nums]">{{ progress.unallocated | number: '1.2-2' }}</span>
+          </div>
+        }
+      </div>
+    }
+  </div>
+}

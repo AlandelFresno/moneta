@@ -1,0 +1,172 @@
+<div class="p-6 md:p-8 max-w-5xl mx-auto">
+  <div class="flex items-start justify-between gap-4 flex-wrap mb-7">
+    <div>
+      <h1 class="text-[1.75rem] font-semibold tracking-tight text-text-primary">Presupuesto</h1>
+      <p class="text-sm text-text-secondary mt-0.5">
+        @if (current) {
+          {{ formatMonthLabel(current.month) }}
+        } @else {
+          Sin presupuesto este mes
+        }
+      </p>
+    </div>
+
+    @if (current) {
+      <div class="flex items-center gap-2">
+        <p-button label="Editar" severity="secondary" [outlined]="true" (onClick)="openEditCurrentDialog()" />
+        <p-button label="Desactivar" severity="danger" [outlined]="true" (onClick)="deactivateCurrent()" />
+      </div>
+    }
+  </div>
+
+  @if (current && progress) {
+    <app-budget-progress [budget]="current" [progress]="progress" [categories]="categories" variant="full" />
+  } @else {
+    <div class="flex flex-col items-center justify-center gap-2 py-16 text-sm text-text-secondary">
+      <i class="pi pi-wallet text-3xl opacity-50"></i>
+      <span>No hay presupuesto activo. Creá uno para repartir tu gasto mensual entre categorías.</span>
+      <p-button label="Crear presupuesto" icon="pi pi-plus" class="mt-2" (onClick)="openPlanNextMonthDialog()" />
+    </div>
+  }
+
+  @if (upcoming) {
+    <div class="mt-6 p-4 rounded-2xl bg-surface-card border border-border-subtle">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <span class="text-sm font-medium text-text-primary">Próximo mes · {{ formatMonthLabel(upcoming.month) }}</span>
+          <p class="text-xs text-text-secondary mt-0.5 [font-variant-numeric:tabular-nums]">
+            {{ upcoming.totalAmount | number: '1.2-2' }} repartido en {{ upcoming.allocations.length }}
+            {{ upcoming.allocations.length === 1 ? 'categoría' : 'categorías' }}
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <p-button label="Editar" size="small" severity="secondary" [outlined]="true" (onClick)="openPlanNextMonthDialog()" />
+          <p-button label="Cancelar" size="small" severity="danger" [outlined]="true" (onClick)="cancelUpcoming()" />
+        </div>
+      </div>
+    </div>
+  } @else if (current) {
+    <div class="mt-6">
+      <p-button
+        label="Planificar el próximo mes"
+        severity="secondary"
+        [outlined]="true"
+        icon="pi pi-plus"
+        (onClick)="openPlanNextMonthDialog()"
+      />
+    </div>
+  }
+
+  @if (history.length > 0) {
+    <div class="mt-8">
+      <button
+        type="button"
+        class="flex items-center gap-2 text-sm font-medium text-text-secondary cursor-pointer border-none bg-transparent p-0"
+        (click)="historyPanelOpen = !historyPanelOpen"
+      >
+        <i class="pi" [ngClass]="historyPanelOpen ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
+        Historial ({{ history.length }})
+      </button>
+
+      @if (historyPanelOpen) {
+        <div class="flex flex-col gap-2 mt-3">
+          @for (b of history; track b.id) {
+            <div class="flex items-center justify-between px-4 py-3 rounded-xl bg-surface-card border border-border-subtle text-sm">
+              <span class="text-text-primary">{{ formatMonthLabel(b.month) }}</span>
+              <span class="text-text-secondary [font-variant-numeric:tabular-nums]">
+                {{ b.totalAmount | number: '1.2-2' }} · {{ b.allocations.length }}
+                {{ b.allocations.length === 1 ? 'categoría' : 'categorías' }}
+              </span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [style]="{ width: '34rem', maxWidth: '92vw' }" [header]="formatMonthLabel(targetMonth)">
+  <div class="flex flex-col gap-1.5">
+    <label for="budget-month" class="text-sm font-medium mt-2 text-text-primary">¿Cuándo empieza?</label>
+    <p-select
+      inputId="budget-month"
+      class="w-full"
+      [options]="targetMonthOptions"
+      optionLabel="label"
+      optionValue="value"
+      [(ngModel)]="targetMonth"
+    />
+
+    <label for="budget-total" class="text-sm font-medium mt-2 text-text-primary">Monto total mensual (ARS)</label>
+    <p-inputnumber
+      inputId="budget-total"
+      class="w-full"
+      [(ngModel)]="totalAmount"
+      mode="decimal"
+      [minFractionDigits]="2"
+      [maxFractionDigits]="2"
+      placeholder="0.00"
+    />
+
+    <div class="flex items-center justify-between mt-4 mb-1">
+      <span class="text-sm font-medium text-text-primary">Categorías</span>
+      <span
+        class="text-xs [font-variant-numeric:tabular-nums]"
+        [class.text-expense]="remaining < 0"
+        [class.text-text-secondary]="remaining >= 0"
+      >
+        Sin asignar: {{ remaining | number: '1.2-2' }}
+      </span>
+    </div>
+
+    <div class="flex items-center gap-2 mb-2 flex-wrap">
+      <p-select class="min-w-[11rem]" [options]="suggestMethodOptions" optionLabel="label" optionValue="value" [(ngModel)]="suggestMethod" />
+      <p-button label="Autocompletar seleccionadas" size="small" severity="secondary" [outlined]="true" (onClick)="autoFillSelected()" />
+    </div>
+
+    <label for="min-spend" class="text-xs text-text-secondary">Filtrar por gasto histórico mínimo</label>
+    <p-inputnumber
+      inputId="min-spend"
+      class="w-full"
+      [(ngModel)]="minSpendFilter"
+      mode="decimal"
+      [minFractionDigits]="0"
+      [maxFractionDigits]="2"
+      placeholder="0"
+    />
+
+    <div class="flex flex-col gap-1.5 mt-2 max-h-72 overflow-y-auto">
+      @for (row of visibleRows; track row.categoryId) {
+        <div class="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-border-subtle">
+          <p-checkbox [binary]="true" [(ngModel)]="row.included" />
+          <div
+            class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs"
+            [style.background-color]="row.color + '22'"
+            [style.color]="row.color"
+          >
+            <app-icon [name]="row.icon" />
+          </div>
+          <span class="text-sm flex-1 min-w-0 truncate text-text-primary">{{ row.name }}</span>
+          <p-inputnumber
+            class="w-32"
+            [(ngModel)]="row.amount"
+            mode="decimal"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            placeholder="0.00"
+            [disabled]="!row.included"
+          />
+        </div>
+      }
+
+      @if (visibleRows.length === 0) {
+        <span class="text-sm text-text-secondary py-4 text-center">No hay categorías de gasto que superen el filtro.</span>
+      }
+    </div>
+  </div>
+
+  <ng-template #footer>
+    <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="dialogVisible = false" />
+    <p-button label="Guardar" (onClick)="saveBudget()" />
+  </ng-template>
+</p-dialog>
