@@ -20,6 +20,9 @@ import Chart from 'chart.js/auto';
 import { TransactionService } from '../../services/transaction.service';
 import { CategoryService } from '../../services/category.service';
 import { BillService } from '../../services/bill.service';
+import { BudgetService } from '../../services/budget.service';
+import { BudgetProgressComponent } from '../../shared/budget-progress/budget-progress.component';
+import { Budget, BudgetProgress } from '../../core/types/budget.types';
 import {
   DashboardService,
   CategoryBreakdownEntry,
@@ -66,7 +69,7 @@ const EMPTY_COMPARISON: PeriodComparison = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, SelectModule, DatePickerModule, ToggleSwitchModule],
+  imports: [CommonModule, FormsModule, SelectModule, DatePickerModule, ToggleSwitchModule, BudgetProgressComponent],
   templateUrl: './dashboard.page.html',
   styleUrl: './dashboard.page.scss'
 })
@@ -87,7 +90,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   private viewReady = false;
 
   private allTransactions: Transaction[] = [];
-  private categories: Category[] = [];
+  categories: Category[] = [];
   private allBills: Bill[] = [];
 
   readonly presetOptions: { label: string; value: RangePreset }[] = [
@@ -122,10 +125,14 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   upcomingBills: UpcomingBillDisplay[] = [];
   hasCategoryTrend = false;
 
+  activeBudget: Budget | null = null;
+  budgetProgress: BudgetProgress | null = null;
+
   constructor(
     private readonly transactionService: TransactionService,
     private readonly categoryService: CategoryService,
     private readonly billService: BillService,
+    private readonly budgetService: BudgetService,
     private readonly dashboardService: DashboardService,
     private readonly themeService: ThemeService,
     private readonly router: Router,
@@ -147,6 +154,20 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
         this.categories = categories;
         this.allBills = bills;
         this.recompute();
+      });
+
+    combineLatest([this.budgetService.getCurrent(), this.transactionService.getAll()])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(([budget, transactions]) => {
+        this.activeBudget = budget;
+        if (budget) {
+          const range = this.dashboardService.rangeForPreset('thisMonth', new Date(), transactions, null);
+          const thisMonth = this.dashboardService.transactionsInRange(transactions, range);
+          this.budgetProgress = this.budgetService.budgetProgress(budget, thisMonth);
+        } else {
+          this.budgetProgress = null;
+        }
+        this.cdr.markForCheck();
       });
   }
 

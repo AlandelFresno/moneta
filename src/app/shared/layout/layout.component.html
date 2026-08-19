@@ -1,6 +1,18 @@
 <div class="min-h-screen bg-surface-page">
-  <app-sidebar />
-  <main class="flex-1 min-w-0 ml-56">
+  <app-sidebar [open]="sidebarOpen()" (closeRequested)="sidebarOpen.set(false)" />
+
+  <div class="md:hidden sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-surface-card border-b border-border-subtle">
+    <button
+      type="button"
+      class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-primary hover:bg-surface-input transition-colors duration-150"
+      (click)="sidebarOpen.set(true)"
+    >
+      <i class="pi pi-bars"></i>
+    </button>
+    <span class="font-semibold text-text-primary">Moneta</span>
+  </div>
+
+  <main class="flex-1 min-w-0 ml-0 md:ml-56">
     <router-outlet />
   </main>
 </div>

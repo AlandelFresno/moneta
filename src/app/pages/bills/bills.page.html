@@ -85,7 +85,7 @@
 <p-dialog
   [(visible)]="dialogVisible"
   [modal]="true"
-  [style]="{ width: '28rem' }"
+  [style]="{ width: '28rem', maxWidth: '92vw' }"
   [header]="form.id ? 'Editar servicio' : 'Nuevo servicio'"
 >
   <div class="flex flex-col gap-1.5">
@@ -148,7 +148,7 @@
   </ng-template>
 </p-dialog>
 
-<p-dialog [(visible)]="payDialogVisible" [modal]="true" [style]="{ width: '24rem' }" header="Registrar pago">
+<p-dialog [(visible)]="payDialogVisible" [modal]="true" [style]="{ width: '24rem', maxWidth: '92vw' }" header="Registrar pago">
   @if (payingBill) {
     <div class="flex flex-col gap-1.5">
       <p class="text-sm text-text-secondary mb-2">
