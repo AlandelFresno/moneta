@@ -1,9 +1,9 @@
 @if (budget && progress) {
-  <div class="p-4 rounded-2xl bg-surface-card border border-border-subtle">
-    <div class="flex items-center justify-between mb-2">
-      <span class="text-sm font-medium text-text-primary">Presupuesto del mes</span>
+  <div class="p-4 rounded-2xl bg-surface-card border border-border-subtle min-w-0">
+    <div class="flex items-center justify-between gap-2 mb-2">
+      <span class="text-sm font-medium text-text-primary flex-shrink-0">Presupuesto del mes</span>
       <span
-        class="text-sm [font-variant-numeric:tabular-nums]"
+        class="text-sm [font-variant-numeric:tabular-nums] truncate min-w-0"
         [class.text-expense]="(progress.totalPct ?? 0) > 100"
         [class.text-text-secondary]="(progress.totalPct ?? 0) <= 100"
       >

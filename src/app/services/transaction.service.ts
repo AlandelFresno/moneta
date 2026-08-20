@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, map } from 'rxjs';
 import { Transaction, TransactionType } from '../core/types/transaction.types';
+import { AccountService } from './account.service';
 
 export interface StoredTransaction extends Omit<Transaction, 'date' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
   date: string;
@@ -38,6 +39,8 @@ export class TransactionService {
   readonly transactions$: Observable<Transaction[]> = this.allSubject.pipe(
     map((transactions) => transactions.filter((txn) => !txn.deletedAt))
   );
+
+  constructor(private readonly accountService: AccountService) {}
 
   private loadAll(): Transaction[] {
     const raw = localStorage.getItem(this.storageKey);
@@ -103,6 +106,10 @@ export class TransactionService {
     this.persist(transactions);
     this.allSubject.next(transactions);
 
+    if (newTransaction.accountId) {
+      this.accountService.adjustBalance(newTransaction.accountId, this.signedDelta(newTransaction));
+    }
+
     return new Observable((subscriber) => {
       subscriber.next(newTransaction);
       subscriber.complete();
@@ -110,11 +117,22 @@ export class TransactionService {
   }
 
   update(id: string, updates: Partial<Omit<Transaction, 'id' | 'createdAt'>>): Observable<void> {
+    const existing = this.allSubject.value.find((txn) => txn.id === id);
     const transactions = this.allSubject.value.map((txn) =>
       txn.id === id ? { ...txn, ...updates, updatedAt: new Date() } : txn
     );
     this.persist(transactions);
     this.allSubject.next(transactions);
+
+    if (existing) {
+      const updated = transactions.find((txn) => txn.id === id)!;
+      if (existing.accountId) {
+        this.accountService.adjustBalance(existing.accountId, -this.signedDelta(existing));
+      }
+      if (updated.accountId) {
+        this.accountService.adjustBalance(updated.accountId, this.signedDelta(updated));
+      }
+    }
 
     return new Observable((subscriber) => {
       subscriber.next();
@@ -124,16 +142,25 @@ export class TransactionService {
 
   delete(id: string): Observable<void> {
     const now = new Date();
+    const existing = this.allSubject.value.find((txn) => txn.id === id);
     const transactions = this.allSubject.value.map((txn) =>
       txn.id === id ? { ...txn, deletedAt: now, updatedAt: now } : txn
     );
     this.persist(transactions);
     this.allSubject.next(transactions);
 
+    if (existing?.accountId && !existing.deletedAt) {
+      this.accountService.adjustBalance(existing.accountId, -this.signedDelta(existing));
+    }
+
     return new Observable((subscriber) => {
       subscriber.next();
       subscriber.complete();
     });
+  }
+
+  private signedDelta(txn: Pick<Transaction, 'type' | 'amount'>): number {
+    return txn.type === 'income' ? txn.amount : -txn.amount;
   }
 
   getTotalIncome(startDate?: Date, endDate?: Date): number {

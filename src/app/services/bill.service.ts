@@ -6,8 +6,9 @@ interface StoredBillPayment extends Omit<BillPayment, 'paidDate'> {
   paidDate: string;
 }
 
-export interface StoredBill extends Omit<Bill, 'dueDate' | 'payments' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
+export interface StoredBill extends Omit<Bill, 'dueDate' | 'endDate' | 'payments' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
   dueDate: string;
+  endDate?: string;
   payments: StoredBillPayment[];
   createdAt: string;
   updatedAt: string;
@@ -18,6 +19,7 @@ export function toBill(stored: StoredBill): Bill {
   return {
     ...stored,
     dueDate: new Date(stored.dueDate),
+    endDate: stored.endDate ? new Date(stored.endDate) : undefined,
     payments: stored.payments.map((p) => ({ ...p, paidDate: new Date(p.paidDate) })),
     createdAt: new Date(stored.createdAt),
     updatedAt: new Date(stored.updatedAt),
@@ -29,6 +31,7 @@ export function fromBill(bill: Bill): StoredBill {
   return {
     ...bill,
     dueDate: bill.dueDate.toISOString(),
+    endDate: bill.endDate ? bill.endDate.toISOString() : undefined,
     payments: bill.payments.map((p) => ({ ...p, paidDate: p.paidDate.toISOString() })),
     createdAt: bill.createdAt.toISOString(),
     updatedAt: bill.updatedAt.toISOString(),
@@ -213,13 +216,20 @@ export class BillService {
     return weekOf(a) === weekOf(b);
   }
 
-  /** Active bills whose current period is due (today or earlier) and not yet paid this period. */
+  /** True once a bill's end date has passed or all its installments have been paid. */
+  isFinished(bill: Bill, now: Date): boolean {
+    if (bill.endDate !== undefined && now.getTime() > bill.endDate.getTime()) return true;
+    if (bill.totalInstallments !== undefined && bill.payments.length >= bill.totalInstallments) return true;
+    return false;
+  }
+
+  /** Active, not-finished bills whose current period is due (today or earlier) and not yet paid this period. */
   dueStatuses(bills: Bill[], now: Date): BillDueStatus[] {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
     return bills
-      .filter((bill) => bill.active)
+      .filter((bill) => bill.active && !this.isFinished(bill, now))
       // Anchor date itself hasn't arrived yet — don't apply the recurring day-of-month/week/year
       // pattern retroactively to periods before the bill's own first occurrence existed.
       .filter((bill) => startOfDay(bill.dueDate).getTime() <= today.getTime())
@@ -235,13 +245,13 @@ export class BillService {
       }));
   }
 
-  /** Active bills with a next unpaid due date within `days` from now (inclusive), soonest first. */
+  /** Active, not-finished bills with a next unpaid due date within `days` from now (inclusive), soonest first. */
   upcomingBills(bills: Bill[], now: Date, days: number): BillDueStatus[] {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const horizon = new Date(today.getFullYear(), today.getMonth(), today.getDate() + days);
 
     return bills
-      .filter((bill) => bill.active)
+      .filter((bill) => bill.active && !this.isFinished(bill, now))
       .map((bill) => ({ bill, periodDueDate: this.nextDueDate(bill, now) }))
       .filter(({ periodDueDate }) => periodDueDate.getTime() <= horizon.getTime())
       .map(({ bill, periodDueDate }) => ({

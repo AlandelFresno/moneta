@@ -8,6 +8,16 @@ import { TransactionService, StoredTransaction, toTransaction, fromTransaction }
 import { CategoryService, StoredCategory, toCategory, fromCategory } from './category.service';
 import { BillService, StoredBill, toBill, fromBill } from './bill.service';
 import { BudgetService, StoredBudget, toBudget, fromBudget } from './budget.service';
+import {
+  AccountService,
+  StoredAccount,
+  toAccount,
+  fromAccount,
+  StoredAccountTransfer,
+  toTransfer,
+  fromTransfer
+} from './account.service';
+import { Account, AccountTransfer } from '../core/types/account.types';
 import { mergeEntities, purgeOldTombstones } from '../core/utils/sync-merge.util';
 import { dedupeCategories } from '../core/utils/category-dedupe.util';
 
@@ -22,6 +32,8 @@ export interface SyncResult {
   categories: EntitySyncStats;
   bills: EntitySyncStats;
   budgets: EntitySyncStats;
+  accounts: EntitySyncStats;
+  transfers: EntitySyncStats;
 }
 
 interface DriveFile {
@@ -38,9 +50,11 @@ interface DriveSyncPayload {
   categories: StoredCategory[];
   bills: StoredBill[];
   budgets: StoredBudget[];
+  accounts: StoredAccount[];
+  transfers: StoredAccountTransfer[];
 }
 
-const EMPTY_PAYLOAD: DriveSyncPayload = { transactions: [], categories: [], bills: [], budgets: [] };
+const EMPTY_PAYLOAD: DriveSyncPayload = { transactions: [], categories: [], bills: [], budgets: [], accounts: [], transfers: [] };
 
 @Injectable({
   providedIn: 'root'
@@ -58,7 +72,8 @@ export class DriveSyncService {
     private readonly transactionService: TransactionService,
     private readonly categoryService: CategoryService,
     private readonly billService: BillService,
-    private readonly budgetService: BudgetService
+    private readonly budgetService: BudgetService,
+    private readonly accountService: AccountService
   ) {}
 
   /** Downloads remote data, merges it into local storage, and writes the merged result locally. Does not upload. */
@@ -73,6 +88,8 @@ export class DriveSyncService {
     this.categoryService.replaceAll(deduped.categories);
     this.billService.replaceAll(deduped.bills);
     this.budgetService.replaceAll(deduped.budgets);
+    this.accountService.replaceAll(deduped.accounts);
+    this.accountService.replaceAllTransfers(deduped.transfers);
 
     return this.finalizeResult(stats);
   }
@@ -89,7 +106,9 @@ export class DriveSyncService {
       transactions: deduped.transactions.map(fromTransaction),
       categories: deduped.categories.map(fromCategory),
       bills: deduped.bills.map(fromBill),
-      budgets: deduped.budgets.map(fromBudget)
+      budgets: deduped.budgets.map(fromBudget),
+      accounts: deduped.accounts.map(fromAccount),
+      transfers: deduped.transfers.map(fromTransfer)
     };
 
     await this.uploadPayload(folderId, existingFile?.id ?? null, outgoingPayload);
@@ -98,8 +117,15 @@ export class DriveSyncService {
   }
 
   private mergeWithLocal(remotePayload: DriveSyncPayload): {
-    deduped: ReturnType<typeof dedupeCategories>;
-    stats: { transactions: EntitySyncStats; categories: EntitySyncStats; bills: EntitySyncStats; budgets: EntitySyncStats };
+    deduped: ReturnType<typeof dedupeCategories> & { accounts: Account[]; transfers: AccountTransfer[] };
+    stats: {
+      transactions: EntitySyncStats;
+      categories: EntitySyncStats;
+      bills: EntitySyncStats;
+      budgets: EntitySyncStats;
+      accounts: EntitySyncStats;
+      transfers: EntitySyncStats;
+    };
   } {
     const now = new Date();
 
@@ -121,15 +147,26 @@ export class DriveSyncService {
     const budgetsResult = mergeEntities(this.budgetService.getAllIncludingDeleted(), remotePayload.budgets.map(toBudget));
     const mergedBudgets = purgeOldTombstones(budgetsResult.merged, now);
 
-    const deduped = dedupeCategories(mergedCategories, mergedTransactions, mergedBills, mergedBudgets, now);
+    const accountsResult = mergeEntities(this.accountService.getAllIncludingDeleted(), remotePayload.accounts.map(toAccount));
+    const mergedAccounts = purgeOldTombstones(accountsResult.merged, now);
+
+    const transfersResult = mergeEntities(
+      this.accountService.getAllTransfersIncludingDeleted(),
+      remotePayload.transfers.map(toTransfer)
+    );
+    const mergedTransfers = purgeOldTombstones(transfersResult.merged, now);
+
+    const categoryDeduped = dedupeCategories(mergedCategories, mergedTransactions, mergedBills, mergedBudgets, now);
 
     return {
-      deduped,
+      deduped: { ...categoryDeduped, accounts: mergedAccounts, transfers: mergedTransfers },
       stats: {
         transactions: { added: transactionsResult.added, updated: transactionsResult.updated },
         categories: { added: categoriesResult.added, updated: categoriesResult.updated },
         bills: { added: billsResult.added, updated: billsResult.updated },
-        budgets: { added: budgetsResult.added, updated: budgetsResult.updated }
+        budgets: { added: budgetsResult.added, updated: budgetsResult.updated },
+        accounts: { added: accountsResult.added, updated: accountsResult.updated },
+        transfers: { added: transfersResult.added, updated: transfersResult.updated }
       }
     };
   }
@@ -139,6 +176,8 @@ export class DriveSyncService {
     categories: EntitySyncStats;
     bills: EntitySyncStats;
     budgets: EntitySyncStats;
+    accounts: EntitySyncStats;
+    transfers: EntitySyncStats;
   }): Promise<SyncResult> {
     const syncedAt = new Date();
     await Preferences.set({ key: this.LAST_SYNCED_KEY, value: syncedAt.toISOString() });

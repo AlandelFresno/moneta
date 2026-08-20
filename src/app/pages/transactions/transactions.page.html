@@ -285,6 +285,20 @@
 
     <label for="txn-date" class="text-sm font-medium mt-2 text-text-primary">Fecha</label>
     <p-datepicker class="w-full" inputId="txn-date" [(ngModel)]="form.date" dateFormat="dd/mm/yy" />
+
+    @if (accounts.length > 0) {
+      <label for="txn-account" class="text-sm font-medium mt-2 text-text-primary">Cuenta</label>
+      <p-select
+        class="w-full"
+        inputId="txn-account"
+        [options]="accounts"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Sin cuenta"
+        [showClear]="true"
+        [(ngModel)]="form.accountId"
+      />
+    }
   </div>
 
   <ng-template #footer>

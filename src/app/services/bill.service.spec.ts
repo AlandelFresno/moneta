@@ -100,6 +100,54 @@ describe('BillService', () => {
     });
   });
 
+  describe('isFinished', () => {
+    it('is false when there is no end date or installment cap', () => {
+      const bill = makeBill({ period: 'monthly' });
+      expect(service.isFinished(bill, new Date(2026, 5, 1))).toBeFalse();
+    });
+
+    it('is true once now is past the end date', () => {
+      const bill = makeBill({ endDate: new Date(2026, 2, 1) });
+      expect(service.isFinished(bill, new Date(2026, 2, 2))).toBeTrue();
+      expect(service.isFinished(bill, new Date(2026, 1, 28))).toBeFalse();
+    });
+
+    it('is true once payments.length reaches totalInstallments', () => {
+      const bill = makeBill({
+        totalInstallments: 2,
+        payments: [{ id: 'p1', paidDate: new Date(2026, 0, 1), amount: 100, transactionId: 't1' }]
+      });
+      expect(service.isFinished(bill, new Date(2026, 1, 1))).toBeFalse();
+
+      const paidBill = { ...bill, payments: [...bill.payments, { id: 'p2', paidDate: new Date(2026, 1, 1), amount: 100, transactionId: 't2' }] };
+      expect(service.isFinished(paidBill, new Date(2026, 1, 2))).toBeTrue();
+    });
+  });
+
+  describe('dueStatuses / upcomingBills exclude finished bills', () => {
+    it('excludes a bill whose end date has passed even though it is still active', () => {
+      const bill = makeBill({ period: 'monthly', dueDate: new Date(2026, 0, 5), endDate: new Date(2026, 1, 1), active: true });
+      const now = new Date(2026, 2, 20);
+
+      expect(service.dueStatuses([bill], now)).toEqual([]);
+      expect(service.upcomingBills([bill], now, 30)).toEqual([]);
+    });
+
+    it('excludes a bill whose installments are all paid even though it is still active', () => {
+      const bill = makeBill({
+        period: 'monthly',
+        dueDate: new Date(2026, 0, 5),
+        totalInstallments: 1,
+        active: true,
+        payments: [{ id: 'p1', paidDate: new Date(2026, 0, 6), amount: 5000, transactionId: 't1' }]
+      });
+      const now = new Date(2026, 2, 20);
+
+      expect(service.dueStatuses([bill], now)).toEqual([]);
+      expect(service.upcomingBills([bill], now, 60)).toEqual([]);
+    });
+  });
+
   describe('dueStatuses', () => {
     it('includes a bill whose period due date has passed and is unpaid', () => {
       const bill = makeBill({ period: 'monthly', dueDate: new Date(2026, 0, 5) });

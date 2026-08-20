@@ -18,6 +18,11 @@ export interface Bill {
   // day-of-month for monthly, month+day for yearly. Changing it only
   // affects future occurrences — past BillPayment entries are untouched.
   dueDate: Date;
+  // Optional termination conditions — at most one is normally set. Once either is met,
+  // the bill stops showing up as due/upcoming (see BillService.isFinished), independent
+  // of `active` which is a separate manual pause.
+  endDate?: Date;
+  totalInstallments?: number;
   active: boolean;
   payments: BillPayment[];
   createdAt: Date;

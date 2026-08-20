@@ -1,0 +1,194 @@
+<div class="p-6 md:p-8 max-w-5xl mx-auto">
+  <div class="flex items-start justify-between gap-4 flex-wrap mb-7">
+    <div>
+      <h1 class="text-[1.75rem] font-semibold tracking-tight text-text-primary">Cuentas</h1>
+      <p class="text-sm text-text-secondary mt-0.5">
+        {{ accounts.length }} {{ accounts.length === 1 ? 'cuenta' : 'cuentas' }}
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <p-button label="Transferir" severity="secondary" [outlined]="true" icon="pi pi-arrow-right-arrow-left" [disabled]="accounts.length < 2" (onClick)="openTransferDialog()" />
+      <p-button label="Nueva cuenta" icon="pi pi-plus" (onClick)="openCreateDialog()" />
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-2">
+    @if (accounts.length === 0) {
+      <div class="flex flex-col items-center justify-center gap-2 py-16 text-sm text-text-secondary">
+        <i class="pi pi-credit-card text-3xl opacity-50"></i>
+        <span>No hay cuentas registradas todavía.</span>
+      </div>
+    }
+
+    @for (account of accounts; track account.id) {
+      <div class="flex items-center gap-4 px-4 py-3.5 rounded-xl bg-surface-card border border-border-subtle hover:border-border-strong transition-colors duration-150">
+        <div
+          class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base"
+          [style.background-color]="account.color + '22'"
+          [style.color]="account.color"
+        >
+          <app-icon [name]="account.icon" />
+        </div>
+
+        <div class="flex flex-col flex-1 min-w-0 gap-0.5">
+          <span class="font-medium truncate text-text-primary">{{ account.name }}</span>
+          <span class="text-sm text-text-secondary">{{ typeLabel(account.type) }}</span>
+        </div>
+
+        <span
+          class="text-lg font-semibold flex-shrink-0 [font-variant-numeric:tabular-nums]"
+          [class.text-expense]="account.balance < 0"
+          [class.text-text-primary]="account.balance >= 0"
+        >
+          {{ account.balance | number: '1.2-2' }}
+        </span>
+
+        <div class="flex items-center gap-1 flex-shrink-0">
+          <button
+            type="button"
+            class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary hover:bg-surface-input hover:text-accent transition-colors duration-150"
+            title="Editar"
+            (click)="openEditDialog(account)"
+          >
+            <i class="pi pi-pencil"></i>
+          </button>
+          <button
+            type="button"
+            class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary hover:bg-surface-input hover:text-expense transition-colors duration-150"
+            title="Eliminar"
+            (click)="deleteAccount(account)"
+          >
+            <i class="pi pi-trash"></i>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (recentTransfers.length > 0) {
+    <div class="mt-8">
+      <h2 class="text-sm font-semibold text-text-primary mb-3">Transferencias recientes</h2>
+      <div class="flex flex-col gap-2">
+        @for (transfer of recentTransfers; track transfer.id) {
+          <div class="flex items-center justify-between gap-2 px-4 py-3 rounded-xl bg-surface-card border border-border-subtle text-sm">
+            <div class="flex items-center flex-wrap gap-x-2 gap-y-0.5 min-w-0 flex-1">
+              <span class="text-text-primary truncate max-w-[40%]">{{ transfer.fromName }}</span>
+              <i class="pi pi-arrow-right text-text-secondary flex-shrink-0"></i>
+              <span class="text-text-primary truncate max-w-[40%]">{{ transfer.toName }}</span>
+              @if (transfer.description) {
+                <span class="text-text-secondary truncate w-full">· {{ transfer.description }}</span>
+              }
+            </div>
+            <div class="flex items-center gap-3 flex-shrink-0">
+              <span class="text-text-secondary hidden sm:inline">{{ formatDate(transfer.date) }}</span>
+              <span class="font-medium text-text-primary [font-variant-numeric:tabular-nums]">{{ transfer.amount | number: '1.2-2' }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
+
+<p-dialog
+  [(visible)]="dialogVisible"
+  [modal]="true"
+  [style]="{ width: '24rem', maxWidth: '92vw' }"
+  [header]="form.id ? 'Editar cuenta' : 'Nueva cuenta'"
+>
+  <div class="flex flex-col gap-1.5">
+    <label for="account-name" class="text-sm font-medium mt-2 text-text-primary">Nombre</label>
+    <input id="account-name" type="text" pInputText [(ngModel)]="form.name" placeholder="Ej: Efectivo, Banco Galicia" />
+
+    <label for="account-type" class="text-sm font-medium mt-2 text-text-primary">Tipo</label>
+    <p-select inputId="account-type" class="w-full" [options]="typeOptions" optionLabel="label" optionValue="value" [(ngModel)]="form.type" />
+
+    <label for="account-balance" class="text-sm font-medium mt-2 text-text-primary">
+      Saldo inicial (ARS)
+      @if (form.id) {
+        <span class="text-text-secondary font-normal">— se ajusta con tus transacciones, no es editable</span>
+      }
+    </label>
+    <p-inputnumber
+      inputId="account-balance"
+      class="w-full"
+      [(ngModel)]="form.balance"
+      mode="decimal"
+      [minFractionDigits]="2"
+      [maxFractionDigits]="2"
+      [disabled]="!!form.id"
+      placeholder="0.00"
+    />
+
+    <label class="text-sm font-medium mt-2 text-text-primary">Color</label>
+    <input type="color" [(ngModel)]="form.color" class="w-full h-10 rounded-lg border border-border-subtle cursor-pointer bg-surface-input" />
+
+    <label class="text-sm font-medium mt-2 text-text-primary">Ícono</label>
+    <div class="grid grid-cols-7 gap-2 mt-1">
+      @for (icon of iconOptions; track icon) {
+        <button
+          type="button"
+          class="w-9 h-9 flex items-center justify-center rounded-lg border cursor-pointer transition-colors duration-150"
+          [ngClass]="form.icon === icon
+            ? 'border-accent bg-accent/15 text-accent'
+            : 'border-border-subtle bg-surface-input text-text-secondary'"
+          (click)="form.icon = icon"
+        >
+          <app-icon [name]="icon" />
+        </button>
+      }
+    </div>
+  </div>
+
+  <ng-template #footer>
+    <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="dialogVisible = false" />
+    <p-button label="Guardar" (onClick)="saveAccount()" />
+  </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="transferDialogVisible" [modal]="true" [style]="{ width: '24rem', maxWidth: '92vw' }" header="Transferir entre cuentas">
+  <div class="flex flex-col gap-1.5">
+    <label for="transfer-from" class="text-sm font-medium mt-2 text-text-primary">Desde</label>
+    <p-select
+      inputId="transfer-from"
+      class="w-full"
+      [options]="accounts"
+      optionLabel="name"
+      optionValue="id"
+      [(ngModel)]="transferForm.fromAccountId"
+      (onChange)="onTransferSourceChange()"
+    />
+
+    <label for="transfer-to" class="text-sm font-medium mt-2 text-text-primary">Hacia</label>
+    <p-select
+      inputId="transfer-to"
+      class="w-full"
+      [options]="transferDestinationOptions"
+      optionLabel="name"
+      optionValue="id"
+      [(ngModel)]="transferForm.toAccountId"
+    />
+
+    <label for="transfer-amount" class="text-sm font-medium mt-2 text-text-primary">Monto (ARS)</label>
+    <p-inputnumber
+      inputId="transfer-amount"
+      class="w-full"
+      [(ngModel)]="transferForm.amount"
+      mode="decimal"
+      [minFractionDigits]="2"
+      [maxFractionDigits]="2"
+      placeholder="0.00"
+    />
+
+    <label for="transfer-date" class="text-sm font-medium mt-2 text-text-primary">Fecha</label>
+    <p-datepicker inputId="transfer-date" class="w-full" [(ngModel)]="transferForm.date" dateFormat="dd/mm/yy" />
+
+    <label for="transfer-description" class="text-sm font-medium mt-2 text-text-primary">Descripción</label>
+    <input id="transfer-description" type="text" pInputText [(ngModel)]="transferForm.description" placeholder="Opcional" />
+  </div>
+
+  <ng-template #footer>
+    <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="transferDialogVisible = false" />
+    <p-button label="Transferir" (onClick)="saveTransfer()" />
+  </ng-template>
+</p-dialog>
