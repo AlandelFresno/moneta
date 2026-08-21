@@ -17,12 +17,22 @@ import { BillService, BillDueStatus } from '../../services/bill.service';
 import { CategoryService } from '../../services/category.service';
 import { TransactionService } from '../../services/transaction.service';
 import { IconComponent } from '../../shared/icon/icon.component';
+import { detectRecurringCandidates, RecurringCandidate } from '../../core/utils/recurring-detection.util';
 
 interface BillWithCategory extends Bill {
   categoryName: string;
   categoryColor: string;
   categoryIcon: string;
 }
+
+interface RecurringSuggestion extends RecurringCandidate {
+  categoryName: string;
+  categoryColor: string;
+  categoryIcon: string;
+  signature: string;
+}
+
+const DISMISSED_SUGGESTIONS_KEY = 'dismissedRecurringSuggestions';
 
 type TerminationMode = 'ongoing' | 'endDate' | 'installments';
 
@@ -78,6 +88,8 @@ export class BillsPage implements OnInit, OnDestroy {
   bills: BillWithCategory[] = [];
   categories: Category[] = [];
   dueStatuses: BillDueStatus[] = [];
+  suggestions: RecurringSuggestion[] = [];
+  private dismissedSuggestions: Set<string> = this.loadDismissedSuggestions();
 
   readonly periodOptions: { label: string; value: BillPeriod }[] = [
     { label: 'Semanal', value: 'weekly' },
@@ -107,14 +119,18 @@ export class BillsPage implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    combineLatest([this.billService.getAll(), this.categoryService.getAll()])
+    combineLatest([this.billService.getAll(), this.categoryService.getAll(), this.transactionService.getAll()])
       .pipe(takeUntil(this.destroy$))
-      .subscribe(([bills, categories]) => {
+      .subscribe(([bills, categories, transactions]) => {
         this.categories = categories;
         this.bills = bills
           .map((bill) => this.withCategory(bill, categories))
           .sort((a, b) => a.name.localeCompare(b.name));
         this.dueStatuses = this.billService.dueStatuses(bills, new Date());
+
+        this.suggestions = detectRecurringCandidates(transactions, bills, new Date())
+          .map((candidate) => this.withSuggestionDisplay(candidate, categories))
+          .filter((suggestion) => !this.dismissedSuggestions.has(suggestion.signature));
       });
   }
 
@@ -133,8 +149,46 @@ export class BillsPage implements OnInit, OnDestroy {
     };
   }
 
-  openCreateDialog(): void {
-    this.form = { ...EMPTY_FORM, dueDate: new Date(), categoryId: this.categories[0]?.id ?? '' };
+  private withSuggestionDisplay(candidate: RecurringCandidate, categories: Category[]): RecurringSuggestion {
+    const category = categories.find((cat) => cat.id === candidate.categoryId);
+    return {
+      ...candidate,
+      categoryName: category?.name ?? 'Sin categoría',
+      categoryColor: category?.color ?? '#6b7280',
+      categoryIcon: category?.icon ?? 'tag',
+      signature: `${candidate.categoryId}::${candidate.name.trim().toLowerCase()}`
+    };
+  }
+
+  private loadDismissedSuggestions(): Set<string> {
+    const raw = localStorage.getItem(DISMISSED_SUGGESTIONS_KEY);
+    if (!raw) return new Set();
+    const signatures: string[] = JSON.parse(raw);
+    return new Set(signatures);
+  }
+
+  private persistDismissedSuggestions(): void {
+    localStorage.setItem(DISMISSED_SUGGESTIONS_KEY, JSON.stringify([...this.dismissedSuggestions]));
+  }
+
+  dismissSuggestion(suggestion: RecurringSuggestion): void {
+    this.dismissedSuggestions.add(suggestion.signature);
+    this.persistDismissedSuggestions();
+    this.suggestions = this.suggestions.filter((s) => s.signature !== suggestion.signature);
+  }
+
+  createFromSuggestion(suggestion: RecurringSuggestion): void {
+    this.openCreateDialog({
+      name: suggestion.name,
+      categoryId: suggestion.categoryId,
+      approxAmount: suggestion.avgAmount,
+      period: 'monthly',
+      dueDate: suggestion.lastDate
+    });
+  }
+
+  openCreateDialog(prefill?: Partial<BillForm>): void {
+    this.form = { ...EMPTY_FORM, dueDate: new Date(), categoryId: this.categories[0]?.id ?? '', ...prefill };
     this.dialogVisible = true;
   }
 

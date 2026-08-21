@@ -243,5 +243,58 @@ describe('TransactionService', () => {
       const all = await firstValueFrom(accountService.getAll());
       expect(all.find((a) => a.id === account.id)?.balance).toBe(1000);
     });
+
+    it('deleteMany reverses balances for every selected transaction in one pass', async () => {
+      const account = await makeAccount(1000);
+      const a = await firstValueFrom(service.create(txnInput({ type: 'expense', amount: 100, accountId: account.id })));
+      const b = await firstValueFrom(service.create(txnInput({ type: 'income', amount: 50, accountId: account.id, categoryId: CATEGORY_B })));
+
+      await firstValueFrom(service.deleteMany([a.id, b.id]));
+
+      const all = await firstValueFrom(accountService.getAll());
+      expect(all.find((acc) => acc.id === account.id)?.balance).toBe(1000);
+
+      const remaining = await firstValueFrom(service.getAll());
+      expect(remaining.length).toBe(0);
+    });
+  });
+
+  describe('deleteMany', () => {
+    it('soft-deletes every given id and leaves others untouched', async () => {
+      const a = await firstValueFrom(service.create(txnInput()));
+      const b = await firstValueFrom(service.create(txnInput()));
+      const c = await firstValueFrom(service.create(txnInput()));
+
+      await firstValueFrom(service.deleteMany([a.id, b.id]));
+
+      const remaining = await firstValueFrom(service.getAll());
+      expect(remaining.map((t) => t.id)).toEqual([c.id]);
+    });
+  });
+
+  describe('updateCategoryMany', () => {
+    it('recategorizes every given id without touching amount or type', async () => {
+      const a = await firstValueFrom(service.create(txnInput({ categoryId: CATEGORY_A })));
+      const b = await firstValueFrom(service.create(txnInput({ categoryId: CATEGORY_A })));
+      const c = await firstValueFrom(service.create(txnInput({ categoryId: CATEGORY_A })));
+
+      await firstValueFrom(service.updateCategoryMany([a.id, b.id], CATEGORY_B));
+
+      const all = await firstValueFrom(service.getAll());
+      expect(all.find((t) => t.id === a.id)?.categoryId).toBe(CATEGORY_B);
+      expect(all.find((t) => t.id === b.id)?.categoryId).toBe(CATEGORY_B);
+      expect(all.find((t) => t.id === c.id)?.categoryId).toBe(CATEGORY_A);
+    });
+
+    it('does not adjust any account balance', async () => {
+      const accountService = TestBed.inject(AccountService);
+      const account = await firstValueFrom(accountService.create({ name: 'Efectivo', type: 'cash', balance: 1000, color: '#10b981', icon: 'wallet' }));
+      const a = await firstValueFrom(service.create(txnInput({ type: 'expense', amount: 100, accountId: account.id })));
+
+      await firstValueFrom(service.updateCategoryMany([a.id], CATEGORY_B));
+
+      const all = await firstValueFrom(accountService.getAll());
+      expect(all.find((acc) => acc.id === account.id)?.balance).toBe(900);
+    });
   });
 });

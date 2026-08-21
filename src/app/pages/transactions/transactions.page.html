@@ -133,6 +133,25 @@
     }
   </div>
 
+  @if (filteredTransactions.length > 0) {
+    <div class="flex items-center gap-2.5 mb-3 text-sm">
+      <input
+        type="checkbox"
+        class="w-4 h-4 rounded border-border-subtle accent-accent cursor-pointer flex-shrink-0"
+        [checked]="allVisibleSelected"
+        (change)="toggleSelectAllVisible()"
+      />
+      @if (selectedIds.size > 0) {
+        <span class="text-text-secondary">{{ selectedIds.size }} seleccionadas</span>
+        <p-button label="Recategorizar" severity="secondary" [text]="true" size="small" (onClick)="openBulkRecategorizeDialog()" />
+        <p-button label="Eliminar" severity="danger" [text]="true" size="small" (onClick)="bulkDeleteSelected()" />
+        <p-button label="Cancelar" severity="secondary" [text]="true" size="small" (onClick)="clearSelection()" />
+      } @else {
+        <span class="text-text-secondary">Seleccionar todas</span>
+      }
+    </div>
+  }
+
   <div class="flex flex-col gap-2">
     @if (filteredTransactions.length === 0) {
       <div class="flex flex-col items-center justify-center gap-2 py-16 text-sm text-text-secondary">
@@ -154,8 +173,17 @@
 
       @for (txn of group.transactions; track txn.id) {
         <div
-          class="flex items-center gap-4 px-4 py-3.5 rounded-xl bg-surface-card border border-border-subtle transition-colors duration-150 hover:border-border-strong"
+          class="flex items-center gap-4 px-4 py-3.5 rounded-xl bg-surface-card border transition-colors duration-150 hover:border-border-strong"
+          [class.border-border-subtle]="!isSelected(txn.id)"
+          [class.border-accent]="isSelected(txn.id)"
         >
+          <input
+            type="checkbox"
+            class="w-4 h-4 rounded border-border-subtle accent-accent cursor-pointer flex-shrink-0"
+            [checked]="isSelected(txn.id)"
+            (change)="toggleSelect(txn.id)"
+          />
+
           <div
             class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base"
             [style.background-color]="txn.categoryColor + '22'"
@@ -370,5 +398,36 @@
   <ng-template #footer>
     <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="payDialogVisible = false" />
     <p-button label="Confirmar pago" (onClick)="confirmBillPayment()" />
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="bulkRecategorizeDialogVisible"
+  [modal]="true"
+  [style]="{ width: '24rem', maxWidth: '92vw' }"
+  header="Recategorizar seleccionadas"
+>
+  @if (selectedCommonType) {
+    <div class="flex flex-col gap-1.5">
+      <label for="bulk-recategorize" class="text-sm font-medium mt-2 text-text-primary">Nueva categoría</label>
+      <p-select
+        inputId="bulk-recategorize"
+        class="w-full"
+        [options]="categoriesForType(selectedCommonType)"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Seleccioná una categoría"
+        [(ngModel)]="bulkRecategorizeCategoryId"
+      />
+    </div>
+  } @else {
+    <p class="text-sm text-text-secondary">
+      La selección mezcla ingresos y gastos. Elegí transacciones de un solo tipo para recategorizarlas juntas.
+    </p>
+  }
+
+  <ng-template #footer>
+    <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="bulkRecategorizeDialogVisible = false" />
+    <p-button label="Guardar" [disabled]="!selectedCommonType" (onClick)="saveBulkRecategorize()" />
   </ng-template>
 </p-dialog>

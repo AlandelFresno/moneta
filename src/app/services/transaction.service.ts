@@ -159,6 +159,41 @@ export class TransactionService {
     });
   }
 
+  /** Soft-deletes every given id in one pass — one persist/emit instead of one per id. */
+  deleteMany(ids: string[]): Observable<void> {
+    const idSet = new Set(ids);
+    const now = new Date();
+    const targets = this.allSubject.value.filter((txn) => idSet.has(txn.id) && !txn.deletedAt);
+    const transactions = this.allSubject.value.map((txn) => (idSet.has(txn.id) ? { ...txn, deletedAt: now, updatedAt: now } : txn));
+    this.persist(transactions);
+    this.allSubject.next(transactions);
+
+    for (const txn of targets) {
+      if (txn.accountId) {
+        this.accountService.adjustBalance(txn.accountId, -this.signedDelta(txn));
+      }
+    }
+
+    return new Observable((subscriber) => {
+      subscriber.next();
+      subscriber.complete();
+    });
+  }
+
+  /** Recategorizes every given id in one pass. Never touches account balances — categoryId doesn't affect signedDelta. */
+  updateCategoryMany(ids: string[], categoryId: string): Observable<void> {
+    const idSet = new Set(ids);
+    const now = new Date();
+    const transactions = this.allSubject.value.map((txn) => (idSet.has(txn.id) ? { ...txn, categoryId, updatedAt: now } : txn));
+    this.persist(transactions);
+    this.allSubject.next(transactions);
+
+    return new Observable((subscriber) => {
+      subscriber.next();
+      subscriber.complete();
+    });
+  }
+
   private signedDelta(txn: Pick<Transaction, 'type' | 'amount'>): number {
     return txn.type === 'income' ? txn.amount : -txn.amount;
   }

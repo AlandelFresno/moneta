@@ -19,8 +19,22 @@
     }
   </div>
 
+  @if (pendingRollovers.length > 0) {
+    <div class="mb-6">
+      <h2 class="text-sm font-semibold text-text-primary mb-3">Rollovers pendientes</h2>
+      <div class="flex flex-col gap-2">
+        @for (item of pendingRollovers; track item.budget.id + item.allocation.goalId) {
+          <div class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-surface-card border border-dashed border-border-strong text-sm">
+            <span class="text-text-primary">{{ rolloverSummary(item) }}</span>
+            <p-button label="Resolver" size="small" (onClick)="openRolloverDialog(item)" />
+          </div>
+        }
+      </div>
+    </div>
+  }
+
   @if (current && progress) {
-    <app-budget-progress [budget]="current" [progress]="progress" [categories]="categories" variant="full" />
+    <app-budget-progress [budget]="current" [progress]="progress" [categories]="categories" [goals]="goals" variant="full" />
   } @else {
     <div class="flex flex-col items-center justify-center gap-2 py-16 text-sm text-text-secondary">
       <i class="pi pi-wallet text-3xl opacity-50"></i>
@@ -163,10 +177,100 @@
         <span class="text-sm text-text-secondary py-4 text-center">No hay categorías de gasto que superen el filtro.</span>
       }
     </div>
+
+    @if (goals.length > 0) {
+      <span class="text-sm font-medium mt-4 mb-1 text-text-primary">Metas</span>
+      <div class="flex flex-col gap-1.5 max-h-72 overflow-y-auto">
+        @for (row of goalRows; track row.goalId) {
+          <div class="flex flex-col gap-2 px-3 py-2 rounded-lg border border-border-subtle">
+            <div class="flex items-center gap-2.5">
+              <p-checkbox [binary]="true" [(ngModel)]="row.included" />
+              <div
+                class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs"
+                [style.background-color]="row.color + '22'"
+                [style.color]="row.color"
+              >
+                <app-icon [name]="row.icon" />
+              </div>
+              <span class="text-sm flex-1 min-w-0 truncate text-text-primary">{{ row.name }}</span>
+              <p-inputnumber
+                class="w-32"
+                [(ngModel)]="row.amount"
+                mode="decimal"
+                [minFractionDigits]="2"
+                [maxFractionDigits]="2"
+                placeholder="0.00"
+                [disabled]="!row.included"
+              />
+            </div>
+
+            @if (row.included) {
+              <p-select
+                class="w-full"
+                [options]="accounts"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Cuenta de origen"
+                [(ngModel)]="row.accountId"
+              />
+            }
+          </div>
+        }
+      </div>
+    }
   </div>
 
   <ng-template #footer>
     <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="dialogVisible = false" />
     <p-button label="Guardar" (onClick)="saveBudget()" />
+  </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="rolloverDialogVisible" [modal]="true" [style]="{ width: '26rem', maxWidth: '92vw' }" header="Resolver rollover">
+  @if (resolvingRollover) {
+    <div class="flex flex-col gap-1.5">
+      <p class="text-sm text-text-secondary mb-2">{{ rolloverSummary(resolvingRollover) }}</p>
+
+      <label for="rollover-action" class="text-sm font-medium text-text-primary">¿Qué hacés con ese dinero?</label>
+      <p-select
+        inputId="rollover-action"
+        class="w-full"
+        [options]="rolloverActionOptions"
+        optionLabel="label"
+        optionValue="value"
+        [(ngModel)]="rolloverForm.action"
+      />
+
+      @if (rolloverForm.action !== 'kept') {
+        <label for="rollover-source" class="text-sm font-medium mt-2 text-text-primary">Cuenta de origen</label>
+        <p-select
+          inputId="rollover-source"
+          class="w-full"
+          [options]="accounts"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Elegí una cuenta"
+          [(ngModel)]="rolloverForm.sourceAccountId"
+        />
+      }
+
+      @if (rolloverForm.action === 'transferred') {
+        <label for="rollover-destination" class="text-sm font-medium mt-2 text-text-primary">Cuenta de destino</label>
+        <p-select
+          inputId="rollover-destination"
+          class="w-full"
+          [options]="rolloverDestinationOptions"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Elegí una cuenta"
+          [(ngModel)]="rolloverForm.destinationAccountId"
+        />
+      }
+    </div>
+  }
+
+  <ng-template #footer>
+    <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="rolloverDialogVisible = false" />
+    <p-button label="Confirmar" (onClick)="saveRolloverResolution()" />
   </ng-template>
 </p-dialog>
