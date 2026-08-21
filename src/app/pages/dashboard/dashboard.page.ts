@@ -108,7 +108,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   currentRange: DateRange | null = null;
 
   compareEnabled = false;
-  comparePreset: RangePreset = 'last3';
+  compareOffset: number | 'custom' = 1;
   compareRangeDates: Date[] | null = null;
   compareRange: DateRange | null = null;
   compareStats: PeriodStats = EMPTY_STATS;
@@ -206,8 +206,8 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     this.recompute();
   }
 
-  onComparePresetChange(): void {
-    if (this.comparePreset !== 'custom') {
+  onCompareOffsetChange(): void {
+    if (this.compareOffset !== 'custom') {
       this.recompute();
       return;
     }
@@ -247,6 +247,18 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     return this.compareEnabled ? `vs. ${this.formatRange(this.compareRange)}` : 'vs. período anterior';
   }
 
+  compareOffsetOptions(): { label: string; value: number | 'custom' }[] {
+    const offsetLabels: Record<number, string> = { 1: 'Período anterior', 2: '2 períodos atrás', 3: '3 períodos atrás', 4: '4 períodos atrás' };
+    const options = [1, 2, 3, 4].map((offset) => ({
+      label: this.currentRange
+        ? `${offsetLabels[offset]} (${this.formatRange(this.dashboardService.previousRange(this.currentRange, offset))})`
+        : offsetLabels[offset],
+      value: offset as number | 'custom'
+    }));
+    options.push({ label: 'Personalizado', value: 'custom' });
+    return options;
+  }
+
   newTransaction(type: 'income' | 'expense'): void {
     void this.router.navigate(['/transactions'], { queryParams: { type } });
   }
@@ -268,18 +280,16 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     this.stats = this.dashboardService.periodStats(inRange);
 
     if (this.compareEnabled) {
-      const compareCustom =
-        this.comparePreset === 'custom' && this.compareRangeDates?.length === 2 && this.compareRangeDates[1]
-          ? { start: this.compareRangeDates[0], end: this.compareRangeDates[1] }
-          : null;
-
-      if (this.comparePreset !== 'custom' || compareCustom) {
-        this.compareRange = this.dashboardService.rangeForPreset(
-          this.comparePreset,
-          reference,
-          this.allTransactions,
-          compareCustom
-        );
+      if (this.compareOffset === 'custom') {
+        const compareCustom =
+          this.compareRangeDates?.length === 2 && this.compareRangeDates[1]
+            ? { start: this.compareRangeDates[0], end: this.compareRangeDates[1] }
+            : null;
+        if (compareCustom) {
+          this.compareRange = compareCustom;
+        }
+      } else {
+        this.compareRange = this.dashboardService.previousRange(this.currentRange, this.compareOffset);
       }
     } else {
       this.compareRange = this.dashboardService.previousRange(this.currentRange);

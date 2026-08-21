@@ -22,7 +22,6 @@
 }
 
 html, body {
-  @apply overflow-x-auto min-w-fit;
   background: var(--surface-page);
   color: var(--text-primary);
 }

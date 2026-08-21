@@ -34,19 +34,27 @@
         </div>
 
         <div class="flex flex-col flex-1 min-w-0 gap-0.5">
-          <span class="font-medium truncate text-text-primary flex items-center gap-2">
-            {{ bill.name }}
-            @if (!bill.active) {
-              <span class="text-xs px-2 py-0.5 rounded-full bg-surface-input text-text-secondary">Inactivo</span>
+          <span class="font-medium text-text-primary flex items-center flex-wrap gap-2">
+            <span class="truncate min-w-0">{{ bill.name }}</span>
+            @if (isFinished(bill)) {
+              <span class="text-xs px-2 py-0.5 rounded-full bg-income/15 text-income flex-shrink-0">Completado</span>
+            } @else if (!bill.active) {
+              <span class="text-xs px-2 py-0.5 rounded-full bg-surface-input text-text-secondary flex-shrink-0">Inactivo</span>
             }
             @if (isDue(bill)) {
-              <span class="text-xs px-2 py-0.5 rounded-full bg-expense/15 text-expense">Pendiente</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-expense/15 text-expense flex-shrink-0">Pendiente</span>
             }
           </span>
           @if (bill.description) {
             <span class="text-sm truncate text-text-secondary">{{ bill.description }}</span>
           }
         </div>
+
+        @if (terminationLabel(bill); as termination) {
+          <span class="text-xs font-medium px-2.5 py-1 rounded-full hidden lg:inline-block flex-shrink-0 bg-surface-input text-text-secondary">
+            {{ termination }}
+          </span>
+        }
 
         <span class="text-xs font-medium px-2.5 py-1 rounded-full hidden md:inline-block flex-shrink-0 bg-surface-input text-text-secondary">
           {{ periodLabel(bill.period) }}
@@ -136,6 +144,33 @@
     </label>
     <p-datepicker inputId="bill-date" class="w-full" [(ngModel)]="form.dueDate" dateFormat="dd/mm/yy" />
 
+    <label for="bill-termination" class="text-sm font-medium mt-2 text-text-primary">¿Hasta cuándo?</label>
+    <p-select
+      inputId="bill-termination"
+      class="w-full"
+      [options]="terminationModeOptions"
+      optionLabel="label"
+      optionValue="value"
+      [(ngModel)]="form.terminationMode"
+    />
+
+    @if (form.terminationMode === 'endDate') {
+      <label for="bill-end-date" class="text-sm font-medium mt-2 text-text-primary">Fecha de fin</label>
+      <p-datepicker inputId="bill-end-date" class="w-full" [(ngModel)]="form.endDate" dateFormat="dd/mm/yy" />
+    }
+
+    @if (form.terminationMode === 'installments') {
+      <label for="bill-installments" class="text-sm font-medium mt-2 text-text-primary">Cantidad de cuotas</label>
+      <p-inputnumber
+        inputId="bill-installments"
+        class="w-full"
+        [(ngModel)]="form.totalInstallments"
+        [min]="1"
+        [maxFractionDigits]="0"
+        placeholder="Ej: 12"
+      />
+    }
+
     <div class="flex items-center justify-between mt-3">
       <label for="bill-active" class="text-sm font-medium text-text-primary">Activo</label>
       <p-toggleswitch inputId="bill-active" [(ngModel)]="form.active" />
@@ -154,6 +189,12 @@
       <p class="text-sm text-text-secondary mb-2">
         Esto va a crear una transacción de gasto para <strong class="text-text-primary">{{ payingBill.name }}</strong>.
       </p>
+
+      @if (payingBill.totalInstallments !== undefined) {
+        <p class="text-sm text-text-secondary mb-2">
+          Vas a registrar la cuota <strong class="text-text-primary">{{ nextInstallmentNumber(payingBill) }} de {{ payingBill.totalInstallments }}</strong>.
+        </p>
+      }
 
       <label for="pay-amount" class="text-sm font-medium text-text-primary">Monto pagado (ARS)</label>
       <p-inputnumber

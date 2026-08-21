@@ -17,10 +17,12 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { Transaction, TransactionType } from '../../core/types/transaction.types';
 import { Category, CategoryType } from '../../core/types/category.types';
 import { Bill } from '../../core/types/bill.types';
+import { Account } from '../../core/types/account.types';
 import { TransactionService } from '../../services/transaction.service';
 import { CategoryService } from '../../services/category.service';
 import { CsvService, ParsedCsvRow } from '../../services/csv.service';
 import { BillService, BillDueStatus } from '../../services/bill.service';
+import { AccountService } from '../../services/account.service';
 import { BudgetService } from '../../services/budget.service';
 import { DashboardService } from '../../services/dashboard.service';
 import { IconComponent } from '../../shared/icon/icon.component';
@@ -38,6 +40,7 @@ interface TransactionGroup {
 interface TransactionForm {
   id: string | null;
   categoryId: string;
+  accountId: string | null;
   type: TransactionType;
   name: string;
   description: string;
@@ -48,6 +51,7 @@ interface TransactionForm {
 const EMPTY_FORM: TransactionForm = {
   id: null,
   categoryId: '',
+  accountId: null,
   type: 'expense',
   name: '',
   description: '',
@@ -130,12 +134,15 @@ export class TransactionsPage implements OnInit, OnDestroy {
   activeBudget: Budget | null = null;
   budgetProgress: BudgetProgress | null = null;
 
+  accounts: Account[] = [];
+
   constructor(
     private readonly transactionService: TransactionService,
     private readonly categoryService: CategoryService,
     private readonly csvService: CsvService,
     private readonly billService: BillService,
     private readonly budgetService: BudgetService,
+    private readonly accountService: AccountService,
     private readonly dashboardService: DashboardService,
     private readonly confirmationService: ConfirmationService,
     private readonly messageService: MessageService,
@@ -166,6 +173,14 @@ export class TransactionsPage implements OnInit, OnDestroy {
       .subscribe((bills) => {
         this.bills = bills;
         this.dueBills = this.billService.dueStatuses(bills, new Date());
+        this.cdr.markForCheck();
+      });
+
+    this.accountService
+      .getAll()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((accounts) => {
+        this.accounts = accounts;
         this.cdr.markForCheck();
       });
 
@@ -396,6 +411,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     this.form = {
       id: txn.id,
       categoryId: txn.categoryId,
+      accountId: txn.accountId ?? null,
       type: txn.type,
       name: txn.name,
       description: txn.description,
@@ -451,6 +467,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
     const payload = {
       categoryId: this.form.categoryId,
+      accountId: this.form.accountId ?? undefined,
       type: this.form.type,
       name: this.form.name,
       description: this.form.description,

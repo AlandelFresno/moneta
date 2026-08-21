@@ -22,6 +22,7 @@ export class SidebarComponent {
 
   readonly menuItems: MenuItem[] = [
     { label: 'Dashboard', icon: 'home', route: '/dashboard' },
+    { label: 'Cuentas', icon: 'credit-card', route: '/accounts' },
     { label: 'Transacciones', icon: 'list', route: '/transactions' },
     { label: 'Categorías', icon: 'tags', route: '/categories' },
     { label: 'Servicios', icon: 'calendar-clock', route: '/bills' },

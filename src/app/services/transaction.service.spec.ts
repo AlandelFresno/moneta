@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { TransactionService } from './transaction.service';
+import { AccountService } from './account.service';
 import { Transaction } from '../core/types/transaction.types';
 
 const CATEGORY_A = 'cat-groceries';
@@ -126,7 +127,7 @@ describe('TransactionService', () => {
   it('persists transactions across service instances via localStorage', async () => {
     await firstValueFrom(service.create(txnInput({ name: 'Persistente' })));
 
-    const fresh = new TransactionService();
+    const fresh = new TransactionService(new AccountService());
     const all = await firstValueFrom(fresh.getAll());
     expect(all.some((t) => t.name === 'Persistente')).toBeTrue();
   });
@@ -134,7 +135,7 @@ describe('TransactionService', () => {
   it('restores Date objects for date/createdAt/updatedAt after reload from storage', async () => {
     await firstValueFrom(service.create(txnInput()));
 
-    const fresh = new TransactionService();
+    const fresh = new TransactionService(new AccountService());
     const all = await firstValueFrom(fresh.getAll());
     expect(all[0].date).toEqual(jasmine.any(Date));
     expect(all[0].createdAt).toEqual(jasmine.any(Date));
@@ -178,5 +179,69 @@ describe('TransactionService', () => {
     const raw = JSON.parse(localStorage.getItem('transactions')!);
     expect(raw.length).toBe(1);
     expect(raw[0].amount).toBe(999);
+  });
+
+  describe('account balance sync', () => {
+    let accountService: AccountService;
+
+    beforeEach(() => {
+      accountService = TestBed.inject(AccountService);
+    });
+
+    async function makeAccount(balance: number) {
+      return firstValueFrom(accountService.create({ name: 'Efectivo', type: 'cash', balance, color: '#10b981', icon: 'wallet' }));
+    }
+
+    it('does not touch any account when accountId is absent', async () => {
+      const account = await makeAccount(1000);
+      await firstValueFrom(service.create(txnInput({ type: 'expense', amount: 100 })));
+
+      const all = await firstValueFrom(accountService.getAll());
+      expect(all.find((a) => a.id === account.id)?.balance).toBe(1000);
+    });
+
+    it('debits an expense and credits an income on create', async () => {
+      const account = await makeAccount(1000);
+      await firstValueFrom(service.create(txnInput({ type: 'expense', amount: 100, accountId: account.id })));
+
+      let all = await firstValueFrom(accountService.getAll());
+      expect(all.find((a) => a.id === account.id)?.balance).toBe(900);
+
+      await firstValueFrom(service.create(txnInput({ type: 'income', amount: 50, accountId: account.id, categoryId: CATEGORY_B })));
+      all = await firstValueFrom(accountService.getAll());
+      expect(all.find((a) => a.id === account.id)?.balance).toBe(950);
+    });
+
+    it('reverses the old delta and applies the new one when amount changes', async () => {
+      const account = await makeAccount(1000);
+      const created = await firstValueFrom(service.create(txnInput({ type: 'expense', amount: 100, accountId: account.id })));
+
+      await firstValueFrom(service.update(created.id, { amount: 300 }));
+
+      const all = await firstValueFrom(accountService.getAll());
+      expect(all.find((a) => a.id === account.id)?.balance).toBe(700);
+    });
+
+    it('moves the balance effect when the account changes', async () => {
+      const accountA = await makeAccount(1000);
+      const accountB = await makeAccount(500);
+      const created = await firstValueFrom(service.create(txnInput({ type: 'expense', amount: 100, accountId: accountA.id })));
+
+      await firstValueFrom(service.update(created.id, { accountId: accountB.id }));
+
+      const all = await firstValueFrom(accountService.getAll());
+      expect(all.find((a) => a.id === accountA.id)?.balance).toBe(1000);
+      expect(all.find((a) => a.id === accountB.id)?.balance).toBe(400);
+    });
+
+    it('reverses the delta on delete', async () => {
+      const account = await makeAccount(1000);
+      const created = await firstValueFrom(service.create(txnInput({ type: 'expense', amount: 100, accountId: account.id })));
+
+      await firstValueFrom(service.delete(created.id));
+
+      const all = await firstValueFrom(accountService.getAll());
+      expect(all.find((a) => a.id === account.id)?.balance).toBe(1000);
+    });
   });
 });

@@ -24,6 +24,8 @@ interface BillWithCategory extends Bill {
   categoryIcon: string;
 }
 
+type TerminationMode = 'ongoing' | 'endDate' | 'installments';
+
 interface BillForm {
   id: string | null;
   name: string;
@@ -32,6 +34,9 @@ interface BillForm {
   approxAmount: number | null;
   period: BillPeriod;
   dueDate: Date;
+  terminationMode: TerminationMode;
+  endDate: Date | null;
+  totalInstallments: number | null;
   active: boolean;
 }
 
@@ -43,6 +48,9 @@ const EMPTY_FORM: BillForm = {
   approxAmount: null,
   period: 'monthly',
   dueDate: new Date(),
+  terminationMode: 'ongoing',
+  endDate: null,
+  totalInstallments: null,
   active: true
 };
 
@@ -75,6 +83,12 @@ export class BillsPage implements OnInit, OnDestroy {
     { label: 'Semanal', value: 'weekly' },
     { label: 'Mensual', value: 'monthly' },
     { label: 'Anual', value: 'yearly' }
+  ];
+
+  readonly terminationModeOptions: { label: string; value: TerminationMode }[] = [
+    { label: 'Sin fin', value: 'ongoing' },
+    { label: 'Hasta una fecha', value: 'endDate' },
+    { label: 'Cantidad de cuotas', value: 'installments' }
   ];
 
   dialogVisible = false;
@@ -125,6 +139,9 @@ export class BillsPage implements OnInit, OnDestroy {
   }
 
   openEditDialog(bill: Bill): void {
+    const terminationMode: TerminationMode =
+      bill.totalInstallments !== undefined ? 'installments' : bill.endDate !== undefined ? 'endDate' : 'ongoing';
+
     this.form = {
       id: bill.id,
       name: bill.name,
@@ -133,6 +150,9 @@ export class BillsPage implements OnInit, OnDestroy {
       approxAmount: bill.approxAmount,
       period: bill.period,
       dueDate: bill.dueDate,
+      terminationMode,
+      endDate: bill.endDate ?? null,
+      totalInstallments: bill.totalInstallments ?? null,
       active: bill.active
     };
     this.dialogVisible = true;
@@ -148,6 +168,15 @@ export class BillsPage implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.form.terminationMode === 'endDate' && !this.form.endDate) {
+      this.messageService.add({ severity: 'warn', summary: 'Elegí una fecha de fin' });
+      return;
+    }
+    if (this.form.terminationMode === 'installments' && (this.form.totalInstallments === null || this.form.totalInstallments < 1)) {
+      this.messageService.add({ severity: 'warn', summary: 'Ingresá una cantidad de cuotas válida' });
+      return;
+    }
+
     const payload = {
       name: this.form.name.trim(),
       description: this.form.description,
@@ -155,6 +184,8 @@ export class BillsPage implements OnInit, OnDestroy {
       approxAmount: this.form.approxAmount,
       period: this.form.period,
       dueDate: this.form.dueDate,
+      endDate: this.form.terminationMode === 'endDate' ? this.form.endDate! : undefined,
+      totalInstallments: this.form.terminationMode === 'installments' ? this.form.totalInstallments! : undefined,
       active: this.form.active
     };
 
@@ -216,6 +247,25 @@ export class BillsPage implements OnInit, OnDestroy {
 
   isDue(bill: Bill): boolean {
     return this.dueStatuses.some((status) => status.bill.id === bill.id);
+  }
+
+  isFinished(bill: Bill): boolean {
+    return this.billService.isFinished(bill, new Date());
+  }
+
+  /** "2/3 cuotas" for installment bills, "Hasta 5 dic 2026" for end-dated ones, null otherwise. */
+  terminationLabel(bill: Bill): string | null {
+    if (bill.totalInstallments !== undefined) {
+      return `${bill.payments.length}/${bill.totalInstallments} cuotas`;
+    }
+    if (bill.endDate !== undefined) {
+      return `Hasta ${this.formatDate(bill.endDate)}`;
+    }
+    return null;
+  }
+
+  nextInstallmentNumber(bill: Bill): number {
+    return bill.payments.length + 1;
   }
 
   periodLabel(period: BillPeriod): string {
