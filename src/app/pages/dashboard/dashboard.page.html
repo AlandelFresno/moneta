@@ -35,15 +35,15 @@
 
     @if (compareEnabled) {
       <p-select
-        class="min-w-[12rem]"
-        [options]="presetOptions"
+        class="min-w-[16rem]"
+        [options]="compareOffsetOptions()"
         optionLabel="label"
         optionValue="value"
-        [(ngModel)]="comparePreset"
-        (onChange)="onComparePresetChange()"
+        [(ngModel)]="compareOffset"
+        (onChange)="onCompareOffsetChange()"
       />
 
-      @if (comparePreset === 'custom') {
+      @if (compareOffset === 'custom') {
         <p-datepicker
           selectionMode="range"
           [(ngModel)]="compareRangeDates"

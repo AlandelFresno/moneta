@@ -72,6 +72,13 @@ describe('DashboardService', () => {
       expect(previous.end).toEqual(new Date(2026, 0, 31, 23, 59, 59, 999));
       expect(previous.start).toEqual(new Date(2026, 0, 4));
     });
+
+    it('shifts back multiple periods when offset > 1', () => {
+      const range = { start: new Date(2026, 1, 1), end: new Date(2026, 1, 28) };
+      const twoBack = service.previousRange(range, 2);
+      expect(twoBack.end).toEqual(new Date(2026, 0, 3, 23, 59, 59, 999));
+      expect(twoBack.start).toEqual(new Date(2025, 11, 7));
+    });
   });
 
   describe('transactionsInRange', () => {

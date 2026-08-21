@@ -88,11 +88,11 @@ export class DashboardService {
     }
   }
 
-  previousRange(range: DateRange): DateRange {
+  previousRange(range: DateRange, offset: number = 1): DateRange {
     const start = this.startOfDay(range.start);
     const end = this.endOfDay(range.end);
     const durationMs = end.getTime() - start.getTime() + 1;
-    const prevEnd = new Date(start.getTime() - 1);
+    const prevEnd = new Date(start.getTime() - durationMs * (offset - 1) - 1);
     const prevStart = new Date(prevEnd.getTime() - durationMs + 1);
     return { start: prevStart, end: prevEnd };
   }
