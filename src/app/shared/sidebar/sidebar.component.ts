@@ -27,6 +27,7 @@ export class SidebarComponent {
     { label: 'Categorías', icon: 'tags', route: '/categories' },
     { label: 'Servicios', icon: 'calendar-clock', route: '/bills' },
     { label: 'Presupuesto', icon: 'wallet', route: '/budgets' },
+    { label: 'Metas', icon: 'flag', route: '/goals' },
     { label: 'Sincronización', icon: 'cloud', route: '/sync' }
   ];
 

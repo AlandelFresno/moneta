@@ -21,8 +21,10 @@ import { TransactionService } from '../../services/transaction.service';
 import { CategoryService } from '../../services/category.service';
 import { BillService } from '../../services/bill.service';
 import { BudgetService } from '../../services/budget.service';
+import { AccountService } from '../../services/account.service';
 import { BudgetProgressComponent } from '../../shared/budget-progress/budget-progress.component';
 import { Budget, BudgetProgress } from '../../core/types/budget.types';
+import { Account } from '../../core/types/account.types';
 import {
   DashboardService,
   CategoryBreakdownEntry,
@@ -90,8 +92,12 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   private viewReady = false;
 
   private allTransactions: Transaction[] = [];
+  private scopedTransactions: Transaction[] = [];
   categories: Category[] = [];
   private allBills: Bill[] = [];
+
+  accounts: Account[] = [];
+  selectedAccountId: string | null = null;
 
   readonly presetOptions: { label: string; value: RangePreset }[] = [
     { label: 'Este mes', value: 'thisMonth' },
@@ -133,6 +139,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     private readonly categoryService: CategoryService,
     private readonly billService: BillService,
     private readonly budgetService: BudgetService,
+    private readonly accountService: AccountService,
     private readonly dashboardService: DashboardService,
     private readonly themeService: ThemeService,
     private readonly router: Router,
@@ -147,12 +154,18 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    combineLatest([this.transactionService.getAll(), this.categoryService.getAll(), this.billService.getAll()])
+    combineLatest([
+      this.transactionService.getAll(),
+      this.categoryService.getAll(),
+      this.billService.getAll(),
+      this.accountService.getAll()
+    ])
       .pipe(takeUntil(this.destroy$))
-      .subscribe(([transactions, categories, bills]) => {
+      .subscribe(([transactions, categories, bills, accounts]) => {
         this.allTransactions = transactions;
         this.categories = categories;
         this.allBills = bills;
+        this.accounts = [...accounts].sort((a, b) => a.name.localeCompare(b.name));
         this.recompute();
       });
 
@@ -203,6 +216,10 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onCompareToggle(): void {
+    this.recompute();
+  }
+
+  onAccountFilterChange(): void {
     this.recompute();
   }
 
@@ -275,7 +292,10 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.currentRange = this.dashboardService.rangeForPreset(this.rangePreset, reference, this.allTransactions, custom);
-    const inRange = this.dashboardService.transactionsInRange(this.allTransactions, this.currentRange);
+    this.scopedTransactions = this.selectedAccountId
+      ? this.allTransactions.filter((t) => t.accountId === this.selectedAccountId)
+      : this.allTransactions;
+    const inRange = this.dashboardService.transactionsInRange(this.scopedTransactions, this.currentRange);
 
     this.stats = this.dashboardService.periodStats(inRange);
 
@@ -296,7 +316,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const inCompareRange = this.compareRange
-      ? this.dashboardService.transactionsInRange(this.allTransactions, this.compareRange)
+      ? this.dashboardService.transactionsInRange(this.scopedTransactions, this.compareRange)
       : [];
     this.compareStats = this.dashboardService.periodStats(inCompareRange);
     this.comparison = this.dashboardService.comparePeriods(this.stats, this.compareStats);
@@ -341,7 +361,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   private renderTrendChart(range: DateRange): void {
     const today = new Date();
     const trendRange: DateRange = { start: range.start, end: range.end > today ? today : range.end };
-    const trend = this.dashboardService.trendInRange(this.allTransactions, trendRange);
+    const trend = this.dashboardService.trendInRange(this.scopedTransactions, trendRange);
     const colors = palette[this.themeService.theme()];
     const pointRadius = trend.length > 15 ? 0 : 4;
 
@@ -482,7 +502,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
 
     const today = new Date();
     const trendRange: DateRange = { start: range.start, end: range.end > today ? today : range.end };
-    const trend = this.dashboardService.categoryTrendInRange(this.allTransactions, this.categories, trendRange, 5);
+    const trend = this.dashboardService.categoryTrendInRange(this.scopedTransactions, this.categories, trendRange, 5);
     const colors = palette[this.themeService.theme()];
 
     this.categoryTrendChart = new Chart(this.categoryTrendCanvasRef.nativeElement, {
@@ -536,7 +556,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private renderWeekdayChart(range: DateRange): void {
-    const inRange = this.dashboardService.transactionsInRange(this.allTransactions, range);
+    const inRange = this.dashboardService.transactionsInRange(this.scopedTransactions, range);
     const weekdaySpend = this.dashboardService.weekdaySpendInRange(inRange);
     const colors = palette[this.themeService.theme()];
 

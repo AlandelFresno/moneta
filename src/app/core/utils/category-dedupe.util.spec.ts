@@ -34,6 +34,7 @@ function budget(id: string, categoryId: string): Budget {
     month: new Date(2026, 0, 1),
     totalAmount: 1000,
     allocations: [{ categoryId, amount: 500 }],
+    goalAllocations: [],
     createdAt: new Date(2026, 0, 1),
     updatedAt: new Date(2026, 0, 1)
   };

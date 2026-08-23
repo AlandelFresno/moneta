@@ -151,6 +151,21 @@ describe('BudgetService', () => {
       expect(all.length).toBe(1);
     });
 
+    it('copies goal allocations forward stripped of any prior resolution', async () => {
+      const created = await firstValueFrom(
+        service.save(new Date(2026, 0, 1), 5000, [], [{ goalId: 'goal-1', accountId: 'acc-1', amount: 1000 }])
+      );
+      await firstValueFrom(
+        service.markGoalAllocationResolved(created.id, 'goal-1', 'saved', 'acc-1')
+      );
+
+      service.carryForwardIfNeeded(new Date(2026, 1, 10));
+
+      const all = await firstValueFrom(service.getAll());
+      const feb = service.currentBudget(all, new Date(2026, 1, 10));
+      expect(feb?.goalAllocations).toEqual([{ goalId: 'goal-1', accountId: 'acc-1', amount: 1000 }]);
+    });
+
     it('does not resurrect a month after the latest record was explicitly paused (deleted)', async () => {
       const created = await firstValueFrom(service.save(new Date(2026, 0, 1), 5000, []));
       await firstValueFrom(service.delete(created.id));
@@ -207,6 +222,7 @@ describe('BudgetService', () => {
           { categoryId: 'cat-1', amount: 6000 },
           { categoryId: 'cat-2', amount: 2000 }
         ],
+        goalAllocations: [],
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -229,6 +245,82 @@ describe('BudgetService', () => {
       const cat2 = progress.categories.find((c) => c.categoryId === 'cat-2')!;
       expect(cat2.spent).toBe(2500);
       expect(cat2.pct).toBe(125);
+    });
+
+    it('counts goal allocations toward totalAllocated/unallocated and lists them separately', () => {
+      const budget: Budget = {
+        id: 'b1',
+        month: new Date(2026, 2, 1),
+        totalAmount: 10000,
+        allocations: [{ categoryId: 'cat-1', amount: 6000 }],
+        goalAllocations: [{ goalId: 'goal-1', accountId: 'acc-1', amount: 1000 }],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      const progress = service.budgetProgress(budget, []);
+      expect(progress.totalAllocated).toBe(7000);
+      expect(progress.unallocated).toBe(3000);
+      expect(progress.goals).toEqual([{ goalId: 'goal-1', amount: 1000 }]);
+    });
+  });
+
+  describe('pendingGoalRollovers', () => {
+    it('returns unresolved goal allocations from past-month budgets only', async () => {
+      const past = await firstValueFrom(
+        service.save(new Date(2026, 0, 1), 5000, [], [{ goalId: 'goal-1', accountId: 'acc-1', amount: 1000 }])
+      );
+      await firstValueFrom(service.save(new Date(2026, 2, 1), 5000, [], [{ goalId: 'goal-1', accountId: 'acc-1', amount: 1000 }]));
+
+      const all = await firstValueFrom(service.getAll());
+      const pending = service.pendingGoalRollovers(all, new Date(2026, 2, 10));
+
+      expect(pending.length).toBe(1);
+      expect(pending[0].budget.id).toBe(past.id);
+      expect(pending[0].allocation.goalId).toBe('goal-1');
+    });
+
+    it('excludes allocations that were already resolved', async () => {
+      const past = await firstValueFrom(
+        service.save(new Date(2026, 0, 1), 5000, [], [{ goalId: 'goal-1', accountId: 'acc-1', amount: 1000 }])
+      );
+      await firstValueFrom(service.markGoalAllocationResolved(past.id, 'goal-1', 'kept', 'acc-1'));
+
+      const all = await firstValueFrom(service.getAll());
+      expect(service.pendingGoalRollovers(all, new Date(2026, 2, 10))).toEqual([]);
+    });
+
+    it('excludes past budgets that were paused (deleted)', async () => {
+      const past = await firstValueFrom(
+        service.save(new Date(2026, 0, 1), 5000, [], [{ goalId: 'goal-1', accountId: 'acc-1', amount: 1000 }])
+      );
+      await firstValueFrom(service.delete(past.id));
+
+      const all = await firstValueFrom(service.getAll());
+      expect(service.pendingGoalRollovers(all, new Date(2026, 2, 10))).toEqual([]);
+    });
+  });
+
+  describe('markGoalAllocationResolved', () => {
+    it('sets resolution fields on the matching allocation only', async () => {
+      const created = await firstValueFrom(
+        service.save(new Date(2026, 0, 1), 5000, [], [
+          { goalId: 'goal-1', accountId: 'acc-1', amount: 1000 },
+          { goalId: 'goal-2', accountId: 'acc-1', amount: 500 }
+        ])
+      );
+
+      await firstValueFrom(service.markGoalAllocationResolved(created.id, 'goal-1', 'transferred', 'acc-1', 'acc-2'));
+
+      const all = await firstValueFrom(service.getAll());
+      const budget = all.find((b) => b.id === created.id)!;
+      const goal1 = budget.goalAllocations.find((a) => a.goalId === 'goal-1')!;
+      const goal2 = budget.goalAllocations.find((a) => a.goalId === 'goal-2')!;
+
+      expect(goal1.resolution).toBe('transferred');
+      expect(goal1.resolvedAccountId).toBe('acc-1');
+      expect(goal1.destinationAccountId).toBe('acc-2');
+      expect(goal2.resolution).toBeUndefined();
     });
   });
 });

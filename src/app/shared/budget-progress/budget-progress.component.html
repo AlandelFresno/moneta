@@ -49,6 +49,24 @@
           </div>
         }
 
+        @for (goal of progress.goals; track goal.goalId) {
+          <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-page border border-border-subtle">
+            <div
+              class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm"
+              [style.background-color]="(goalFor(goal.goalId)?.color ?? '#6b7280') + '22'"
+              [style.color]="goalFor(goal.goalId)?.color ?? '#6b7280'"
+            >
+              <app-icon [name]="goalFor(goal.goalId)?.icon ?? 'flag'" />
+            </div>
+            <span class="text-sm font-medium flex-1 min-w-0 truncate text-text-primary">
+              {{ goalFor(goal.goalId)?.name ?? 'Meta eliminada' }}
+            </span>
+            <span class="text-xs flex-shrink-0 text-text-secondary [font-variant-numeric:tabular-nums]">
+              {{ goal.amount | number: '1.2-2' }}
+            </span>
+          </div>
+        }
+
         @if (progress.unallocated > 0) {
           <div class="flex items-center justify-between px-4 py-3 rounded-xl bg-surface-page text-sm text-text-secondary">
             <span>Sin asignar</span>

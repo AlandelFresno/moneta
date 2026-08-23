@@ -82,6 +82,16 @@
             <span>Transferencias</span>
             <span class="font-medium text-text-primary">+{{ lastResult.transfers.added }} / ±{{ lastResult.transfers.updated }}</span>
           </div>
+          <div class="flex items-center justify-between">
+            <span>Metas</span>
+            <span class="font-medium text-text-primary">+{{ lastResult.goals.added }} / ±{{ lastResult.goals.updated }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span>Aportes</span>
+            <span class="font-medium text-text-primary">
+              +{{ lastResult.goalContributions.added }} / ±{{ lastResult.goalContributions.updated }}
+            </span>
+          </div>
         </div>
       }
     </div>

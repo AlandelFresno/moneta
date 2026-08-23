@@ -15,6 +15,20 @@
         (onChange)="onPresetChange()"
       />
 
+      @if (accounts.length > 0) {
+        <p-select
+          class="min-w-[10rem]"
+          [options]="accounts"
+          optionLabel="name"
+          optionValue="id"
+          [(ngModel)]="selectedAccountId"
+          placeholder="Todas las cuentas"
+          [showClear]="true"
+          (onChange)="onAccountFilterChange()"
+          (onClear)="onAccountFilterChange()"
+        />
+      }
+
       <p-datepicker
         selectionMode="range"
         [(ngModel)]="customRangeDates"

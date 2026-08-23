@@ -136,6 +136,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   accounts: Account[] = [];
 
+  selectedIds = new Set<string>();
+  bulkRecategorizeDialogVisible = false;
+  bulkRecategorizeCategoryId: string | null = null;
+
   constructor(
     private readonly transactionService: TransactionService,
     private readonly categoryService: CategoryService,
@@ -238,6 +242,11 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
     this.filteredTransactions = filtered;
     this.calculateStats();
+
+    const visibleIds = new Set(this.filteredTransactions.map((txn) => txn.id));
+    for (const id of this.selectedIds) {
+      if (!visibleIds.has(id)) this.selectedIds.delete(id);
+    }
   }
 
   private calculateStats(): void {
@@ -498,6 +507,72 @@ export class TransactionsPage implements OnInit, OnDestroy {
         this.messageService.add({ severity: 'success', summary: 'Transacción eliminada' });
       }
     });
+  }
+
+  isSelected(id: string): boolean {
+    return this.selectedIds.has(id);
+  }
+
+  toggleSelect(id: string): void {
+    if (this.selectedIds.has(id)) this.selectedIds.delete(id);
+    else this.selectedIds.add(id);
+  }
+
+  get allVisibleSelected(): boolean {
+    return this.filteredTransactions.length > 0 && this.filteredTransactions.every((txn) => this.selectedIds.has(txn.id));
+  }
+
+  toggleSelectAllVisible(): void {
+    if (this.allVisibleSelected) {
+      for (const txn of this.filteredTransactions) this.selectedIds.delete(txn.id);
+    } else {
+      for (const txn of this.filteredTransactions) this.selectedIds.add(txn.id);
+    }
+  }
+
+  clearSelection(): void {
+    this.selectedIds.clear();
+  }
+
+  /** The type shared by every selected transaction, or null when the selection mixes income and expense. */
+  get selectedCommonType(): TransactionType | null {
+    const selected = this.filteredTransactions.filter((txn) => this.selectedIds.has(txn.id));
+    if (selected.length === 0) return null;
+    const first = selected[0].type;
+    return selected.every((txn) => txn.type === first) ? first : null;
+  }
+
+  bulkDeleteSelected(): void {
+    const count = this.selectedIds.size;
+    this.confirmationService.confirm({
+      header: `¿Eliminar ${count} ${count === 1 ? 'transacción' : 'transacciones'}?`,
+      message: 'Esta acción no se puede deshacer.',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí',
+      rejectLabel: 'No',
+      accept: async () => {
+        await lastValueFrom(this.transactionService.deleteMany([...this.selectedIds]));
+        this.messageService.add({ severity: 'success', summary: 'Transacciones eliminadas' });
+        this.clearSelection();
+      }
+    });
+  }
+
+  openBulkRecategorizeDialog(): void {
+    this.bulkRecategorizeCategoryId = null;
+    this.bulkRecategorizeDialogVisible = true;
+  }
+
+  async saveBulkRecategorize(): Promise<void> {
+    if (!this.bulkRecategorizeCategoryId) {
+      this.messageService.add({ severity: 'warn', summary: 'Elegí una categoría' });
+      return;
+    }
+
+    await lastValueFrom(this.transactionService.updateCategoryMany([...this.selectedIds], this.bulkRecategorizeCategoryId));
+    this.messageService.add({ severity: 'success', summary: 'Transacciones recategorizadas' });
+    this.bulkRecategorizeDialogVisible = false;
+    this.clearSelection();
   }
 
   formatDate(date: Date): string {

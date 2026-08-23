@@ -17,7 +17,17 @@ import {
   toTransfer,
   fromTransfer
 } from './account.service';
+import {
+  GoalService,
+  StoredGoal,
+  toGoal,
+  fromGoal,
+  StoredGoalContribution,
+  toGoalContribution,
+  fromGoalContribution
+} from './goal.service';
 import { Account, AccountTransfer } from '../core/types/account.types';
+import { Goal, GoalContribution } from '../core/types/goal.types';
 import { mergeEntities, purgeOldTombstones } from '../core/utils/sync-merge.util';
 import { dedupeCategories } from '../core/utils/category-dedupe.util';
 
@@ -34,6 +44,8 @@ export interface SyncResult {
   budgets: EntitySyncStats;
   accounts: EntitySyncStats;
   transfers: EntitySyncStats;
+  goals: EntitySyncStats;
+  goalContributions: EntitySyncStats;
 }
 
 interface DriveFile {
@@ -52,9 +64,20 @@ interface DriveSyncPayload {
   budgets: StoredBudget[];
   accounts: StoredAccount[];
   transfers: StoredAccountTransfer[];
+  goals: StoredGoal[];
+  goalContributions: StoredGoalContribution[];
 }
 
-const EMPTY_PAYLOAD: DriveSyncPayload = { transactions: [], categories: [], bills: [], budgets: [], accounts: [], transfers: [] };
+const EMPTY_PAYLOAD: DriveSyncPayload = {
+  transactions: [],
+  categories: [],
+  bills: [],
+  budgets: [],
+  accounts: [],
+  transfers: [],
+  goals: [],
+  goalContributions: []
+};
 
 @Injectable({
   providedIn: 'root'
@@ -73,7 +96,8 @@ export class DriveSyncService {
     private readonly categoryService: CategoryService,
     private readonly billService: BillService,
     private readonly budgetService: BudgetService,
-    private readonly accountService: AccountService
+    private readonly accountService: AccountService,
+    private readonly goalService: GoalService
   ) {}
 
   /** Downloads remote data, merges it into local storage, and writes the merged result locally. Does not upload. */
@@ -90,6 +114,8 @@ export class DriveSyncService {
     this.budgetService.replaceAll(deduped.budgets);
     this.accountService.replaceAll(deduped.accounts);
     this.accountService.replaceAllTransfers(deduped.transfers);
+    this.goalService.replaceAll(deduped.goals);
+    this.goalService.replaceAllContributions(deduped.goalContributions);
 
     return this.finalizeResult(stats);
   }
@@ -108,7 +134,9 @@ export class DriveSyncService {
       bills: deduped.bills.map(fromBill),
       budgets: deduped.budgets.map(fromBudget),
       accounts: deduped.accounts.map(fromAccount),
-      transfers: deduped.transfers.map(fromTransfer)
+      transfers: deduped.transfers.map(fromTransfer),
+      goals: deduped.goals.map(fromGoal),
+      goalContributions: deduped.goalContributions.map(fromGoalContribution)
     };
 
     await this.uploadPayload(folderId, existingFile?.id ?? null, outgoingPayload);
@@ -117,7 +145,12 @@ export class DriveSyncService {
   }
 
   private mergeWithLocal(remotePayload: DriveSyncPayload): {
-    deduped: ReturnType<typeof dedupeCategories> & { accounts: Account[]; transfers: AccountTransfer[] };
+    deduped: ReturnType<typeof dedupeCategories> & {
+      accounts: Account[];
+      transfers: AccountTransfer[];
+      goals: Goal[];
+      goalContributions: GoalContribution[];
+    };
     stats: {
       transactions: EntitySyncStats;
       categories: EntitySyncStats;
@@ -125,6 +158,8 @@ export class DriveSyncService {
       budgets: EntitySyncStats;
       accounts: EntitySyncStats;
       transfers: EntitySyncStats;
+      goals: EntitySyncStats;
+      goalContributions: EntitySyncStats;
     };
   } {
     const now = new Date();
@@ -156,17 +191,34 @@ export class DriveSyncService {
     );
     const mergedTransfers = purgeOldTombstones(transfersResult.merged, now);
 
+    const goalsResult = mergeEntities(this.goalService.getAllIncludingDeleted(), remotePayload.goals.map(toGoal));
+    const mergedGoals = purgeOldTombstones(goalsResult.merged, now);
+
+    const goalContributionsResult = mergeEntities(
+      this.goalService.getAllContributionsIncludingDeleted(),
+      remotePayload.goalContributions.map(toGoalContribution)
+    );
+    const mergedGoalContributions = purgeOldTombstones(goalContributionsResult.merged, now);
+
     const categoryDeduped = dedupeCategories(mergedCategories, mergedTransactions, mergedBills, mergedBudgets, now);
 
     return {
-      deduped: { ...categoryDeduped, accounts: mergedAccounts, transfers: mergedTransfers },
+      deduped: {
+        ...categoryDeduped,
+        accounts: mergedAccounts,
+        transfers: mergedTransfers,
+        goals: mergedGoals,
+        goalContributions: mergedGoalContributions
+      },
       stats: {
         transactions: { added: transactionsResult.added, updated: transactionsResult.updated },
         categories: { added: categoriesResult.added, updated: categoriesResult.updated },
         bills: { added: billsResult.added, updated: billsResult.updated },
         budgets: { added: budgetsResult.added, updated: budgetsResult.updated },
         accounts: { added: accountsResult.added, updated: accountsResult.updated },
-        transfers: { added: transfersResult.added, updated: transfersResult.updated }
+        transfers: { added: transfersResult.added, updated: transfersResult.updated },
+        goals: { added: goalsResult.added, updated: goalsResult.updated },
+        goalContributions: { added: goalContributionsResult.added, updated: goalContributionsResult.updated }
       }
     };
   }
@@ -178,6 +230,8 @@ export class DriveSyncService {
     budgets: EntitySyncStats;
     accounts: EntitySyncStats;
     transfers: EntitySyncStats;
+    goals: EntitySyncStats;
+    goalContributions: EntitySyncStats;
   }): Promise<SyncResult> {
     const syncedAt = new Date();
     await Preferences.set({ key: this.LAST_SYNCED_KEY, value: syncedAt.toISOString() });
@@ -235,15 +289,16 @@ export class DriveSyncService {
     });
   }
 
-  private downloadPayload(fileId: string): Promise<DriveSyncPayload> {
-    return this.withAuth((headers) =>
+  private async downloadPayload(fileId: string): Promise<DriveSyncPayload> {
+    const payload = await this.withAuth((headers) =>
       lastValueFrom(
-        this.http.get<DriveSyncPayload>(`${this.FILES_URL}/${fileId}`, {
+        this.http.get<Partial<DriveSyncPayload>>(`${this.FILES_URL}/${fileId}`, {
           headers,
           params: new HttpParams({ fromObject: { alt: 'media' } })
         })
       )
     );
+    return { ...EMPTY_PAYLOAD, ...payload };
   }
 
   private uploadPayload(folderId: string, existingFileId: string | null, payload: DriveSyncPayload): Promise<string> {

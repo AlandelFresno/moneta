@@ -9,12 +9,24 @@ import { SelectModule } from 'primeng/select';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
-import { Budget, BudgetAllocation, BudgetProgress, BudgetSuggestMethod } from '../../core/types/budget.types';
+import {
+  Budget,
+  BudgetAllocation,
+  BudgetGoalAllocation,
+  BudgetProgress,
+  BudgetSuggestMethod,
+  GoalAllocationResolution,
+  PendingGoalRollover
+} from '../../core/types/budget.types';
 import { Category } from '../../core/types/category.types';
 import { Transaction } from '../../core/types/transaction.types';
+import { Goal } from '../../core/types/goal.types';
+import { Account } from '../../core/types/account.types';
 import { BudgetService } from '../../services/budget.service';
 import { CategoryService } from '../../services/category.service';
 import { TransactionService } from '../../services/transaction.service';
+import { GoalService } from '../../services/goal.service';
+import { AccountService } from '../../services/account.service';
 import { DashboardService } from '../../services/dashboard.service';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { BudgetProgressComponent } from '../../shared/budget-progress/budget-progress.component';
@@ -28,6 +40,28 @@ interface BudgetFormRow {
   included: boolean;
   amount: number | null;
 }
+
+interface BudgetFormGoalRow {
+  goalId: string;
+  name: string;
+  color: string;
+  icon: string;
+  included: boolean;
+  amount: number | null;
+  accountId: string | null;
+}
+
+interface RolloverForm {
+  action: GoalAllocationResolution;
+  sourceAccountId: string | null;
+  destinationAccountId: string | null;
+}
+
+const EMPTY_ROLLOVER_FORM: RolloverForm = {
+  action: 'saved',
+  sourceAccountId: null,
+  destinationAccountId: null
+};
 
 @Component({
   selector: 'app-budgets',
@@ -52,12 +86,15 @@ export class BudgetsPage implements OnInit, OnDestroy {
   categories: Category[] = [];
   expenseCategories: Category[] = [];
   allTransactions: Transaction[] = [];
+  goals: Goal[] = [];
+  accounts: Account[] = [];
 
   current: Budget | null = null;
   upcoming: Budget | null = null;
   progress: BudgetProgress | null = null;
   history: Budget[] = [];
   historyPanelOpen = false;
+  pendingRollovers: PendingGoalRollover[] = [];
 
   readonly suggestMethodOptions: { label: string; value: BudgetSuggestMethod }[] = [
     { label: 'Mes pasado', value: 'lastMonth' },
@@ -73,11 +110,24 @@ export class BudgetsPage implements OnInit, OnDestroy {
   suggestMethod: BudgetSuggestMethod = 'avg3';
   minSpendFilter: number | null = 0;
   rows: BudgetFormRow[] = [];
+  goalRows: BudgetFormGoalRow[] = [];
+
+  rolloverDialogVisible = false;
+  resolvingRollover: PendingGoalRollover | null = null;
+  rolloverForm: RolloverForm = { ...EMPTY_ROLLOVER_FORM };
+
+  readonly rolloverActionOptions: { label: string; value: GoalAllocationResolution }[] = [
+    { label: 'Dejar en la cuenta', value: 'kept' },
+    { label: 'Mover a otra cuenta', value: 'transferred' },
+    { label: 'Ahorrar en la meta', value: 'saved' }
+  ];
 
   constructor(
     private readonly budgetService: BudgetService,
     private readonly categoryService: CategoryService,
     private readonly transactionService: TransactionService,
+    private readonly goalService: GoalService,
+    private readonly accountService: AccountService,
     private readonly dashboardService: DashboardService,
     private readonly confirmationService: ConfirmationService,
     private readonly messageService: MessageService,
@@ -88,17 +138,22 @@ export class BudgetsPage implements OnInit, OnDestroy {
     combineLatest([
       this.budgetService.getAll(),
       this.transactionService.getAll(),
-      this.categoryService.getAll()
+      this.categoryService.getAll(),
+      this.goalService.getAll(),
+      this.accountService.getAll()
     ])
       .pipe(takeUntil(this.destroy$))
-      .subscribe(([budgets, transactions, categories]) => {
+      .subscribe(([budgets, transactions, categories, goals, accounts]) => {
         const reference = new Date();
         this.categories = categories;
         this.expenseCategories = categories.filter((cat) => cat.type === 'expense');
         this.allTransactions = transactions;
+        this.goals = goals;
+        this.accounts = accounts;
         this.current = this.budgetService.currentBudget(budgets, reference);
         this.upcoming = this.budgetService.upcomingBudget(budgets, reference);
         this.history = this.budgetService.historyBudgets(budgets, reference);
+        this.pendingRollovers = this.budgetService.pendingGoalRollovers(budgets, reference);
 
         if (this.current) {
           const range = this.dashboardService.rangeForPreset('thisMonth', reference, transactions, null);
@@ -123,7 +178,9 @@ export class BudgetsPage implements OnInit, OnDestroy {
   }
 
   get allocatedSum(): number {
-    return this.rows.filter((row) => row.included).reduce((sum, row) => sum + (row.amount ?? 0), 0);
+    const categorySum = this.rows.filter((row) => row.included).reduce((sum, row) => sum + (row.amount ?? 0), 0);
+    const goalSum = this.goalRows.filter((row) => row.included).reduce((sum, row) => sum + (row.amount ?? 0), 0);
+    return categorySum + goalSum;
   }
 
   get remaining(): number {
@@ -204,18 +261,33 @@ export class BudgetsPage implements OnInit, OnDestroy {
       return;
     }
 
+    const includedGoals = this.goalRows.filter((row) => row.included);
+    if (includedGoals.some((row) => row.amount === null || row.amount <= 0 || !row.accountId)) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Metas incompletas',
+        detail: 'Completá cuenta de origen y un monto válido para cada meta seleccionada'
+      });
+      return;
+    }
+
     if (this.allocatedSum > this.totalAmount) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Presupuesto sobreasignado',
-        detail: 'La suma de las categorías supera el monto total'
+        detail: 'La suma de las categorías y metas supera el monto total'
       });
       return;
     }
 
     const allocations: BudgetAllocation[] = included.map((row) => ({ categoryId: row.categoryId, amount: row.amount! }));
+    const goalAllocations: BudgetGoalAllocation[] = includedGoals.map((row) => ({
+      goalId: row.goalId,
+      accountId: row.accountId!,
+      amount: row.amount!
+    }));
 
-    await lastValueFrom(this.budgetService.save(this.targetMonth, this.totalAmount, allocations));
+    await lastValueFrom(this.budgetService.save(this.targetMonth, this.totalAmount, allocations, goalAllocations));
     this.messageService.add({ severity: 'success', summary: 'Presupuesto guardado' });
 
     this.dialogVisible = false;
@@ -237,6 +309,7 @@ export class BudgetsPage implements OnInit, OnDestroy {
     this.minSpendFilter = 0;
     this.suggestMethod = 'avg3';
     this.rows = this.buildRows(source?.allocations ?? []);
+    this.goalRows = this.buildGoalRows(source?.goalAllocations ?? []);
     this.dialogVisible = true;
   }
 
@@ -274,5 +347,90 @@ export class BudgetsPage implements OnInit, OnDestroy {
         };
       })
       .sort((a, b) => b.historicalTotal - a.historicalTotal);
+  }
+
+  private buildGoalRows(existing: BudgetGoalAllocation[]): BudgetFormGoalRow[] {
+    return this.goals.map((goal) => {
+      const existingAllocation = existing.find((allocation) => allocation.goalId === goal.id);
+      return {
+        goalId: goal.id,
+        name: goal.name,
+        color: goal.color,
+        icon: goal.icon,
+        included: !!existingAllocation,
+        amount: existingAllocation?.amount ?? null,
+        accountId: existingAllocation?.accountId ?? null
+      };
+    });
+  }
+
+  private goalName(goalId: string): string {
+    return this.goals.find((goal) => goal.id === goalId)?.name ?? 'Meta eliminada';
+  }
+
+  private accountName(accountId: string): string {
+    return this.accounts.find((account) => account.id === accountId)?.name ?? 'Cuenta eliminada';
+  }
+
+  rolloverSummary(item: PendingGoalRollover): string {
+    return `${this.formatMonthLabel(item.budget.month)}: ${item.allocation.amount.toLocaleString('es-AR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })} planeados para "${this.goalName(item.allocation.goalId)}" desde "${this.accountName(item.allocation.accountId)}"`;
+  }
+
+  get rolloverDestinationOptions(): Account[] {
+    return this.accounts.filter((account) => account.id !== this.rolloverForm.sourceAccountId);
+  }
+
+  openRolloverDialog(item: PendingGoalRollover): void {
+    this.resolvingRollover = item;
+    const originalStillExists = this.accounts.some((account) => account.id === item.allocation.accountId);
+    this.rolloverForm = {
+      action: 'saved',
+      sourceAccountId: originalStillExists ? item.allocation.accountId : null,
+      destinationAccountId: null
+    };
+    this.rolloverDialogVisible = true;
+  }
+
+  async saveRolloverResolution(): Promise<void> {
+    if (!this.resolvingRollover) return;
+    const { action, sourceAccountId, destinationAccountId } = this.rolloverForm;
+    const { budget, allocation } = this.resolvingRollover;
+
+    if (action !== 'kept' && !sourceAccountId) {
+      this.messageService.add({ severity: 'warn', summary: 'Elegí de qué cuenta sale el dinero' });
+      return;
+    }
+    if (action === 'transferred' && (!destinationAccountId || destinationAccountId === sourceAccountId)) {
+      this.messageService.add({ severity: 'warn', summary: 'Elegí una cuenta de destino distinta' });
+      return;
+    }
+
+    const description = `Rollover presupuesto ${this.formatMonthLabel(budget.month)} — ${this.goalName(allocation.goalId)}`;
+
+    if (action === 'transferred') {
+      await lastValueFrom(
+        this.accountService.transfer(sourceAccountId!, destinationAccountId!, allocation.amount, new Date(), description)
+      );
+    } else if (action === 'saved') {
+      this.accountService.adjustBalance(sourceAccountId!, -allocation.amount);
+      await lastValueFrom(this.goalService.contribute(allocation.goalId, allocation.amount, new Date(), description));
+    }
+
+    await lastValueFrom(
+      this.budgetService.markGoalAllocationResolved(
+        budget.id,
+        allocation.goalId,
+        action,
+        action === 'kept' ? allocation.accountId : sourceAccountId!,
+        action === 'transferred' ? destinationAccountId! : undefined
+      )
+    );
+
+    this.messageService.add({ severity: 'success', summary: 'Rollover resuelto' });
+    this.rolloverDialogVisible = false;
+    this.resolvingRollover = null;
   }
 }

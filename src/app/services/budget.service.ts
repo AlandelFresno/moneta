@@ -1,6 +1,15 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, map } from 'rxjs';
-import { Budget, BudgetAllocation, BudgetProgress, BudgetSuggestMethod, CategoryProgress } from '../core/types/budget.types';
+import {
+  Budget,
+  BudgetAllocation,
+  BudgetGoalAllocation,
+  BudgetProgress,
+  BudgetSuggestMethod,
+  CategoryProgress,
+  GoalAllocationResolution,
+  PendingGoalRollover
+} from '../core/types/budget.types';
 import { Transaction } from '../core/types/transaction.types';
 
 export interface StoredBudget extends Omit<Budget, 'month' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
@@ -13,6 +22,7 @@ export interface StoredBudget extends Omit<Budget, 'month' | 'createdAt' | 'upda
 export function toBudget(stored: StoredBudget): Budget {
   return {
     ...stored,
+    goalAllocations: stored.goalAllocations ?? [],
     month: new Date(stored.month),
     createdAt: new Date(stored.createdAt),
     updatedAt: new Date(stored.updatedAt),
@@ -100,7 +110,7 @@ export class BudgetService {
   }
 
   /** Upserts the budget for the given month — updates the existing non-deleted record for that month if there is one, else creates it. */
-  save(month: Date, totalAmount: number, allocations: BudgetAllocation[]): Observable<Budget> {
+  save(month: Date, totalAmount: number, allocations: BudgetAllocation[], goalAllocations: BudgetGoalAllocation[] = []): Observable<Budget> {
     const now = new Date();
     const targetMonth = this.startOfMonth(month);
     const existing = this.allSubject.value.find((budget) => !budget.deletedAt && budget.month.getTime() === targetMonth.getTime());
@@ -109,7 +119,7 @@ export class BudgetService {
     let budgets: Budget[];
 
     if (existing) {
-      saved = { ...existing, totalAmount, allocations, updatedAt: now };
+      saved = { ...existing, totalAmount, allocations, goalAllocations, updatedAt: now };
       budgets = this.allSubject.value.map((budget) => (budget.id === existing.id ? saved : budget));
     } else {
       saved = {
@@ -117,6 +127,7 @@ export class BudgetService {
         month: targetMonth,
         totalAmount,
         allocations,
+        goalAllocations,
         createdAt: now,
         updatedAt: now
       };
@@ -168,7 +179,9 @@ export class BudgetService {
   /** Plan-vs-actual for a budget against a set of transactions already filtered to its month. */
   budgetProgress(budget: Budget, transactionsThisMonth: Transaction[]): BudgetProgress {
     const expenses = transactionsThisMonth.filter((t) => t.type === 'expense');
-    const totalAllocated = budget.allocations.reduce((sum, allocation) => sum + allocation.amount, 0);
+    const categoryAllocated = budget.allocations.reduce((sum, allocation) => sum + allocation.amount, 0);
+    const goalAllocated = budget.goalAllocations.reduce((sum, allocation) => sum + allocation.amount, 0);
+    const totalAllocated = categoryAllocated + goalAllocated;
     const totalSpent = expenses.reduce((sum, t) => sum + t.amount, 0);
 
     const categories: CategoryProgress[] = budget.allocations.map((allocation) => {
@@ -188,7 +201,8 @@ export class BudgetService {
       unallocated: budget.totalAmount - totalAllocated,
       totalSpent,
       totalPct: budget.totalAmount > 0 ? (totalSpent / budget.totalAmount) * 100 : null,
-      categories
+      categories,
+      goals: budget.goalAllocations.map(({ goalId, amount }) => ({ goalId, amount }))
     };
   }
 
@@ -217,6 +231,7 @@ export class BudgetService {
         month: cursor,
         totalAmount: latest.totalAmount,
         allocations: latest.allocations,
+        goalAllocations: latest.goalAllocations.map(({ goalId, accountId, amount }) => ({ goalId, accountId, amount })),
         createdAt: now,
         updatedAt: now
       });
@@ -228,6 +243,44 @@ export class BudgetService {
     const budgets = [...all, ...newRecords];
     this.persist(budgets);
     this.allSubject.next(budgets);
+  }
+
+  /** Unresolved goal allocations belonging to non-deleted budgets whose month has already passed. */
+  pendingGoalRollovers(budgets: Budget[], reference: Date): PendingGoalRollover[] {
+    const result: PendingGoalRollover[] = [];
+    for (const budget of this.historyBudgets(budgets, reference)) {
+      for (const allocation of budget.goalAllocations) {
+        if (!allocation.resolution) result.push({ budget, allocation });
+      }
+    }
+    return result;
+  }
+
+  /** Records what actually happened to a goal allocation's money once its month rolled over. Pure data mutation — no Account/Goal side effects (the caller performs those first). */
+  markGoalAllocationResolved(
+    budgetId: string,
+    goalId: string,
+    resolution: GoalAllocationResolution,
+    resolvedAccountId: string,
+    destinationAccountId?: string
+  ): Observable<void> {
+    const budgets = this.allSubject.value.map((budget) => {
+      if (budget.id !== budgetId) return budget;
+      return {
+        ...budget,
+        goalAllocations: budget.goalAllocations.map((allocation) =>
+          allocation.goalId === goalId ? { ...allocation, resolution, resolvedAccountId, destinationAccountId } : allocation
+        ),
+        updatedAt: new Date()
+      };
+    });
+    this.persist(budgets);
+    this.allSubject.next(budgets);
+
+    return new Observable((subscriber) => {
+      subscriber.next();
+      subscriber.complete();
+    });
   }
 
   /** Totals for each of the `n` calendar months preceding `reference`'s month, oldest first. */
