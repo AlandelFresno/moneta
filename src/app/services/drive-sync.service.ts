@@ -289,15 +289,16 @@ export class DriveSyncService {
     });
   }
 
-  private downloadPayload(fileId: string): Promise<DriveSyncPayload> {
-    return this.withAuth((headers) =>
+  private async downloadPayload(fileId: string): Promise<DriveSyncPayload> {
+    const payload = await this.withAuth((headers) =>
       lastValueFrom(
-        this.http.get<DriveSyncPayload>(`${this.FILES_URL}/${fileId}`, {
+        this.http.get<Partial<DriveSyncPayload>>(`${this.FILES_URL}/${fileId}`, {
           headers,
           params: new HttpParams({ fromObject: { alt: 'media' } })
         })
       )
     );
+    return { ...EMPTY_PAYLOAD, ...payload };
   }
 
   private uploadPayload(folderId: string, existingFileId: string | null, payload: DriveSyncPayload): Promise<string> {
