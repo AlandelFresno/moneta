@@ -4,7 +4,7 @@ Guidance for Claude Code working in this repo.
 
 ## Project
 
-Moneta — Angular + Capacitor personal finance app (accounts, transactions, categories, budgets, multi-currency, Google Drive sync). Mobile via Capacitor (Android/iOS).
+Moneta — Angular + Capacitor personal finance app (accounts, transactions, categories, bills, budgets, goals, dashboard/analytics, Google Drive sync). Mobile via Capacitor (Android/iOS).
 
 ## Stack
 
@@ -37,12 +37,10 @@ One component per folder: `.ts` + `.html` + `.scss`. No component logic outside 
 - **No legacy shims**: don't add deprecated/optional fields for backward compatibility with old data shapes. If a data migration is needed, write an explicit one-time migration, not a runtime fallback (`resolveXxx()` style resolvers) sprinkled through the domain model.
 - **Comments**: only when the *why* isn't obvious (hidden constraint, workaround, subtle invariant). Never explain *what* the code does.
 
-## Domain scope (post-rewrite)
+## Domain scope
 
-In scope: **Transactions, Categories, Bills (recurring), Dashboard/Analytics, Google Drive sync**. Transactions are plain ARS amounts — no multi-currency, no rate conversion.
+In scope: **Transactions (with splits and an amount calculator), Categories, Bills (recurring), Budgets, Accounts + transfers, Goals, Dashboard/Analytics, Google Drive sync**. Transactions are plain ARS amounts — no multi-currency, no rate conversion.
 
-Google Drive sync (`GoogleAuthService` + `DriveSyncService`) is a manual "Sync now" action plus one automatic pull-merge on app startup — not continuous background sync. It merges by `id` + `updatedAt` (newest wins, ties go to local) across Transactions/Categories/Bills, treating soft-deletes (`deletedAt`) as just another mutation so deletions propagate across devices instead of resurrecting. Every domain service exposes `getAllIncludingDeleted()` (sync reads this) and `replaceAll()` (sync writes through this) alongside the normal filtered `getAll()`.
+Google Drive sync (`GoogleAuthService` + `DriveSyncService`) is a manual "Sync now" action plus one automatic pull-merge on app startup — not continuous background sync. It merges by `id` + `updatedAt` (newest wins, ties go to local) across every domain entity (Transactions, Categories, Bills, Budgets, Accounts, Transfers, Goals, Goal contributions, Transaction calculations), treating soft-deletes (`deletedAt`) as just another mutation so deletions propagate across devices instead of resurrecting. Every domain service exposes `getAllIncludingDeleted()` (sync reads this) and `replaceAll()` (sync writes through this) alongside the normal filtered `getAll()`.
 
-Out of scope — do not resurrect without explicit request: Accounts, Budgets, Exchange rates/multi-currency, Fuel log, Vehicle, Billing/Monotributo (AR tax bracket).
-
-See `REWRITE_PLAN.md` for the active rewrite steps and status.
+Out of scope — do not resurrect without explicit request: Exchange rates/multi-currency, Fuel log, Vehicle, Billing/Monotributo (AR tax bracket).
