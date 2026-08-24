@@ -56,6 +56,12 @@ export interface PeriodComparison {
   balanceChangePct: number | null;
 }
 
+export interface HeatmapDay {
+  date: Date;
+  total: number;
+  isFuture: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -222,6 +228,37 @@ export class DashboardService {
 
   topTransactionsByAmount(transactions: Transaction[], limit: number): Transaction[] {
     return [...transactions].sort((a, b) => b.amount - a.amount).slice(0, limit);
+  }
+
+  /** Expense totals per day for a GitHub-style heatmap grid: `weeks` full Monday-Sunday weeks ending on the current week. */
+  dailyHeatmap(transactions: Transaction[], reference: Date, weeks: number = 53): HeatmapDay[] {
+    const today = this.startOfDay(reference);
+    const mondayOffset = (today.getDay() + 6) % 7;
+    const gridEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + (6 - mondayOffset));
+    const gridStart = new Date(gridEnd.getFullYear(), gridEnd.getMonth(), gridEnd.getDate() - (weeks * 7 - 1));
+
+    const totals = new Map<string, number>();
+    for (const txn of transactions) {
+      if (txn.type !== 'expense') continue;
+      const day = this.startOfDay(txn.date);
+      if (day < gridStart || day > today) continue;
+      const key = this.dateKey(day);
+      totals.set(key, (totals.get(key) ?? 0) + txn.amount);
+    }
+
+    const result: HeatmapDay[] = [];
+    let cursor = gridStart;
+    while (cursor.getTime() <= gridEnd.getTime()) {
+      const isFuture = cursor.getTime() > today.getTime();
+      result.push({ date: new Date(cursor), total: isFuture ? 0 : totals.get(this.dateKey(cursor)) ?? 0, isFuture });
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1);
+    }
+
+    return result;
+  }
+
+  private dateKey(date: Date): string {
+    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
   }
 
   private pctChange(curr: number, prev: number): number | null {

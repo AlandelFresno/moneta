@@ -6,6 +6,16 @@
     </div>
 
     <div class="flex items-center gap-2 flex-wrap">
+      <button
+        type="button"
+        class="w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer border border-border-subtle bg-surface-card text-text-secondary transition-colors duration-150 hover:bg-surface-input hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed"
+        title="Exportar reporte PDF"
+        [disabled]="!currentRange"
+        (click)="exportPdf()"
+      >
+        <i class="pi pi-file-pdf"></i>
+      </button>
+
       <p-select
         class="min-w-[12rem]"
         [options]="presetOptions"
@@ -275,6 +285,48 @@
         </div>
       }
     </div>
+  </div>
+
+  <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle mb-4 min-w-0 overflow-x-auto">
+    <h2 class="text-sm font-semibold text-text-primary mb-4">Mapa de gastos diarios</h2>
+    @if (heatmapWeeks.length > 0) {
+      <div class="flex gap-2 w-max">
+        <div class="flex flex-col gap-[3px] pt-[16px]">
+          @for (wd of heatmapWeekdayLabels; track $index) {
+            <span class="text-[9px] text-text-secondary h-[11px] leading-[11px]">{{ wd }}</span>
+          }
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <div class="grid" [style.grid-template-columns]="'repeat(' + heatmapWeeks.length + ', 11px)'" style="column-gap: 3px">
+            @for (week of heatmapWeeks; track $index; let weekIndex = $index) {
+              <span class="text-[9px] text-text-secondary h-[11px] leading-[11px] whitespace-nowrap">
+                @for (m of heatmapMonthLabels; track m.weekIndex) {
+                  @if (m.weekIndex === weekIndex) {
+                    {{ m.label }}
+                  }
+                }
+              </span>
+            }
+          </div>
+
+          <div class="grid grid-flow-col" [style.grid-template-rows]="'repeat(7, 11px)'" style="gap: 3px">
+            @for (week of heatmapWeeks; track $index) {
+              @for (day of week; track day.date.getTime()) {
+                <div
+                  class="w-[11px] h-[11px] rounded-sm bg-expense"
+                  [class.bg-surface-input]="heatmapLevel(day) <= 0"
+                  [style.opacity]="
+                    day.isFuture ? 0 : heatmapLevel(day) === 0 ? 1 : heatmapLevel(day) === 1 ? 0.3 : heatmapLevel(day) === 2 ? 0.55 : heatmapLevel(day) === 3 ? 0.75 : 1
+                  "
+                  [title]="heatmapTooltip(day)"
+                ></div>
+              }
+            }
+          </div>
+        </div>
+      </div>
+    }
   </div>
 
   <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle min-w-0">

@@ -12,6 +12,7 @@ import { InputGroupModule } from 'primeng/inputgroup';
 import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
 import { Transaction, TransactionType } from '../../core/types/transaction.types';
@@ -19,6 +20,7 @@ import { Category, CategoryType } from '../../core/types/category.types';
 import { Bill } from '../../core/types/bill.types';
 import { Account } from '../../core/types/account.types';
 import { TransactionService } from '../../services/transaction.service';
+import { TransactionCalculationService } from '../../services/transaction-calculation.service';
 import { CategoryService } from '../../services/category.service';
 import { CsvService, ParsedCsvRow } from '../../services/csv.service';
 import { BillService, BillDueStatus } from '../../services/bill.service';
@@ -29,12 +31,26 @@ import { IconComponent } from '../../shared/icon/icon.component';
 import { BudgetProgressComponent } from '../../shared/budget-progress/budget-progress.component';
 import { TransactionWithCategory, withCategory } from '../../core/utils/transaction-display.util';
 import { CATEGORY_ICON_OPTIONS } from '../../core/utils/category-icons.util';
+import { evaluateMathExpression } from '../../core/utils/math-expression.util';
 import { Budget, BudgetProgress } from '../../core/types/budget.types';
+
+interface TransactionListItem {
+  key: string;
+  isSplit: boolean;
+  primary: TransactionWithCategory;
+  lines: TransactionWithCategory[];
+  totalAmount: number;
+}
 
 interface TransactionGroup {
   key: string;
   label: string;
-  transactions: TransactionWithCategory[];
+  items: TransactionListItem[];
+}
+
+interface SplitLine {
+  categoryId: string;
+  amount: number | null;
 }
 
 interface TransactionForm {
@@ -46,6 +62,10 @@ interface TransactionForm {
   description: string;
   amount: number | null;
   date: Date;
+  isSplit: boolean;
+  splitGroupId: string | null;
+  splitLines: SplitLine[];
+  calculatorExpression: string | null;
 }
 
 const EMPTY_FORM: TransactionForm = {
@@ -56,7 +76,11 @@ const EMPTY_FORM: TransactionForm = {
   name: '',
   description: '',
   amount: null,
-  date: new Date()
+  date: new Date(),
+  isSplit: false,
+  splitGroupId: null,
+  splitLines: [],
+  calculatorExpression: null
 };
 
 interface CategoryQuickForm {
@@ -85,6 +109,7 @@ const EMPTY_CATEGORY_FORM: CategoryQuickForm = {
     InputGroupAddonModule,
     SelectModule,
     DatePickerModule,
+    ToggleSwitchModule,
     IconComponent,
     BudgetProgressComponent
   ],
@@ -140,8 +165,16 @@ export class TransactionsPage implements OnInit, OnDestroy {
   bulkRecategorizeDialogVisible = false;
   bulkRecategorizeCategoryId: string | null = null;
 
+  expandedSplitGroups = new Set<string>();
+
+  calculatorOpen = false;
+  calculatorInput = '';
+  calculatorPreview: number | null = null;
+  calculatorError: string | null = null;
+
   constructor(
     private readonly transactionService: TransactionService,
+    private readonly transactionCalculationService: TransactionCalculationService,
     private readonly categoryService: CategoryService,
     private readonly csvService: CsvService,
     private readonly billService: BillService,
@@ -193,6 +226,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       .subscribe((text) => {
         this.filters.searchText = text;
         this.applyFilters();
+        this.cdr.markForCheck();
       });
 
     combineLatest([this.budgetService.getCurrent(), this.transactionService.getAll()])
@@ -265,20 +299,58 @@ export class TransactionsPage implements OnInit, OnDestroy {
     this.applyFilters();
   }
 
+  /** Collapses sibling split-transaction lines into one composite item; full line data is read from `this.transactions` (unfiltered) so a partial filter match still shows every line. */
   get groupedTransactions(): TransactionGroup[] {
     const groups = new Map<string, TransactionGroup>();
+    const seenSplitGroups = new Set<string>();
 
     for (const txn of this.filteredTransactions) {
+      if (txn.splitGroupId && seenSplitGroups.has(txn.splitGroupId)) continue;
+
       const key = `${txn.date.getFullYear()}-${txn.date.getMonth()}`;
       let group = groups.get(key);
       if (!group) {
-        group = { key, label: this.monthYearLabel(txn.date), transactions: [] };
+        group = { key, label: this.monthYearLabel(txn.date), items: [] };
         groups.set(key, group);
       }
-      group.transactions.push(txn);
+
+      if (txn.splitGroupId) {
+        seenSplitGroups.add(txn.splitGroupId);
+        const lines = this.transactions.filter((t) => t.splitGroupId === txn.splitGroupId);
+        group.items.push({
+          key: txn.splitGroupId,
+          isSplit: true,
+          primary: txn,
+          lines,
+          totalAmount: lines.reduce((sum, line) => sum + line.amount, 0)
+        });
+      } else {
+        group.items.push({ key: txn.id, isSplit: false, primary: txn, lines: [txn], totalAmount: txn.amount });
+      }
     }
 
     return Array.from(groups.values());
+  }
+
+  isExpanded(key: string): boolean {
+    return this.expandedSplitGroups.has(key);
+  }
+
+  toggleExpand(key: string): void {
+    if (this.expandedSplitGroups.has(key)) this.expandedSplitGroups.delete(key);
+    else this.expandedSplitGroups.add(key);
+  }
+
+  isGroupSelected(item: TransactionListItem): boolean {
+    return item.lines.every((line) => this.selectedIds.has(line.id));
+  }
+
+  toggleSelectGroup(item: TransactionListItem): void {
+    if (this.isGroupSelected(item)) {
+      for (const line of item.lines) this.selectedIds.delete(line.id);
+    } else {
+      for (const line of item.lines) this.selectedIds.add(line.id);
+    }
   }
 
   private monthYearLabel(date: Date): string {
@@ -413,6 +485,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   openCreateDialog(type: TransactionType = 'expense'): void {
     this.form = { ...EMPTY_FORM, type, date: new Date() };
+    this.resetCalculator();
     this.dialogVisible = true;
   }
 
@@ -425,9 +498,131 @@ export class TransactionsPage implements OnInit, OnDestroy {
       name: txn.name,
       description: txn.description,
       amount: txn.amount,
-      date: txn.date
+      date: txn.date,
+      isSplit: false,
+      splitGroupId: null,
+      splitLines: [],
+      calculatorExpression: null
     };
+    this.resetCalculator();
     this.dialogVisible = true;
+  }
+
+  /** Dispatches to the split or single edit flow depending on what the clicked list item represents. */
+  editItem(item: TransactionListItem): void {
+    if (!item.isSplit) {
+      this.openEditDialog(item.primary);
+      return;
+    }
+
+    this.form = {
+      ...EMPTY_FORM,
+      id: null,
+      splitGroupId: item.key,
+      accountId: item.primary.accountId ?? null,
+      type: item.primary.type,
+      name: item.primary.name,
+      description: item.primary.description,
+      date: item.primary.date,
+      isSplit: true,
+      splitLines: item.lines.map((line) => ({ categoryId: line.categoryId, amount: line.amount }))
+    };
+    this.resetCalculator();
+    this.dialogVisible = true;
+  }
+
+  deleteItem(item: TransactionListItem): void {
+    if (!item.isSplit) {
+      this.deleteTransaction(item.primary);
+      return;
+    }
+
+    const ids = item.lines.map((line) => line.id);
+    this.confirmationService.confirm({
+      header: `¿Eliminar transacción dividida (${ids.length} líneas)?`,
+      message: 'Esta acción no se puede deshacer.',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí',
+      rejectLabel: 'No',
+      accept: async () => {
+        await lastValueFrom(this.transactionService.deleteMany(ids));
+        this.messageService.add({ severity: 'success', summary: 'Transacción eliminada' });
+      }
+    });
+  }
+
+  onTypeChange(type: TransactionType): void {
+    this.form.type = type;
+    this.form.categoryId = '';
+    this.form.splitLines = this.form.splitLines.map((line) => ({ ...line, categoryId: '' }));
+  }
+
+  onSplitToggle(): void {
+    if (this.form.isSplit) {
+      if (this.form.splitLines.length < 2) {
+        this.form.splitLines = [
+          { categoryId: this.form.categoryId || '', amount: this.form.amount },
+          { categoryId: '', amount: null }
+        ];
+      }
+    } else {
+      this.form.amount = this.splitTotal || this.form.amount;
+    }
+  }
+
+  addSplitLine(): void {
+    this.form.splitLines.push({ categoryId: '', amount: null });
+  }
+
+  removeSplitLine(index: number): void {
+    if (this.form.splitLines.length <= 2) return;
+    this.form.splitLines.splice(index, 1);
+  }
+
+  get splitTotal(): number {
+    return this.form.splitLines.reduce((sum, line) => sum + (line.amount ?? 0), 0);
+  }
+
+  private resetCalculator(): void {
+    this.calculatorOpen = false;
+    this.calculatorInput = '';
+    this.calculatorPreview = null;
+    this.calculatorError = null;
+  }
+
+  toggleCalculator(): void {
+    this.calculatorOpen = !this.calculatorOpen;
+    if (this.calculatorOpen) {
+      this.calculatorInput = this.form.amount !== null ? String(this.form.amount) : '';
+      this.onCalculatorInputChange();
+    }
+  }
+
+  onCalculatorInputChange(): void {
+    if (!this.calculatorInput.trim()) {
+      this.calculatorPreview = null;
+      this.calculatorError = null;
+      return;
+    }
+
+    try {
+      this.calculatorPreview = evaluateMathExpression(this.calculatorInput);
+      this.calculatorError = null;
+    } catch (error) {
+      this.calculatorPreview = null;
+      this.calculatorError = error instanceof Error ? error.message : 'Expresión inválida';
+    }
+  }
+
+  applyCalculator(): void {
+    if (this.calculatorPreview === null) return;
+    this.form.amount = Math.round(this.calculatorPreview * 100) / 100;
+    this.form.calculatorExpression = this.calculatorInput.trim();
+    this.calculatorOpen = false;
+  }
+
+  onAmountManuallyChanged(): void {
+    this.form.calculatorExpression = null;
   }
 
   categoriesForType(type: TransactionType): Category[] {
@@ -465,13 +660,30 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   async saveTransaction(): Promise<void> {
-    if (!this.form.categoryId || !this.form.name || this.form.amount === null || this.form.amount <= 0) {
+    if (!this.form.name) {
+      this.messageService.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Ingresá un nombre' });
+      return;
+    }
+
+    if (this.form.isSplit) {
+      await this.saveSplitTransaction();
+      return;
+    }
+
+    if (!this.form.categoryId || this.form.amount === null || this.form.amount <= 0) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Datos incompletos',
         detail: 'Completá categoría, nombre y un monto válido'
       });
       return;
+    }
+
+    // Editing a transaction that used to be split, now saved as a single line: drop the old group first.
+    if (this.form.splitGroupId) {
+      const oldIds = this.transactions.filter((t) => t.splitGroupId === this.form.splitGroupId).map((t) => t.id);
+      await lastValueFrom(this.transactionService.deleteMany(oldIds));
+      this.form.id = null;
     }
 
     const payload = {
@@ -484,15 +696,73 @@ export class TransactionsPage implements OnInit, OnDestroy {
       date: this.form.date
     };
 
+    let transactionId: string;
     if (this.form.id) {
       await lastValueFrom(this.transactionService.update(this.form.id, payload));
+      transactionId = this.form.id;
       this.messageService.add({ severity: 'success', summary: 'Transacción actualizada' });
     } else {
-      await lastValueFrom(this.transactionService.create(payload));
+      const created = await lastValueFrom(this.transactionService.create(payload));
+      transactionId = created.id;
       this.messageService.add({ severity: 'success', summary: 'Transacción creada' });
     }
 
+    if (this.form.calculatorExpression) {
+      await lastValueFrom(
+        this.transactionCalculationService.create({
+          transactionId,
+          expression: this.form.calculatorExpression,
+          result: this.form.amount
+        })
+      );
+    }
+
     this.dialogVisible = false;
+  }
+
+  private async saveSplitTransaction(): Promise<void> {
+    const validLines = this.form.splitLines.filter((line) => line.categoryId && line.amount !== null && line.amount > 0);
+    if (validLines.length < 2) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Datos incompletos',
+        detail: 'Agregá al menos 2 líneas con categoría y monto'
+      });
+      return;
+    }
+
+    const isUpdate = this.form.splitGroupId !== null || this.form.id !== null;
+
+    if (this.form.splitGroupId) {
+      const oldIds = this.transactions.filter((t) => t.splitGroupId === this.form.splitGroupId).map((t) => t.id);
+      await lastValueFrom(this.transactionService.deleteMany(oldIds));
+    } else if (this.form.id) {
+      await lastValueFrom(this.transactionService.delete(this.form.id));
+      await lastValueFrom(this.transactionCalculationService.deleteForTransaction(this.form.id));
+    }
+
+    const groupId = this.form.splitGroupId ?? this.generateSplitGroupId();
+    for (const line of validLines) {
+      await lastValueFrom(
+        this.transactionService.create({
+          categoryId: line.categoryId,
+          accountId: this.form.accountId ?? undefined,
+          type: this.form.type,
+          name: this.form.name,
+          description: this.form.description,
+          amount: line.amount!,
+          date: this.form.date,
+          splitGroupId: groupId
+        })
+      );
+    }
+
+    this.messageService.add({ severity: 'success', summary: isUpdate ? 'Transacción actualizada' : 'Transacción dividida creada' });
+    this.dialogVisible = false;
+  }
+
+  private generateSplitGroupId(): string {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
   }
 
   deleteTransaction(txn: Transaction): void {
@@ -504,6 +774,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       rejectLabel: 'No',
       accept: async () => {
         await lastValueFrom(this.transactionService.delete(txn.id));
+        await lastValueFrom(this.transactionCalculationService.deleteForTransaction(txn.id));
         this.messageService.add({ severity: 'success', summary: 'Transacción eliminada' });
       }
     });

@@ -194,4 +194,48 @@ describe('DashboardService', () => {
       expect(result[1].amount).toBe(150);
     });
   });
+
+  describe('dailyHeatmap', () => {
+    it('returns a Monday-aligned grid of weeks*7 days ending on the week containing the reference date', () => {
+      const reference = new Date(2026, 0, 15);
+
+      const result = service.dailyHeatmap([], reference, 2);
+
+      expect(result.length).toBe(14);
+      expect(result[0].date.getDay()).toBe(1);
+      expect(result[result.length - 1].date.getDay()).toBe(0);
+    });
+
+    it('sums expense amounts per day and ignores income', () => {
+      const reference = new Date(2026, 0, 15);
+      const transactions = [
+        txn({ date: reference, amount: 100, type: 'expense' }),
+        txn({ date: reference, amount: 50, type: 'expense' }),
+        txn({ date: reference, amount: 999, type: 'income' })
+      ];
+
+      const result = service.dailyHeatmap(transactions, reference, 2);
+      const day = result.find(
+        (d) =>
+          d.date.getFullYear() === reference.getFullYear() &&
+          d.date.getMonth() === reference.getMonth() &&
+          d.date.getDate() === reference.getDate()
+      );
+
+      expect(day?.total).toBe(150);
+      expect(day?.isFuture).toBe(false);
+    });
+
+    it('marks days after the reference date as future and excludes them from totals', () => {
+      const reference = new Date(2026, 0, 15);
+      const tomorrow = new Date(2026, 0, 16);
+      const transactions = [txn({ date: tomorrow, amount: 500, type: 'expense' })];
+
+      const result = service.dailyHeatmap(transactions, reference, 2);
+      const future = result.find((d) => d.date.getTime() === tomorrow.getTime());
+
+      expect(future?.isFuture).toBe(true);
+      expect(future?.total).toBe(0);
+    });
+  });
 });

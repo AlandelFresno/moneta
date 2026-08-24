@@ -1,6 +1,6 @@
 {
   "name": "moneta",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -46,6 +46,7 @@
     "@primeuix/themes": "^1.2.5",
     "@primeuix/utils": "0.6.2",
     "chart.js": "4.5.1",
+    "jspdf": "^4.2.1",
     "primeicons": "7.0.0",
     "primeng": "20.4.0",
     "rxjs": "7.8.1",
