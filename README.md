@@ -1,123 +1,76 @@
 # Moneta
 
-Una aplicación moderna de seguimiento de presupuestos construida con Angular, TailwindCSS, PrimeNG y Capacitor.
+App de finanzas personales. Angular + Capacitor, corre en web, Android e iOS.
 
-## Stack Tecnológico
+## Stack
 
-- **Frontend Framework**: Angular 20 (standalone components)
-- **UI Library**: PrimeNG
-- **Styling**: TailwindCSS v3 + SCSS
-- **Mobile**: Capacitor (Android & iOS)
-- **State Management**: Angular Signals
+- Angular 20 (standalone components, sin NgModules), control flow `@if`/`@for`
+- PrimeNG + TailwindCSS
+- RxJS, zoneless (`ChangeDetectorRef.markForCheck()` donde hace falta)
+- Capacitor (Android/iOS), datos locales vía `@capacitor/preferences`
+- Sync opcional con Google Drive (OAuth + Drive API)
 
-## Estructura del Proyecto
+## Estructura
 
 ```
-src/
-├── app/
-│   ├── core/
-│   │   ├── models/          # Modelos de datos (Transaction, Budget, Category)
-│   │   └── services/        # Servicios (BudgetService)
-│   ├── app.ts               # Componente raíz
-│   ├── app.html             # Template raíz
-│   ├── app.scss             # Estilos raíz
-│   ├── app.routes.ts        # Configuración de rutas
-│   └── version.ts           # Información de versión
-├── pages/
-│   └── dashboard/           # Página de dashboard
-│       ├── dashboard.page.ts
-│       ├── dashboard.page.html
-│       └── dashboard.page.scss
-├── components/              # Componentes reutilizables
-└── styles.scss              # Estilos globales
+src/app/
+  core/         # guards, tipos, enums, utils — sin componentes
+  pages/        # rutas (accounts, bills, budgets, categories, dashboard, goals, sync, transactions, welcome)
+  shared/       # componentes/UI reutilizable
+  services/     # servicios de dominio, providedIn: 'root'
 ```
 
-## Convenciones de Código
+Cada componente: `.ts` + `.html` + `.scss` en su propia carpeta.
 
-- **Páginas**: Cada página debe tener 3 archivos separados (.ts, .html, .scss)
-- **Componentes**: Igual que páginas, siempre archivos separados
-- **No usar templates inline**: Siempre usar `templateUrl` y `styleUrls`
-- **SCSS**: Todos los estilos en SCSS, no CSS
+## Funcionalidad
 
-## Desarrollo Local
+- Transacciones, categorías, cuentas y transferencias
+- Bills recurrentes (con fecha de fin / cuotas)
+- Budgets con alertas y detección de gastos recurrentes
+- Goals de ahorro (con rollover de budgets)
+- Dashboard/analytics
+- Sync manual con Google Drive (merge por `id` + `updatedAt`, soft-delete)
 
-### Requisitos Previos
-- Node.js 18+
-- npm 9+
+## Desarrollo
 
-### Instalación
+Requisitos: Node 18+, npm 9+.
 
 ```bash
 npm install
-```
-
-### Servidor de Desarrollo
-
-```bash
-npm start
-```
-
-Navega a `http://localhost:4200/`
-
-### Build de Producción
-
-```bash
+npm start          # http://localhost:4200
 npm run build
 ```
 
-## Desarrollo Móvil
+### Google Drive sync (opcional)
 
-### Build para Móvil
-
-```bash
-npm run build:mobile
-```
-
-Este comando construye la aplicación Angular y sincroniza los archivos con Capacitor.
-
-### Abrir en Android Studio
+`npm run build`/`npm start` corren `scripts/generate-env.mjs`, que genera `src/environments/environment.ts` a partir de env vars:
 
 ```bash
-npm run cap:android
+GOOGLE_CLIENT_ID=...
+GOOGLE_API_KEY=...
+GOOGLE_MOBILE_CLIENT_ID=...
+GOOGLE_MOBILE_CLIENT_SECRET=...
 ```
 
-### Abrir en Xcode
+Sin esas vars, el sync queda deshabilitado pero el resto de la app funciona igual.
+
+## Mobile
 
 ```bash
-npm run cap:ios
+npm run build:mobile   # build + cap sync
+npm run cap:android    # abre Android Studio
+npm run cap:ios        # abre Xcode
+npm run cap:sync       # sync tras cambios web
 ```
 
-### Sincronizar Cambios
-
-Después de hacer cambios en el código web:
+Build APK debug:
 
 ```bash
-npm run cap:sync
-```
-
-### Build APK
-
 npm run build
 npx cap sync android
 export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 cd android && ./gradlew assembleDebug
-
-
-## Características
-
-- ✅ Dashboard con resumen financiero
-- ✅ Gestión de transacciones (ingresos y gastos)
-- ✅ Seguimiento de presupuestos por categoría
-- ✅ Responsive design (móvil y escritorio)
-- ✅ Build nativo para Android e iOS
-
-## Próximos Pasos
-
-1. Agregar persistencia de datos (LocalStorage o IndexedDB)
-2. Implementar gráficos y visualizaciones
-3. Agregar categorías personalizadas
-4. Implementar filtros y búsqueda de transacciones
-5. Exportar reportes
+```
 
 ## Licencia
 
