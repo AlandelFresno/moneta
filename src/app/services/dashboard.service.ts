@@ -72,11 +72,12 @@ export class DashboardService {
     reference: Date,
     transactions: Transaction[],
     custom: DateRange | null,
-    periodStartDay: number
+    periodStartDay: number,
+    periodStartHour: number
   ): DateRange {
     switch (preset) {
       case 'thisMonth':
-        return periodRange(reference, periodStartDay);
+        return periodRange(reference, periodStartDay, periodStartHour, transactions);
       case 'last3':
       case 'last6':
       case 'last12': {
@@ -111,6 +112,11 @@ export class DashboardService {
     const start = this.startOfDay(range.start);
     const end = this.endOfDay(range.end);
     return transactions.filter((txn) => txn.date >= start && txn.date <= end);
+  }
+
+  /** Exact match, no whole-day widening — for period ranges that may carry real hour precision from a marker transaction. */
+  transactionsInPeriod(transactions: Transaction[], range: DateRange): Transaction[] {
+    return transactions.filter((txn) => txn.date >= range.start && txn.date <= range.end);
   }
 
   categoryBreakdown(transactions: Transaction[], categories: Category[], type: 'income' | 'expense'): CategoryBreakdownEntry[] {

@@ -128,6 +128,7 @@ export class BudgetsPage implements OnInit, OnDestroy {
   ];
 
   periodStartDay = 1;
+  periodStartHour = 0;
   currentPeriodRange: { start: Date; end: Date } | null = null;
 
   constructor(
@@ -145,6 +146,7 @@ export class BudgetsPage implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.periodStartDay = this.periodSettingsService.getStartDay();
+    this.periodStartHour = this.periodSettingsService.getStartHour();
 
     combineLatest([
       this.budgetService.getAll(),
@@ -166,11 +168,18 @@ export class BudgetsPage implements OnInit, OnDestroy {
         this.upcoming = this.budgetService.upcomingBudget(budgets, reference);
         this.history = this.budgetService.historyBudgets(budgets, reference);
         this.pendingRollovers = this.budgetService.pendingGoalRollovers(budgets, reference);
-        this.currentPeriodRange = periodRange(reference, this.periodStartDay);
+        this.currentPeriodRange = periodRange(reference, this.periodStartDay, this.periodStartHour, transactions);
 
         if (this.current) {
-          const range = this.dashboardService.rangeForPreset('thisMonth', reference, transactions, null, this.periodStartDay);
-          const thisMonth = this.dashboardService.transactionsInRange(transactions, range);
+          const range = this.dashboardService.rangeForPreset(
+            'thisMonth',
+            reference,
+            transactions,
+            null,
+            this.periodStartDay,
+            this.periodStartHour
+          );
+          const thisMonth = this.dashboardService.transactionsInPeriod(transactions, range);
           this.progress = this.budgetService.budgetProgress(this.current, thisMonth);
         } else {
           this.progress = null;
@@ -180,17 +189,25 @@ export class BudgetsPage implements OnInit, OnDestroy {
       });
   }
 
-  onPeriodStartDayChange(day: number): void {
-    this.periodStartDay = day;
+  onPeriodSettingsChange(): void {
+    this.periodStartDay = this.periodSettingsService.getStartDay();
+    this.periodStartHour = this.periodSettingsService.getStartHour();
     const reference = new Date();
     this.current = this.budgetService.currentBudget(this.budgets, reference);
     this.upcoming = this.budgetService.upcomingBudget(this.budgets, reference);
     this.history = this.budgetService.historyBudgets(this.budgets, reference);
-    this.currentPeriodRange = periodRange(reference, this.periodStartDay);
+    this.currentPeriodRange = periodRange(reference, this.periodStartDay, this.periodStartHour, this.allTransactions);
 
     if (this.current) {
-      const range = this.dashboardService.rangeForPreset('thisMonth', new Date(), this.allTransactions, null, this.periodStartDay);
-      const thisMonth = this.dashboardService.transactionsInRange(this.allTransactions, range);
+      const range = this.dashboardService.rangeForPreset(
+        'thisMonth',
+        reference,
+        this.allTransactions,
+        null,
+        this.periodStartDay,
+        this.periodStartHour
+      );
+      const thisMonth = this.dashboardService.transactionsInPeriod(this.allTransactions, range);
       this.progress = this.budgetService.budgetProgress(this.current, thisMonth);
     } else {
       this.progress = null;
@@ -327,7 +344,9 @@ export class BudgetsPage implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    return new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+    const base = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+    if (date.getHours() === 0 && date.getMinutes() === 0) return base;
+    return `${base} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   }
 
   private openFormDialog(targetMonth: Date, source: Budget | null): void {

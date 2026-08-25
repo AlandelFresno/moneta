@@ -34,40 +34,46 @@ describe('DashboardService', () => {
 
   describe('rangeForPreset', () => {
     it('resolves "thisMonth" to the full calendar month of the reference date at the default start day', () => {
-      const range = service.rangeForPreset('thisMonth', new Date(2026, 1, 15), [], null, 1);
+      const range = service.rangeForPreset('thisMonth', new Date(2026, 1, 15), [], null, 1, 0);
       expect(range.start).toEqual(new Date(2026, 1, 1));
-      expect(range.end).toEqual(new Date(2026, 1, 28));
+      expect(range.end).toEqual(new Date(2026, 1, 28, 23, 59, 59, 999));
     });
 
     it('resolves "thisMonth" to the custom period when a period start day is set', () => {
       // Paid the 6th of each month: the 1st-5th belong to the previous period.
-      const range = service.rangeForPreset('thisMonth', new Date(2026, 7, 3), [], null, 6);
+      const range = service.rangeForPreset('thisMonth', new Date(2026, 7, 3), [], null, 6, 0);
       expect(range.start).toEqual(new Date(2026, 6, 6));
-      expect(range.end).toEqual(new Date(2026, 7, 5));
+      expect(range.end).toEqual(new Date(new Date(2026, 7, 6).getTime() - 1));
+    });
+
+    it('resolves "thisMonth" using a marked transaction\'s exact timestamp instead of the default hour', () => {
+      const marker = txn({ type: 'income', isPeriodStart: true, date: new Date(2026, 7, 6, 14, 32) });
+      const range = service.rangeForPreset('thisMonth', new Date(2026, 7, 20), [marker], null, 6, 0);
+      expect(range.start).toEqual(new Date(2026, 7, 6, 14, 32));
     });
 
     it('resolves "last3" to a 3-month window ending on the reference month', () => {
-      const range = service.rangeForPreset('last3', new Date(2026, 2, 10), [], null, 1);
+      const range = service.rangeForPreset('last3', new Date(2026, 2, 10), [], null, 1, 0);
       expect(range.start).toEqual(new Date(2026, 0, 1));
       expect(range.end).toEqual(new Date(2026, 2, 31));
     });
 
     it('resolves "thisYear" to Jan 1 - Dec 31 of the reference year', () => {
-      const range = service.rangeForPreset('thisYear', new Date(2026, 5, 1), [], null, 1);
+      const range = service.rangeForPreset('thisYear', new Date(2026, 5, 1), [], null, 1, 0);
       expect(range.start).toEqual(new Date(2026, 0, 1));
       expect(range.end).toEqual(new Date(2026, 11, 31));
     });
 
     it('resolves "allTime" to the min/max transaction dates', () => {
       const transactions = [txn({ date: new Date(2024, 3, 1) }), txn({ date: new Date(2026, 0, 20) })];
-      const range = service.rangeForPreset('allTime', new Date(2026, 5, 1), transactions, null, 1);
+      const range = service.rangeForPreset('allTime', new Date(2026, 5, 1), transactions, null, 1, 0);
       expect(range.start).toEqual(new Date(2024, 3, 1));
       expect(range.end).toEqual(new Date(2026, 0, 20));
     });
 
     it('resolves "custom" to the provided range', () => {
       const custom = { start: new Date(2026, 0, 5), end: new Date(2026, 0, 10) };
-      const range = service.rangeForPreset('custom', new Date(2026, 5, 1), [], custom, 1);
+      const range = service.rangeForPreset('custom', new Date(2026, 5, 1), [], custom, 1, 0);
       expect(range).toEqual(custom);
     });
   });
@@ -98,6 +104,24 @@ describe('DashboardService', () => {
 
       const result = service.transactionsInRange(transactions, { start: new Date(2026, 0, 1), end: new Date(2026, 0, 31) });
       expect(result.length).toBe(1);
+    });
+  });
+
+  describe('transactionsInPeriod', () => {
+    it('matches exactly, without widening to whole days', () => {
+      const transactions = [
+        txn({ date: new Date(2026, 7, 6, 10, 0) }),
+        txn({ date: new Date(2026, 7, 6, 14, 32) }),
+        txn({ date: new Date(2026, 7, 6, 18, 0) })
+      ];
+
+      const result = service.transactionsInPeriod(transactions, {
+        start: new Date(2026, 7, 6, 14, 32),
+        end: new Date(2026, 7, 6, 23, 59, 59, 999)
+      });
+
+      expect(result.length).toBe(2);
+      expect(result.every((t) => t.date.getTime() >= new Date(2026, 7, 6, 14, 32).getTime())).toBe(true);
     });
   });
 

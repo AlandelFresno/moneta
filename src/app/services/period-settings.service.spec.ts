@@ -46,4 +46,41 @@ describe('PeriodSettingsService', () => {
     const fresh = new PeriodSettingsService();
     expect(fresh.getStartDay()).toBe(6);
   });
+
+  it('defaults to hour 0', () => {
+    expect(service.getStartHour()).toBe(0);
+  });
+
+  it('persists a set hour value', () => {
+    service.setStartHour(14);
+    expect(service.getStartHour()).toBe(14);
+  });
+
+  it('clamps hour below the minimum up to 0', () => {
+    service.setStartHour(-3);
+    expect(service.getStartHour()).toBe(0);
+  });
+
+  it('clamps hour above the maximum down to 23', () => {
+    service.setStartHour(30);
+    expect(service.getStartHour()).toBe(23);
+  });
+
+  it('rounds a fractional hour value', () => {
+    service.setStartHour(14.6);
+    expect(service.getStartHour()).toBe(15);
+  });
+
+  it('persists hour across service instances via localStorage', () => {
+    service.setStartHour(14);
+    const fresh = new PeriodSettingsService();
+    expect(fresh.getStartHour()).toBe(14);
+  });
+
+  it('keeps day and hour independent', () => {
+    service.setStartDay(6);
+    service.setStartHour(14);
+    expect(service.getStartDay()).toBe(6);
+    expect(service.getStartHour()).toBe(14);
+  });
 });

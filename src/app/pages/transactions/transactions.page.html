@@ -50,7 +50,7 @@
     </div>
   </div>
 
-  <app-period-start-day class="block mb-6" (dayChange)="onPeriodStartDayChange()" />
+  <app-period-start-day class="block mb-6" (settingsChange)="onPeriodSettingsChange()" />
 
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
     <div class="flex items-center gap-3.5 p-4 rounded-2xl bg-surface-card border border-border-subtle">
@@ -200,7 +200,12 @@
             </div>
 
             <div class="flex flex-col flex-1 min-w-0 gap-0.5">
-              <span class="font-medium truncate text-text-primary">{{ item.primary.name }}</span>
+              <span class="font-medium truncate text-text-primary flex items-center gap-1.5">
+                {{ item.primary.name }}
+                @if (item.primary.isPeriodStart) {
+                  <i class="pi pi-flag-fill text-accent text-xs" title="Inicio de período"></i>
+                }
+              </span>
               @if (item.isSplit) {
                 <span class="text-sm truncate text-text-secondary">Dividida en {{ item.lines.length }} categorías</span>
               } @else if (item.primary.description) {
@@ -448,7 +453,22 @@
     }
 
     <label for="txn-date" class="text-sm font-medium mt-2 text-text-primary">Fecha</label>
-    <p-datepicker class="w-full" inputId="txn-date" [(ngModel)]="form.date" dateFormat="dd/mm/yy" appendTo="body" />
+    <p-datepicker
+      class="w-full"
+      inputId="txn-date"
+      [(ngModel)]="form.date"
+      dateFormat="dd/mm/yy"
+      [showTime]="form.type === 'income' && !form.isSplit && form.isPeriodStart"
+      hourFormat="24"
+      appendTo="body"
+    />
+
+    @if (form.type === 'income' && !form.isSplit) {
+      <div class="flex items-center gap-2.5 mt-2">
+        <p-toggleswitch [(ngModel)]="form.isPeriodStart" />
+        <span class="text-sm text-text-primary">Marca el inicio de un nuevo período</span>
+      </div>
+    }
 
     @if (accounts.length > 0) {
       <label for="txn-account" class="text-sm font-medium mt-2 text-text-primary">Cuenta</label>

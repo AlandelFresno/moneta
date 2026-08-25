@@ -11,17 +11,21 @@ import { PeriodSettingsService } from '../../services/period-settings.service';
   styleUrl: './period-start-day.component.scss'
 })
 export class PeriodStartDayComponent {
-  @Output() dayChange = new EventEmitter<number>();
+  @Output() settingsChange = new EventEmitter<void>();
 
   day: number;
+  hour: number;
 
   constructor(private readonly periodSettingsService: PeriodSettingsService) {
     this.day = this.periodSettingsService.getStartDay();
+    this.hour = this.periodSettingsService.getStartHour();
   }
 
   onBlur(): void {
     this.periodSettingsService.setStartDay(this.day);
+    this.periodSettingsService.setStartHour(this.hour);
     this.day = this.periodSettingsService.getStartDay();
-    this.dayChange.emit(this.day);
+    this.hour = this.periodSettingsService.getStartHour();
+    this.settingsChange.emit();
   }
 }

@@ -191,7 +191,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
       });
   }
 
-  onPeriodStartDayChange(): void {
+  onPeriodSettingsChange(): void {
     this.recomputeBudgetProgress();
     this.recompute();
   }
@@ -203,13 +203,21 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
         new Date(),
         this.budgetTransactions,
         null,
-        this.periodSettingsService.getStartDay()
+        this.periodSettingsService.getStartDay(),
+        this.periodSettingsService.getStartHour()
       );
-      const thisMonth = this.dashboardService.transactionsInRange(this.budgetTransactions, range);
+      const thisMonth = this.dashboardService.transactionsInPeriod(this.budgetTransactions, range);
       this.budgetProgress = this.budgetService.budgetProgress(this.activeBudget, thisMonth);
     } else {
       this.budgetProgress = null;
     }
+  }
+
+  /** Exact matching for boundaries that may carry real hour precision from a marker transaction; whole-day matching for calendar-picker ranges. */
+  private matchRange(transactions: Transaction[], range: DateRange, precise: boolean): Transaction[] {
+    return precise
+      ? this.dashboardService.transactionsInPeriod(transactions, range)
+      : this.dashboardService.transactionsInRange(transactions, range);
   }
 
   ngAfterViewInit(): void {
@@ -324,17 +332,21 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
       reference,
       this.allTransactions,
       custom,
-      this.periodSettingsService.getStartDay()
+      this.periodSettingsService.getStartDay(),
+      this.periodSettingsService.getStartHour()
     );
     this.scopedTransactions = this.selectedAccountId
       ? this.allTransactions.filter((t) => t.accountId === this.selectedAccountId)
       : this.allTransactions;
-    const inRange = this.dashboardService.transactionsInRange(this.scopedTransactions, this.currentRange);
+    const isThisMonth = this.rangePreset === 'thisMonth';
+    const inRange = this.matchRange(this.scopedTransactions, this.currentRange, isThisMonth);
 
     this.stats = this.dashboardService.periodStats(inRange);
 
+    let compareIsCustom = false;
     if (this.compareEnabled) {
       if (this.compareOffset === 'custom') {
+        compareIsCustom = true;
         const compareCustom =
           this.compareRangeDates?.length === 2 && this.compareRangeDates[1]
             ? { start: this.compareRangeDates[0], end: this.compareRangeDates[1] }
@@ -350,7 +362,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const inCompareRange = this.compareRange
-      ? this.dashboardService.transactionsInRange(this.scopedTransactions, this.compareRange)
+      ? this.matchRange(this.scopedTransactions, this.compareRange, isThisMonth && !compareIsCustom)
       : [];
     this.compareStats = this.dashboardService.periodStats(inCompareRange);
     this.comparison = this.dashboardService.comparePeriods(this.stats, this.compareStats);
@@ -426,7 +438,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   async exportPdf(): Promise<void> {
     if (!this.currentRange) return;
 
-    const inRange = this.dashboardService.transactionsInRange(this.scopedTransactions, this.currentRange);
+    const inRange = this.matchRange(this.scopedTransactions, this.currentRange, this.rangePreset === 'thisMonth');
     const topTransactions = this.dashboardService.topTransactionsByAmount(inRange, 10);
 
     await this.reportExportService.exportMonthlyReport({
@@ -647,7 +659,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private renderWeekdayChart(range: DateRange): void {
-    const inRange = this.dashboardService.transactionsInRange(this.scopedTransactions, range);
+    const inRange = this.matchRange(this.scopedTransactions, range, this.rangePreset === 'thisMonth');
     const weekdaySpend = this.dashboardService.weekdaySpendInRange(inRange);
     const colors = palette[this.themeService.theme()];
 

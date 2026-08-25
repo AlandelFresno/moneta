@@ -34,6 +34,7 @@ import { PeriodStartDayComponent } from '../../shared/period-start-day/period-st
 import { TransactionWithCategory, withCategory } from '../../core/utils/transaction-display.util';
 import { CATEGORY_ICON_OPTIONS } from '../../core/utils/category-icons.util';
 import { evaluateMathExpression } from '../../core/utils/math-expression.util';
+import { periodStart } from '../../core/utils/period.util';
 import { Budget, BudgetProgress } from '../../core/types/budget.types';
 
 interface TransactionListItem {
@@ -68,6 +69,7 @@ interface TransactionForm {
   splitGroupId: string | null;
   splitLines: SplitLine[];
   calculatorExpression: string | null;
+  isPeriodStart: boolean;
 }
 
 const EMPTY_FORM: TransactionForm = {
@@ -82,7 +84,8 @@ const EMPTY_FORM: TransactionForm = {
   isSplit: false,
   splitGroupId: null,
   splitLines: [],
-  calculatorExpression: null
+  calculatorExpression: null,
+  isPeriodStart: false
 };
 
 interface CategoryQuickForm {
@@ -244,7 +247,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       });
   }
 
-  onPeriodStartDayChange(): void {
+  onPeriodSettingsChange(): void {
     this.recomputeBudgetProgress();
     this.cdr.markForCheck();
   }
@@ -256,9 +259,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
         new Date(),
         this.budgetTransactions,
         null,
-        this.periodSettingsService.getStartDay()
+        this.periodSettingsService.getStartDay(),
+        this.periodSettingsService.getStartHour()
       );
-      const thisMonth = this.dashboardService.transactionsInRange(this.budgetTransactions, range);
+      const thisMonth = this.dashboardService.transactionsInPeriod(this.budgetTransactions, range);
       this.budgetProgress = this.budgetService.budgetProgress(this.activeBudget, thisMonth);
     } else {
       this.budgetProgress = null;
@@ -523,7 +527,8 @@ export class TransactionsPage implements OnInit, OnDestroy {
       isSplit: false,
       splitGroupId: null,
       splitLines: [],
-      calculatorExpression: null
+      calculatorExpression: null,
+      isPeriodStart: txn.isPeriodStart ?? false
     };
     this.resetCalculator();
     this.dialogVisible = true;
@@ -576,10 +581,12 @@ export class TransactionsPage implements OnInit, OnDestroy {
     this.form.type = type;
     this.form.categoryId = '';
     this.form.splitLines = this.form.splitLines.map((line) => ({ ...line, categoryId: '' }));
+    if (type !== 'income') this.form.isPeriodStart = false;
   }
 
   onSplitToggle(): void {
     if (this.form.isSplit) {
+      this.form.isPeriodStart = false;
       if (this.form.splitLines.length < 2) {
         this.form.splitLines = [
           { categoryId: this.form.categoryId || '', amount: this.form.amount },
@@ -714,7 +721,8 @@ export class TransactionsPage implements OnInit, OnDestroy {
       name: this.form.name,
       description: this.form.description,
       amount: this.form.amount,
-      date: this.form.date
+      date: this.form.date,
+      isPeriodStart: this.form.isPeriodStart
     };
 
     let transactionId: string;
@@ -738,7 +746,23 @@ export class TransactionsPage implements OnInit, OnDestroy {
       );
     }
 
+    if (this.form.isPeriodStart) {
+      await this.clearConflictingPeriodMarkers(this.form.date, transactionId);
+    }
+
     this.dialogVisible = false;
+  }
+
+  /** At most one active period-start marker per nominal period bucket — re-marking a transaction clears any other one already marked for the same period. */
+  private async clearConflictingPeriodMarkers(date: Date, keepId: string): Promise<void> {
+    const startDay = this.periodSettingsService.getStartDay();
+    const bucket = periodStart(date, startDay).getTime();
+    const conflicts = this.transactions.filter(
+      (t) => t.isPeriodStart && t.id !== keepId && periodStart(t.date, startDay).getTime() === bucket
+    );
+    for (const conflict of conflicts) {
+      await lastValueFrom(this.transactionService.update(conflict.id, { isPeriodStart: false }));
+    }
   }
 
   private async saveSplitTransaction(): Promise<void> {
