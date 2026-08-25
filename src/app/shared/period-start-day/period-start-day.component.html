@@ -1,0 +1,5 @@
+<div class="flex items-center gap-3 flex-wrap p-3.5 rounded-2xl bg-surface-card border border-border-subtle">
+  <span class="text-sm font-medium text-text-primary">Tu período empieza el día</span>
+  <p-inputnumber [(ngModel)]="day" [min]="1" [max]="28" [showButtons]="false" [inputStyle]="{ width: '4rem' }" (onBlur)="onBlur()" />
+  <span class="text-xs text-text-secondary">de cada mes — se aplica en Dashboard, Transacciones y Presupuesto</span>
+</div>

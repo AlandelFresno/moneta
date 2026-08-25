@@ -22,18 +22,7 @@
     }
   </div>
 
-  <div class="flex items-center gap-3 flex-wrap mb-6 p-3.5 rounded-2xl bg-surface-card border border-border-subtle">
-    <span class="text-sm font-medium text-text-primary">Tu período empieza el día</span>
-    <p-inputnumber
-      [(ngModel)]="periodStartDay"
-      [min]="1"
-      [max]="28"
-      [showButtons]="false"
-      [inputStyle]="{ width: '4rem' }"
-      (onBlur)="onPeriodStartDayChange()"
-    />
-    <span class="text-xs text-text-secondary">de cada mes — también define "Este mes" en el Dashboard</span>
-  </div>
+  <app-period-start-day class="block mb-6" (dayChange)="onPeriodStartDayChange($event)" />
 
   @if (pendingRollovers.length > 0) {
     <div class="mb-6">

@@ -32,6 +32,7 @@ import { PeriodSettingsService } from '../../services/period-settings.service';
 import { periodLabelMonth, periodRange, addMonths } from '../../core/utils/period.util';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { BudgetProgressComponent } from '../../shared/budget-progress/budget-progress.component';
+import { PeriodStartDayComponent } from '../../shared/period-start-day/period-start-day.component';
 
 interface BudgetFormRow {
   categoryId: string;
@@ -77,7 +78,8 @@ const EMPTY_ROLLOVER_FORM: RolloverForm = {
     SelectModule,
     CheckboxModule,
     IconComponent,
-    BudgetProgressComponent
+    BudgetProgressComponent,
+    PeriodStartDayComponent
   ],
   templateUrl: './budgets.page.html',
   styleUrl: './budgets.page.scss'
@@ -178,9 +180,8 @@ export class BudgetsPage implements OnInit, OnDestroy {
       });
   }
 
-  onPeriodStartDayChange(): void {
-    this.periodSettingsService.setStartDay(this.periodStartDay);
-    this.periodStartDay = this.periodSettingsService.getStartDay();
+  onPeriodStartDayChange(day: number): void {
+    this.periodStartDay = day;
     const reference = new Date();
     this.current = this.budgetService.currentBudget(this.budgets, reference);
     this.upcoming = this.budgetService.upcomingBudget(this.budgets, reference);
