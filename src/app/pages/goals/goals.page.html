@@ -150,7 +150,7 @@
     />
 
     <label for="goal-deadline" class="text-sm font-medium mt-2 text-text-primary">Fecha límite</label>
-    <p-datepicker inputId="goal-deadline" class="w-full" [(ngModel)]="form.deadline" dateFormat="dd/mm/yy" placeholder="Opcional" />
+    <p-datepicker inputId="goal-deadline" class="w-full" [(ngModel)]="form.deadline" dateFormat="dd/mm/yy" placeholder="Opcional" appendTo="body" />
 
     <label class="text-sm font-medium mt-2 text-text-primary">Color</label>
     <input type="color" [(ngModel)]="form.color" class="w-full h-10 rounded-lg border border-border-subtle cursor-pointer bg-surface-input" />
@@ -207,7 +207,7 @@
     />
 
     <label for="contribution-date" class="text-sm font-medium mt-2 text-text-primary">Fecha</label>
-    <p-datepicker inputId="contribution-date" class="w-full" [(ngModel)]="contributionForm.date" dateFormat="dd/mm/yy" />
+    <p-datepicker inputId="contribution-date" class="w-full" [(ngModel)]="contributionForm.date" dateFormat="dd/mm/yy" appendTo="body" />
 
     <label for="contribution-description" class="text-sm font-medium mt-2 text-text-primary">Descripción</label>
     <input id="contribution-description" type="text" pInputText [(ngModel)]="contributionForm.description" placeholder="Opcional" />

@@ -193,7 +193,7 @@
         @default { Día de vencimiento del mes }
       }
     </label>
-    <p-datepicker inputId="bill-date" class="w-full" [(ngModel)]="form.dueDate" dateFormat="dd/mm/yy" />
+    <p-datepicker inputId="bill-date" class="w-full" [(ngModel)]="form.dueDate" dateFormat="dd/mm/yy" appendTo="body" />
 
     <label for="bill-termination" class="text-sm font-medium mt-2 text-text-primary">¿Hasta cuándo?</label>
     <p-select
@@ -207,7 +207,7 @@
 
     @if (form.terminationMode === 'endDate') {
       <label for="bill-end-date" class="text-sm font-medium mt-2 text-text-primary">Fecha de fin</label>
-      <p-datepicker inputId="bill-end-date" class="w-full" [(ngModel)]="form.endDate" dateFormat="dd/mm/yy" />
+      <p-datepicker inputId="bill-end-date" class="w-full" [(ngModel)]="form.endDate" dateFormat="dd/mm/yy" appendTo="body" />
     }
 
     @if (form.terminationMode === 'installments') {

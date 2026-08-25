@@ -27,6 +27,7 @@ import { BillService, BillDueStatus } from '../../services/bill.service';
 import { AccountService } from '../../services/account.service';
 import { BudgetService } from '../../services/budget.service';
 import { DashboardService } from '../../services/dashboard.service';
+import { PeriodSettingsService } from '../../services/period-settings.service';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { BudgetProgressComponent } from '../../shared/budget-progress/budget-progress.component';
 import { TransactionWithCategory, withCategory } from '../../core/utils/transaction-display.util';
@@ -181,6 +182,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     private readonly budgetService: BudgetService,
     private readonly accountService: AccountService,
     private readonly dashboardService: DashboardService,
+    private readonly periodSettingsService: PeriodSettingsService,
     private readonly confirmationService: ConfirmationService,
     private readonly messageService: MessageService,
     private readonly route: ActivatedRoute,
@@ -234,7 +236,13 @@ export class TransactionsPage implements OnInit, OnDestroy {
       .subscribe(([budget, transactions]) => {
         this.activeBudget = budget;
         if (budget) {
-          const range = this.dashboardService.rangeForPreset('thisMonth', new Date(), transactions, null);
+          const range = this.dashboardService.rangeForPreset(
+            'thisMonth',
+            new Date(),
+            transactions,
+            null,
+            this.periodSettingsService.getStartDay()
+          );
           const thisMonth = this.dashboardService.transactionsInRange(transactions, range);
           this.budgetProgress = this.budgetService.budgetProgress(budget, thisMonth);
         } else {

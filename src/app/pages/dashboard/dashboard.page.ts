@@ -35,6 +35,7 @@ import {
   RangePreset
 } from '../../services/dashboard.service';
 import { ReportExportService } from '../../services/report-export.service';
+import { PeriodSettingsService } from '../../services/period-settings.service';
 import { ThemeService } from '../../services/theme.service';
 import { Transaction } from '../../core/types/transaction.types';
 import { Category } from '../../core/types/category.types';
@@ -149,6 +150,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     private readonly accountService: AccountService,
     private readonly dashboardService: DashboardService,
     private readonly reportExportService: ReportExportService,
+    private readonly periodSettingsService: PeriodSettingsService,
     private readonly themeService: ThemeService,
     private readonly router: Router,
     private readonly cdr: ChangeDetectorRef
@@ -182,7 +184,13 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
       .subscribe(([budget, transactions]) => {
         this.activeBudget = budget;
         if (budget) {
-          const range = this.dashboardService.rangeForPreset('thisMonth', new Date(), transactions, null);
+          const range = this.dashboardService.rangeForPreset(
+            'thisMonth',
+            new Date(),
+            transactions,
+            null,
+            this.periodSettingsService.getStartDay()
+          );
           const thisMonth = this.dashboardService.transactionsInRange(transactions, range);
           this.budgetProgress = this.budgetService.budgetProgress(budget, thisMonth);
         } else {
@@ -299,7 +307,13 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.currentRange = this.dashboardService.rangeForPreset(this.rangePreset, reference, this.allTransactions, custom);
+    this.currentRange = this.dashboardService.rangeForPreset(
+      this.rangePreset,
+      reference,
+      this.allTransactions,
+      custom,
+      this.periodSettingsService.getStartDay()
+    );
     this.scopedTransactions = this.selectedAccountId
       ? this.allTransactions.filter((t) => t.accountId === this.selectedAccountId)
       : this.allTransactions;

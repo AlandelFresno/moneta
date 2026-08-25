@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Transaction } from '../core/types/transaction.types';
 import { Category } from '../core/types/category.types';
+import { periodRange } from '../core/utils/period.util';
 
 export type RangePreset = 'thisMonth' | 'last3' | 'last6' | 'last12' | 'thisYear' | 'allTime' | 'custom';
 
@@ -66,13 +67,16 @@ export interface HeatmapDay {
   providedIn: 'root'
 })
 export class DashboardService {
-  rangeForPreset(preset: RangePreset, reference: Date, transactions: Transaction[], custom: DateRange | null): DateRange {
+  rangeForPreset(
+    preset: RangePreset,
+    reference: Date,
+    transactions: Transaction[],
+    custom: DateRange | null,
+    periodStartDay: number
+  ): DateRange {
     switch (preset) {
       case 'thisMonth':
-        return {
-          start: new Date(reference.getFullYear(), reference.getMonth(), 1),
-          end: new Date(reference.getFullYear(), reference.getMonth() + 1, 0)
-        };
+        return periodRange(reference, periodStartDay);
       case 'last3':
       case 'last6':
       case 'last12': {

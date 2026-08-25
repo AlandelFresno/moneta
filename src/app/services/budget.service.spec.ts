@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { BudgetService } from './budget.service';
+import { PeriodSettingsService } from './period-settings.service';
 import { Budget } from '../core/types/budget.types';
 import { Transaction } from '../core/types/transaction.types';
 
@@ -118,7 +119,7 @@ describe('BudgetService', () => {
     it('persists across service instances via localStorage', async () => {
       await firstValueFrom(service.save(new Date(2026, 2, 15), 12345, []));
 
-      const fresh = new BudgetService();
+      const fresh = new BudgetService(new PeriodSettingsService());
       const all = await firstValueFrom(fresh.getAll());
       expect(all.some((b) => b.totalAmount === 12345)).toBeTrue();
     });
@@ -321,6 +322,49 @@ describe('BudgetService', () => {
       expect(goal1.resolvedAccountId).toBe('acc-1');
       expect(goal1.destinationAccountId).toBe('acc-2');
       expect(goal2.resolution).toBeUndefined();
+    });
+  });
+
+  describe('custom period start day', () => {
+    let periodSettings: PeriodSettingsService;
+
+    beforeEach(() => {
+      periodSettings = TestBed.inject(PeriodSettingsService);
+      periodSettings.setStartDay(6);
+    });
+
+    it('currentBudget labels a day-1-to-5 reference under the previous calendar month', async () => {
+      // Paid the 6th: Aug 3 is still "July's" period.
+      await firstValueFrom(service.save(new Date(2026, 6, 1), 5000, []));
+
+      const all = await firstValueFrom(service.getAll());
+      expect(service.currentBudget(all, new Date(2026, 7, 3))?.totalAmount).toBe(5000);
+    });
+
+    it('currentBudget labels a day-on-or-after-startDay reference under that calendar month', async () => {
+      await firstValueFrom(service.save(new Date(2026, 7, 1), 6000, []));
+
+      const all = await firstValueFrom(service.getAll());
+      expect(service.currentBudget(all, new Date(2026, 7, 6))?.totalAmount).toBe(6000);
+    });
+
+    it('upcomingBudget shifts along with the custom label', async () => {
+      await firstValueFrom(service.save(new Date(2026, 7, 1), 7000, []));
+
+      const all = await firstValueFrom(service.getAll());
+      // Reference Aug 3 -> current label = July, so upcoming = August.
+      expect(service.upcomingBudget(all, new Date(2026, 7, 3))?.totalAmount).toBe(7000);
+    });
+
+    it('carryForwardIfNeeded fills gaps using the custom label month', async () => {
+      await firstValueFrom(service.save(new Date(2026, 5, 1), 1000, []));
+
+      // Aug 20 is on-or-after startDay=6, so its label is August itself.
+      service.carryForwardIfNeeded(new Date(2026, 7, 20));
+
+      const all = await firstValueFrom(service.getAll());
+      const months = all.map((b) => b.month.getTime()).sort();
+      expect(months).toEqual([new Date(2026, 5, 1).getTime(), new Date(2026, 6, 1).getTime(), new Date(2026, 7, 1).getTime()]);
     });
   });
 });

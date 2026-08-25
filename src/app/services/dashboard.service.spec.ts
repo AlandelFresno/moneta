@@ -33,34 +33,41 @@ describe('DashboardService', () => {
   });
 
   describe('rangeForPreset', () => {
-    it('resolves "thisMonth" to the full calendar month of the reference date', () => {
-      const range = service.rangeForPreset('thisMonth', new Date(2026, 1, 15), [], null);
+    it('resolves "thisMonth" to the full calendar month of the reference date at the default start day', () => {
+      const range = service.rangeForPreset('thisMonth', new Date(2026, 1, 15), [], null, 1);
       expect(range.start).toEqual(new Date(2026, 1, 1));
       expect(range.end).toEqual(new Date(2026, 1, 28));
     });
 
+    it('resolves "thisMonth" to the custom period when a period start day is set', () => {
+      // Paid the 6th of each month: the 1st-5th belong to the previous period.
+      const range = service.rangeForPreset('thisMonth', new Date(2026, 7, 3), [], null, 6);
+      expect(range.start).toEqual(new Date(2026, 6, 6));
+      expect(range.end).toEqual(new Date(2026, 7, 5));
+    });
+
     it('resolves "last3" to a 3-month window ending on the reference month', () => {
-      const range = service.rangeForPreset('last3', new Date(2026, 2, 10), [], null);
+      const range = service.rangeForPreset('last3', new Date(2026, 2, 10), [], null, 1);
       expect(range.start).toEqual(new Date(2026, 0, 1));
       expect(range.end).toEqual(new Date(2026, 2, 31));
     });
 
     it('resolves "thisYear" to Jan 1 - Dec 31 of the reference year', () => {
-      const range = service.rangeForPreset('thisYear', new Date(2026, 5, 1), [], null);
+      const range = service.rangeForPreset('thisYear', new Date(2026, 5, 1), [], null, 1);
       expect(range.start).toEqual(new Date(2026, 0, 1));
       expect(range.end).toEqual(new Date(2026, 11, 31));
     });
 
     it('resolves "allTime" to the min/max transaction dates', () => {
       const transactions = [txn({ date: new Date(2024, 3, 1) }), txn({ date: new Date(2026, 0, 20) })];
-      const range = service.rangeForPreset('allTime', new Date(2026, 5, 1), transactions, null);
+      const range = service.rangeForPreset('allTime', new Date(2026, 5, 1), transactions, null, 1);
       expect(range.start).toEqual(new Date(2024, 3, 1));
       expect(range.end).toEqual(new Date(2026, 0, 20));
     });
 
     it('resolves "custom" to the provided range', () => {
       const custom = { start: new Date(2026, 0, 5), end: new Date(2026, 0, 10) };
-      const range = service.rangeForPreset('custom', new Date(2026, 5, 1), [], custom);
+      const range = service.rangeForPreset('custom', new Date(2026, 5, 1), [], custom, 1);
       expect(range).toEqual(custom);
     });
   });

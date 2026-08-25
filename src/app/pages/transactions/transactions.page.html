@@ -446,7 +446,7 @@
     }
 
     <label for="txn-date" class="text-sm font-medium mt-2 text-text-primary">Fecha</label>
-    <p-datepicker class="w-full" inputId="txn-date" [(ngModel)]="form.date" dateFormat="dd/mm/yy" />
+    <p-datepicker class="w-full" inputId="txn-date" [(ngModel)]="form.date" dateFormat="dd/mm/yy" appendTo="body" />
 
     @if (accounts.length > 0) {
       <label for="txn-account" class="text-sm font-medium mt-2 text-text-primary">Cuenta</label>
