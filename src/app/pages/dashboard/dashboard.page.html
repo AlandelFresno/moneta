@@ -51,6 +51,8 @@
     </div>
   </div>
 
+  <app-period-start-day class="block mb-5" (dayChange)="onPeriodStartDayChange()" />
+
   <div class="flex items-center gap-3 flex-wrap mb-5 p-3.5 rounded-2xl bg-surface-card border border-border-subtle">
     <div class="flex items-center gap-2.5">
       <p-toggleswitch [(ngModel)]="compareEnabled" (onChange)="onCompareToggle()" />

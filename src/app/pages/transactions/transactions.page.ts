@@ -30,6 +30,7 @@ import { DashboardService } from '../../services/dashboard.service';
 import { PeriodSettingsService } from '../../services/period-settings.service';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { BudgetProgressComponent } from '../../shared/budget-progress/budget-progress.component';
+import { PeriodStartDayComponent } from '../../shared/period-start-day/period-start-day.component';
 import { TransactionWithCategory, withCategory } from '../../core/utils/transaction-display.util';
 import { CATEGORY_ICON_OPTIONS } from '../../core/utils/category-icons.util';
 import { evaluateMathExpression } from '../../core/utils/math-expression.util';
@@ -112,7 +113,8 @@ const EMPTY_CATEGORY_FORM: CategoryQuickForm = {
     DatePickerModule,
     ToggleSwitchModule,
     IconComponent,
-    BudgetProgressComponent
+    BudgetProgressComponent,
+    PeriodStartDayComponent
   ],
   templateUrl: './transactions.page.html',
   styleUrl: './transactions.page.scss'
@@ -159,6 +161,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   activeBudget: Budget | null = null;
   budgetProgress: BudgetProgress | null = null;
+  private budgetTransactions: Transaction[] = [];
 
   accounts: Account[] = [];
 
@@ -235,21 +238,31 @@ export class TransactionsPage implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(([budget, transactions]) => {
         this.activeBudget = budget;
-        if (budget) {
-          const range = this.dashboardService.rangeForPreset(
-            'thisMonth',
-            new Date(),
-            transactions,
-            null,
-            this.periodSettingsService.getStartDay()
-          );
-          const thisMonth = this.dashboardService.transactionsInRange(transactions, range);
-          this.budgetProgress = this.budgetService.budgetProgress(budget, thisMonth);
-        } else {
-          this.budgetProgress = null;
-        }
+        this.budgetTransactions = transactions;
+        this.recomputeBudgetProgress();
         this.cdr.markForCheck();
       });
+  }
+
+  onPeriodStartDayChange(): void {
+    this.recomputeBudgetProgress();
+    this.cdr.markForCheck();
+  }
+
+  private recomputeBudgetProgress(): void {
+    if (this.activeBudget) {
+      const range = this.dashboardService.rangeForPreset(
+        'thisMonth',
+        new Date(),
+        this.budgetTransactions,
+        null,
+        this.periodSettingsService.getStartDay()
+      );
+      const thisMonth = this.dashboardService.transactionsInRange(this.budgetTransactions, range);
+      this.budgetProgress = this.budgetService.budgetProgress(this.activeBudget, thisMonth);
+    } else {
+      this.budgetProgress = null;
+    }
   }
 
   ngOnDestroy(): void {

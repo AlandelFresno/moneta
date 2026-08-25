@@ -23,6 +23,7 @@ import { BillService } from '../../services/bill.service';
 import { BudgetService } from '../../services/budget.service';
 import { AccountService } from '../../services/account.service';
 import { BudgetProgressComponent } from '../../shared/budget-progress/budget-progress.component';
+import { PeriodStartDayComponent } from '../../shared/period-start-day/period-start-day.component';
 import { Budget, BudgetProgress } from '../../core/types/budget.types';
 import { Account } from '../../core/types/account.types';
 import {
@@ -74,7 +75,7 @@ const EMPTY_COMPARISON: PeriodComparison = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, SelectModule, DatePickerModule, ToggleSwitchModule, BudgetProgressComponent],
+  imports: [CommonModule, FormsModule, SelectModule, DatePickerModule, ToggleSwitchModule, BudgetProgressComponent, PeriodStartDayComponent],
   templateUrl: './dashboard.page.html',
   styleUrl: './dashboard.page.scss'
 })
@@ -136,6 +137,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
 
   activeBudget: Budget | null = null;
   budgetProgress: BudgetProgress | null = null;
+  private budgetTransactions: Transaction[] = [];
 
   heatmapWeeks: HeatmapDay[][] = [];
   heatmapMonthLabels: { label: string; weekIndex: number }[] = [];
@@ -183,21 +185,31 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(([budget, transactions]) => {
         this.activeBudget = budget;
-        if (budget) {
-          const range = this.dashboardService.rangeForPreset(
-            'thisMonth',
-            new Date(),
-            transactions,
-            null,
-            this.periodSettingsService.getStartDay()
-          );
-          const thisMonth = this.dashboardService.transactionsInRange(transactions, range);
-          this.budgetProgress = this.budgetService.budgetProgress(budget, thisMonth);
-        } else {
-          this.budgetProgress = null;
-        }
+        this.budgetTransactions = transactions;
+        this.recomputeBudgetProgress();
         this.cdr.markForCheck();
       });
+  }
+
+  onPeriodStartDayChange(): void {
+    this.recomputeBudgetProgress();
+    this.recompute();
+  }
+
+  private recomputeBudgetProgress(): void {
+    if (this.activeBudget) {
+      const range = this.dashboardService.rangeForPreset(
+        'thisMonth',
+        new Date(),
+        this.budgetTransactions,
+        null,
+        this.periodSettingsService.getStartDay()
+      );
+      const thisMonth = this.dashboardService.transactionsInRange(this.budgetTransactions, range);
+      this.budgetProgress = this.budgetService.budgetProgress(this.activeBudget, thisMonth);
+    } else {
+      this.budgetProgress = null;
+    }
   }
 
   ngAfterViewInit(): void {
