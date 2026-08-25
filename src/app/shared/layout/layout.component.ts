@@ -2,6 +2,7 @@ import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { BudgetAlertService } from '../../services/budget-alert.service';
+import { BillNotificationService } from '../../services/bill-notification.service';
 
 @Component({
   selector: 'app-layout',
@@ -13,6 +14,9 @@ import { BudgetAlertService } from '../../services/budget-alert.service';
 export class LayoutComponent {
   readonly sidebarOpen = signal(false);
 
-  /** Injected only to instantiate the app-wide budget threshold watcher. */
-  constructor(private readonly budgetAlertService: BudgetAlertService) {}
+  /** Injected only to instantiate the app-wide budget threshold and bill-reminder watchers. */
+  constructor(
+    private readonly budgetAlertService: BudgetAlertService,
+    private readonly billNotificationService: BillNotificationService
+  ) {}
 }

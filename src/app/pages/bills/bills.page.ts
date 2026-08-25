@@ -14,6 +14,7 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { Bill, BillPeriod } from '../../core/types/bill.types';
 import { Category } from '../../core/types/category.types';
 import { BillService, BillDueStatus } from '../../services/bill.service';
+import { BillNotificationService } from '../../services/bill-notification.service';
 import { CategoryService } from '../../services/category.service';
 import { TransactionService } from '../../services/transaction.service';
 import { IconComponent } from '../../shared/icon/icon.component';
@@ -110,15 +111,29 @@ export class BillsPage implements OnInit, OnDestroy {
   payingBill: BillWithCategory | null = null;
   payAmount: number | null = null;
 
+  reminderEnabled = false;
+  reminderDaysBefore = 1;
+  readonly reminderDaysOptions: { label: string; value: number }[] = [
+    { label: 'El mismo día', value: 0 },
+    { label: '1 día antes', value: 1 },
+    { label: '3 días antes', value: 3 },
+    { label: '7 días antes', value: 7 }
+  ];
+
   constructor(
     private readonly billService: BillService,
     private readonly categoryService: CategoryService,
     private readonly transactionService: TransactionService,
     private readonly confirmationService: ConfirmationService,
-    private readonly messageService: MessageService
+    private readonly messageService: MessageService,
+    readonly billNotificationService: BillNotificationService
   ) {}
 
   ngOnInit(): void {
+    const reminderSettings = this.billNotificationService.settings();
+    this.reminderEnabled = reminderSettings.enabled;
+    this.reminderDaysBefore = reminderSettings.daysBefore;
+
     combineLatest([this.billService.getAll(), this.categoryService.getAll(), this.transactionService.getAll()])
       .pipe(takeUntil(this.destroy$))
       .subscribe(([bills, categories, transactions]) => {
@@ -132,6 +147,22 @@ export class BillsPage implements OnInit, OnDestroy {
           .map((candidate) => this.withSuggestionDisplay(candidate, categories))
           .filter((suggestion) => !this.dismissedSuggestions.has(suggestion.signature));
       });
+  }
+
+  async onReminderToggle(): Promise<void> {
+    const ok = await this.billNotificationService.setEnabled(this.reminderEnabled);
+    if (!ok) {
+      this.reminderEnabled = false;
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Permiso denegado',
+        detail: 'Activá las notificaciones para Moneta en los ajustes del sistema para recibir recordatorios.'
+      });
+    }
+  }
+
+  async onReminderDaysChange(): Promise<void> {
+    await this.billNotificationService.setDaysBefore(this.reminderDaysBefore);
   }
 
   ngOnDestroy(): void {
