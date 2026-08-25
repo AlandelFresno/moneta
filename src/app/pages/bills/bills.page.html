@@ -12,6 +12,26 @@
     <p-button label="Nuevo servicio" icon="pi pi-plus" (onClick)="openCreateDialog()" />
   </div>
 
+  @if (billNotificationService.isSupported()) {
+    <div class="flex items-center gap-3 flex-wrap mb-6 p-3.5 rounded-2xl bg-surface-card border border-border-subtle">
+      <div class="flex items-center gap-2.5">
+        <p-toggleswitch [(ngModel)]="reminderEnabled" (onChange)="onReminderToggle()" />
+        <span class="text-sm font-medium text-text-primary">Recordatorios de vencimiento</span>
+      </div>
+
+      @if (reminderEnabled) {
+        <p-select
+          class="min-w-[10rem]"
+          [options]="reminderDaysOptions"
+          optionLabel="label"
+          optionValue="value"
+          [(ngModel)]="reminderDaysBefore"
+          (onChange)="onReminderDaysChange()"
+        />
+      }
+    </div>
+  }
+
   @if (suggestions.length > 0) {
     <div class="mb-6">
       <h2 class="text-sm font-semibold text-text-primary mb-3">Sugerencias</h2>
@@ -173,7 +193,7 @@
         @default { Día de vencimiento del mes }
       }
     </label>
-    <p-datepicker inputId="bill-date" class="w-full" [(ngModel)]="form.dueDate" dateFormat="dd/mm/yy" />
+    <p-datepicker inputId="bill-date" class="w-full" [(ngModel)]="form.dueDate" dateFormat="dd/mm/yy" appendTo="body" />
 
     <label for="bill-termination" class="text-sm font-medium mt-2 text-text-primary">¿Hasta cuándo?</label>
     <p-select
@@ -187,7 +207,7 @@
 
     @if (form.terminationMode === 'endDate') {
       <label for="bill-end-date" class="text-sm font-medium mt-2 text-text-primary">Fecha de fin</label>
-      <p-datepicker inputId="bill-end-date" class="w-full" [(ngModel)]="form.endDate" dateFormat="dd/mm/yy" />
+      <p-datepicker inputId="bill-end-date" class="w-full" [(ngModel)]="form.endDate" dateFormat="dd/mm/yy" appendTo="body" />
     }
 
     @if (form.terminationMode === 'installments') {

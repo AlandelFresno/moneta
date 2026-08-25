@@ -26,8 +26,15 @@ import {
   toGoalContribution,
   fromGoalContribution
 } from './goal.service';
+import {
+  TransactionCalculationService,
+  StoredTransactionCalculation,
+  toTransactionCalculation,
+  fromTransactionCalculation
+} from './transaction-calculation.service';
 import { Account, AccountTransfer } from '../core/types/account.types';
 import { Goal, GoalContribution } from '../core/types/goal.types';
+import { TransactionCalculation } from '../core/types/transaction-calculation.types';
 import { mergeEntities, purgeOldTombstones } from '../core/utils/sync-merge.util';
 import { dedupeCategories } from '../core/utils/category-dedupe.util';
 
@@ -46,6 +53,7 @@ export interface SyncResult {
   transfers: EntitySyncStats;
   goals: EntitySyncStats;
   goalContributions: EntitySyncStats;
+  transactionCalculations: EntitySyncStats;
 }
 
 interface DriveFile {
@@ -66,6 +74,7 @@ interface DriveSyncPayload {
   transfers: StoredAccountTransfer[];
   goals: StoredGoal[];
   goalContributions: StoredGoalContribution[];
+  transactionCalculations: StoredTransactionCalculation[];
 }
 
 const EMPTY_PAYLOAD: DriveSyncPayload = {
@@ -76,7 +85,8 @@ const EMPTY_PAYLOAD: DriveSyncPayload = {
   accounts: [],
   transfers: [],
   goals: [],
-  goalContributions: []
+  goalContributions: [],
+  transactionCalculations: []
 };
 
 @Injectable({
@@ -97,7 +107,8 @@ export class DriveSyncService {
     private readonly billService: BillService,
     private readonly budgetService: BudgetService,
     private readonly accountService: AccountService,
-    private readonly goalService: GoalService
+    private readonly goalService: GoalService,
+    private readonly transactionCalculationService: TransactionCalculationService
   ) {}
 
   /** Downloads remote data, merges it into local storage, and writes the merged result locally. Does not upload. */
@@ -116,6 +127,7 @@ export class DriveSyncService {
     this.accountService.replaceAllTransfers(deduped.transfers);
     this.goalService.replaceAll(deduped.goals);
     this.goalService.replaceAllContributions(deduped.goalContributions);
+    this.transactionCalculationService.replaceAll(deduped.transactionCalculations);
 
     return this.finalizeResult(stats);
   }
@@ -136,7 +148,8 @@ export class DriveSyncService {
       accounts: deduped.accounts.map(fromAccount),
       transfers: deduped.transfers.map(fromTransfer),
       goals: deduped.goals.map(fromGoal),
-      goalContributions: deduped.goalContributions.map(fromGoalContribution)
+      goalContributions: deduped.goalContributions.map(fromGoalContribution),
+      transactionCalculations: deduped.transactionCalculations.map(fromTransactionCalculation)
     };
 
     await this.uploadPayload(folderId, existingFile?.id ?? null, outgoingPayload);
@@ -150,6 +163,7 @@ export class DriveSyncService {
       transfers: AccountTransfer[];
       goals: Goal[];
       goalContributions: GoalContribution[];
+      transactionCalculations: TransactionCalculation[];
     };
     stats: {
       transactions: EntitySyncStats;
@@ -160,6 +174,7 @@ export class DriveSyncService {
       transfers: EntitySyncStats;
       goals: EntitySyncStats;
       goalContributions: EntitySyncStats;
+      transactionCalculations: EntitySyncStats;
     };
   } {
     const now = new Date();
@@ -200,6 +215,12 @@ export class DriveSyncService {
     );
     const mergedGoalContributions = purgeOldTombstones(goalContributionsResult.merged, now);
 
+    const transactionCalculationsResult = mergeEntities(
+      this.transactionCalculationService.getAllIncludingDeleted(),
+      remotePayload.transactionCalculations.map(toTransactionCalculation)
+    );
+    const mergedTransactionCalculations = purgeOldTombstones(transactionCalculationsResult.merged, now);
+
     const categoryDeduped = dedupeCategories(mergedCategories, mergedTransactions, mergedBills, mergedBudgets, now);
 
     return {
@@ -208,7 +229,8 @@ export class DriveSyncService {
         accounts: mergedAccounts,
         transfers: mergedTransfers,
         goals: mergedGoals,
-        goalContributions: mergedGoalContributions
+        goalContributions: mergedGoalContributions,
+        transactionCalculations: mergedTransactionCalculations
       },
       stats: {
         transactions: { added: transactionsResult.added, updated: transactionsResult.updated },
@@ -218,7 +240,8 @@ export class DriveSyncService {
         accounts: { added: accountsResult.added, updated: accountsResult.updated },
         transfers: { added: transfersResult.added, updated: transfersResult.updated },
         goals: { added: goalsResult.added, updated: goalsResult.updated },
-        goalContributions: { added: goalContributionsResult.added, updated: goalContributionsResult.updated }
+        goalContributions: { added: goalContributionsResult.added, updated: goalContributionsResult.updated },
+        transactionCalculations: { added: transactionCalculationsResult.added, updated: transactionCalculationsResult.updated }
       }
     };
   }
@@ -232,6 +255,7 @@ export class DriveSyncService {
     transfers: EntitySyncStats;
     goals: EntitySyncStats;
     goalContributions: EntitySyncStats;
+    transactionCalculations: EntitySyncStats;
   }): Promise<SyncResult> {
     const syncedAt = new Date();
     await Preferences.set({ key: this.LAST_SYNCED_KEY, value: syncedAt.toISOString() });

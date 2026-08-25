@@ -11,6 +11,8 @@ import {
   PendingGoalRollover
 } from '../core/types/budget.types';
 import { Transaction } from '../core/types/transaction.types';
+import { periodLabelMonth, addMonths } from '../core/utils/period.util';
+import { PeriodSettingsService } from './period-settings.service';
 
 export interface StoredBudget extends Omit<Budget, 'month' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
   month: string;
@@ -48,7 +50,7 @@ export class BudgetService {
   private readonly allSubject = new BehaviorSubject<Budget[]>(this.loadAll());
   readonly budgets$: Observable<Budget[]> = this.allSubject.pipe(map((budgets) => budgets.filter((budget) => !budget.deletedAt)));
 
-  constructor() {
+  constructor(private readonly periodSettings: PeriodSettingsService) {
     this.carryForwardIfNeeded();
   }
 
@@ -89,21 +91,21 @@ export class BudgetService {
     return this.budgets$.pipe(map((budgets) => this.historyBudgets(budgets, new Date())));
   }
 
-  /** Non-deleted record whose month is the reference's calendar month. */
+  /** Non-deleted record whose month labels the period `reference` falls in (see period.util). */
   currentBudget(budgets: Budget[], reference: Date): Budget | null {
-    const target = this.startOfMonth(reference).getTime();
+    const target = periodLabelMonth(reference, this.periodSettings.getStartDay()).getTime();
     return budgets.find((budget) => budget.month.getTime() === target) ?? null;
   }
 
-  /** Non-deleted record whose month is the calendar month right after the reference's. */
+  /** Non-deleted record whose month is the label right after the reference's period. */
   upcomingBudget(budgets: Budget[], reference: Date): Budget | null {
-    const target = this.addMonths(this.startOfMonth(reference), 1).getTime();
+    const target = addMonths(periodLabelMonth(reference, this.periodSettings.getStartDay()), 1).getTime();
     return budgets.find((budget) => budget.month.getTime() === target) ?? null;
   }
 
-  /** Non-deleted records whose month is before the reference's calendar month, most recent first. */
+  /** Non-deleted records whose month is before the reference's period label, most recent first. */
   historyBudgets(budgets: Budget[], reference: Date): Budget[] {
-    const target = this.startOfMonth(reference).getTime();
+    const target = periodLabelMonth(reference, this.periodSettings.getStartDay()).getTime();
     return budgets
       .filter((budget) => budget.month.getTime() < target)
       .sort((a, b) => b.month.getTime() - a.month.getTime());
@@ -219,12 +221,12 @@ export class BudgetService {
     const latest = [...all].sort((a, b) => b.month.getTime() - a.month.getTime())[0];
     if (latest.deletedAt) return;
 
-    const currentMonth = this.startOfMonth(reference);
+    const currentMonth = periodLabelMonth(reference, this.periodSettings.getStartDay());
     if (latest.month.getTime() >= currentMonth.getTime()) return;
 
     const now = new Date();
     const newRecords: Budget[] = [];
-    let cursor = this.addMonths(latest.month, 1);
+    let cursor = addMonths(latest.month, 1);
     while (cursor.getTime() <= currentMonth.getTime()) {
       newRecords.push({
         id: this.generateId(),
@@ -235,7 +237,7 @@ export class BudgetService {
         createdAt: now,
         updatedAt: now
       });
-      cursor = this.addMonths(cursor, 1);
+      cursor = addMonths(cursor, 1);
     }
 
     if (newRecords.length === 0) return;
@@ -317,12 +319,9 @@ export class BudgetService {
     return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
   }
 
+  /** Plain calendar day-1 normalization — only for values that are already a period label (see period.util's periodLabelMonth for real dates). */
   private startOfMonth(date: Date): Date {
     return new Date(date.getFullYear(), date.getMonth(), 1);
-  }
-
-  private addMonths(date: Date, n: number): Date {
-    return new Date(date.getFullYear(), date.getMonth() + n, 1);
   }
 
   private generateId(): string {

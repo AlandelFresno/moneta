@@ -5,6 +5,7 @@ import { BudgetService } from './budget.service';
 import { TransactionService } from './transaction.service';
 import { CategoryService } from './category.service';
 import { DashboardService } from './dashboard.service';
+import { PeriodSettingsService } from './period-settings.service';
 import { BUDGET_OVER_THRESHOLD, BUDGET_WARN_THRESHOLD } from '../core/types/budget.types';
 import { Category } from '../core/types/category.types';
 
@@ -21,13 +22,20 @@ export class BudgetAlertService {
     private readonly transactionService: TransactionService,
     private readonly categoryService: CategoryService,
     private readonly dashboardService: DashboardService,
+    private readonly periodSettingsService: PeriodSettingsService,
     private readonly messageService: MessageService
   ) {
     combineLatest([this.budgetService.getCurrent(), this.transactionService.getAll(), this.categoryService.getAll()]).subscribe(
       ([budget, transactions, categories]) => {
         if (!budget) return;
 
-        const range = this.dashboardService.rangeForPreset('thisMonth', new Date(), transactions, null);
+        const range = this.dashboardService.rangeForPreset(
+          'thisMonth',
+          new Date(),
+          transactions,
+          null,
+          this.periodSettingsService.getStartDay()
+        );
         const thisMonth = this.dashboardService.transactionsInRange(transactions, range);
         const progress = this.budgetService.budgetProgress(budget, thisMonth);
 

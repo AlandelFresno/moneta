@@ -171,72 +171,115 @@
         {{ group.label }}
       </h2>
 
-      @for (txn of group.transactions; track txn.id) {
-        <div
-          class="flex items-center gap-4 px-4 py-3.5 rounded-xl bg-surface-card border transition-colors duration-150 hover:border-border-strong"
-          [class.border-border-subtle]="!isSelected(txn.id)"
-          [class.border-accent]="isSelected(txn.id)"
-        >
-          <input
-            type="checkbox"
-            class="w-4 h-4 rounded border-border-subtle accent-accent cursor-pointer flex-shrink-0"
-            [checked]="isSelected(txn.id)"
-            (change)="toggleSelect(txn.id)"
-          />
-
+      @for (item of group.items; track item.key) {
+        <div class="flex flex-col gap-1">
           <div
-            class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base"
-            [style.background-color]="txn.categoryColor + '22'"
-            [style.color]="txn.categoryColor"
+            class="flex items-center gap-4 px-4 py-3.5 rounded-xl bg-surface-card border transition-colors duration-150 hover:border-border-strong"
+            [class.border-border-subtle]="!isGroupSelected(item)"
+            [class.border-accent]="isGroupSelected(item)"
           >
-            <app-icon [name]="txn.categoryIcon" />
-          </div>
+            <input
+              type="checkbox"
+              class="w-4 h-4 rounded border-border-subtle accent-accent cursor-pointer flex-shrink-0"
+              [checked]="isGroupSelected(item)"
+              (change)="toggleSelectGroup(item)"
+            />
 
-          <div class="flex flex-col flex-1 min-w-0 gap-0.5">
-            <span class="font-medium truncate text-text-primary">{{ txn.name }}</span>
-            @if (txn.description) {
-              <span class="text-sm truncate text-text-secondary">{{ txn.description }}</span>
+            <div
+              class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base"
+              [style.background-color]="(item.isSplit ? 'var(--accent)' : item.primary.categoryColor) + '22'"
+              [style.color]="item.isSplit ? 'var(--accent)' : item.primary.categoryColor"
+            >
+              @if (item.isSplit) {
+                <i class="pi pi-sitemap"></i>
+              } @else {
+                <app-icon [name]="item.primary.categoryIcon" />
+              }
+            </div>
+
+            <div class="flex flex-col flex-1 min-w-0 gap-0.5">
+              <span class="font-medium truncate text-text-primary">{{ item.primary.name }}</span>
+              @if (item.isSplit) {
+                <span class="text-sm truncate text-text-secondary">Dividida en {{ item.lines.length }} categorías</span>
+              } @else if (item.primary.description) {
+                <span class="text-sm truncate text-text-secondary">{{ item.primary.description }}</span>
+              }
+            </div>
+
+            @if (item.isSplit) {
+              <button
+                type="button"
+                class="text-xs font-medium px-2.5 py-1 rounded-full hidden md:inline-flex items-center gap-1 flex-shrink-0 border-none cursor-pointer bg-accent/15 text-accent"
+                (click)="toggleExpand(item.key)"
+              >
+                {{ item.lines.length }} líneas
+                <i class="pi" [class.pi-chevron-down]="!isExpanded(item.key)" [class.pi-chevron-up]="isExpanded(item.key)"></i>
+              </button>
+            } @else {
+              <span
+                class="text-xs font-medium px-2.5 py-1 rounded-full hidden md:inline-block flex-shrink-0"
+                [style.background-color]="item.primary.categoryColor + '1a'"
+                [style.color]="item.primary.categoryColor"
+              >
+                {{ item.primary.categoryName }}
+              </span>
             }
+
+            <span class="text-sm hidden sm:block flex-shrink-0 w-24 text-text-secondary [font-variant-numeric:tabular-nums]">
+              {{ formatDate(item.primary.date) }}
+            </span>
+
+            <span
+              class="font-semibold w-28 text-right flex-shrink-0 [font-variant-numeric:tabular-nums]"
+              [class.text-income]="item.primary.type === 'income'"
+              [class.text-expense]="item.primary.type === 'expense'"
+            >
+              {{ item.primary.type === 'income' ? '+' : '−' }}{{ item.totalAmount | number: '1.2-2' }}
+            </span>
+
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <button
+                type="button"
+                class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-input hover:text-accent"
+                title="Editar"
+                (click)="editItem(item)"
+              >
+                <i class="pi pi-pencil"></i>
+              </button>
+              <button
+                type="button"
+                class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-input hover:text-expense"
+                title="Eliminar"
+                (click)="deleteItem(item)"
+              >
+                <i class="pi pi-trash"></i>
+              </button>
+            </div>
           </div>
 
-          <span
-            class="text-xs font-medium px-2.5 py-1 rounded-full hidden md:inline-block flex-shrink-0"
-            [style.background-color]="txn.categoryColor + '1a'"
-            [style.color]="txn.categoryColor"
-          >
-            {{ txn.categoryName }}
-          </span>
-
-          <span class="text-sm hidden sm:block flex-shrink-0 w-24 text-text-secondary [font-variant-numeric:tabular-nums]">
-            {{ formatDate(txn.date) }}
-          </span>
-
-          <span
-            class="font-semibold w-28 text-right flex-shrink-0 [font-variant-numeric:tabular-nums]"
-            [class.text-income]="txn.type === 'income'"
-            [class.text-expense]="txn.type === 'expense'"
-          >
-            {{ txn.type === 'income' ? '+' : '−' }}{{ txn.amount | number: '1.2-2' }}
-          </span>
-
-          <div class="flex items-center gap-1 flex-shrink-0">
-            <button
-              type="button"
-              class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-input hover:text-accent"
-              title="Editar"
-              (click)="openEditDialog(txn)"
-            >
-              <i class="pi pi-pencil"></i>
-            </button>
-            <button
-              type="button"
-              class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-input hover:text-expense"
-              title="Eliminar"
-              (click)="deleteTransaction(txn)"
-            >
-              <i class="pi pi-trash"></i>
-            </button>
-          </div>
+          @if (item.isSplit && isExpanded(item.key)) {
+            <div class="flex flex-col gap-1 ml-8 pl-4 border-l-2 border-border-subtle">
+              @for (line of item.lines; track line.id) {
+                <div class="flex items-center gap-3 px-3 py-2 rounded-lg bg-surface-input/50">
+                  <div
+                    class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs"
+                    [style.background-color]="line.categoryColor + '22'"
+                    [style.color]="line.categoryColor"
+                  >
+                    <app-icon [name]="line.categoryIcon" />
+                  </div>
+                  <span class="text-sm text-text-secondary flex-1 truncate">{{ line.categoryName }}</span>
+                  <span
+                    class="text-sm font-medium [font-variant-numeric:tabular-nums]"
+                    [class.text-income]="line.type === 'income'"
+                    [class.text-expense]="line.type === 'expense'"
+                  >
+                    {{ line.type === 'income' ? '+' : '−' }}{{ line.amount | number: '1.2-2' }}
+                  </span>
+                </div>
+              }
+            </div>
+          }
         </div>
       }
     }
@@ -247,7 +290,7 @@
   [(visible)]="dialogVisible"
   [modal]="true"
   [style]="{ width: '28rem', maxWidth: '92vw' }"
-  [header]="form.id ? 'Editar transacción' : 'Nueva transacción'"
+  [header]="form.id || form.splitGroupId ? 'Editar transacción' : 'Nueva transacción'"
 >
   <div class="flex flex-col gap-1.5">
     <div class="flex gap-2 mb-1">
@@ -257,7 +300,7 @@
         [ngClass]="form.type === 'expense'
           ? 'bg-expense/15 border-expense text-expense'
           : 'bg-surface-input border-border-subtle text-text-secondary'"
-        (click)="form.type = 'expense'; form.categoryId = ''"
+        (click)="onTypeChange('expense')"
       >
         <i class="pi pi-arrow-up-right"></i> Gasto
       </button>
@@ -267,32 +310,39 @@
         [ngClass]="form.type === 'income'
           ? 'bg-income/15 border-income text-income'
           : 'bg-surface-input border-border-subtle text-text-secondary'"
-        (click)="form.type = 'income'; form.categoryId = ''"
+        (click)="onTypeChange('income')"
       >
         <i class="pi pi-arrow-down-left"></i> Ingreso
       </button>
     </div>
 
-    <label for="txn-category" class="text-sm font-medium mt-2 text-text-primary">Categoría</label>
-    <div class="flex gap-2">
-      <p-select
-        class="w-full flex-1"
-        inputId="txn-category"
-        [options]="categoriesForType(form.type)"
-        optionLabel="name"
-        optionValue="id"
-        placeholder="Seleccioná una categoría"
-        [(ngModel)]="form.categoryId"
-      />
-      <button
-        type="button"
-        class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-lg border border-border-subtle bg-surface-input text-text-secondary cursor-pointer transition-colors duration-150 hover:bg-surface-card hover:text-accent"
-        title="Nueva categoría"
-        (click)="openCreateCategoryDialog()"
-      >
-        <i class="pi pi-plus"></i>
-      </button>
+    <div class="flex items-center gap-2.5 mt-1">
+      <p-toggleswitch [(ngModel)]="form.isSplit" (onChange)="onSplitToggle()" />
+      <span class="text-sm font-medium text-text-primary">Dividir en varias categorías</span>
     </div>
+
+    @if (!form.isSplit) {
+      <label for="txn-category" class="text-sm font-medium mt-2 text-text-primary">Categoría</label>
+      <div class="flex gap-2">
+        <p-select
+          class="w-full flex-1"
+          inputId="txn-category"
+          [options]="categoriesForType(form.type)"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Seleccioná una categoría"
+          [(ngModel)]="form.categoryId"
+        />
+        <button
+          type="button"
+          class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-lg border border-border-subtle bg-surface-input text-text-secondary cursor-pointer transition-colors duration-150 hover:bg-surface-card hover:text-accent"
+          title="Nueva categoría"
+          (click)="openCreateCategoryDialog()"
+        >
+          <i class="pi pi-plus"></i>
+        </button>
+      </div>
+    }
 
     <label for="txn-name" class="text-sm font-medium mt-2 text-text-primary">Nombre</label>
     <input id="txn-name" type="text" pInputText [(ngModel)]="form.name" placeholder="Ej: Sueldo, Supermercado" />
@@ -300,19 +350,103 @@
     <label for="txn-description" class="text-sm font-medium mt-2 text-text-primary">Descripción</label>
     <input id="txn-description" type="text" pInputText [(ngModel)]="form.description" placeholder="Opcional" />
 
-    <label for="txn-amount" class="text-sm font-medium mt-2 text-text-primary">Monto (ARS)</label>
-    <p-inputnumber
-      class="w-full"
-      inputId="txn-amount"
-      [(ngModel)]="form.amount"
-      mode="decimal"
-      [minFractionDigits]="2"
-      [maxFractionDigits]="2"
-      placeholder="0.00"
-    />
+    @if (form.isSplit) {
+      <label class="text-sm font-medium mt-2 text-text-primary">Líneas</label>
+      <div class="flex flex-col gap-2">
+        @for (line of form.splitLines; track $index; let i = $index) {
+          <div class="flex gap-2 items-center">
+            <p-select
+              class="flex-1"
+              [options]="categoriesForType(form.type)"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Categoría"
+              [(ngModel)]="line.categoryId"
+            />
+            <p-inputnumber
+              class="w-28 flex-shrink-0"
+              mode="decimal"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+              placeholder="0.00"
+              [(ngModel)]="line.amount"
+            />
+            <button
+              type="button"
+              class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-md border-none bg-transparent text-text-secondary cursor-pointer transition-colors duration-150 hover:bg-surface-input hover:text-expense disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Quitar línea"
+              [disabled]="form.splitLines.length <= 2"
+              (click)="removeSplitLine(i)"
+            >
+              <i class="pi pi-trash"></i>
+            </button>
+          </div>
+        }
+      </div>
+
+      <button
+        type="button"
+        class="self-start text-xs font-medium text-accent cursor-pointer border-none bg-transparent flex items-center gap-1 mt-1"
+        (click)="addSplitLine()"
+      >
+        <i class="pi pi-plus"></i> Agregar línea
+      </button>
+
+      <div class="flex justify-between text-sm font-medium mt-1 text-text-primary">
+        <span>Total</span>
+        <span class="[font-variant-numeric:tabular-nums]">{{ splitTotal | number: '1.2-2' }}</span>
+      </div>
+    } @else {
+      <div class="flex items-center justify-between mt-2">
+        <label for="txn-amount" class="text-sm font-medium text-text-primary">Monto (ARS)</label>
+        <button
+          type="button"
+          class="text-xs font-medium text-accent cursor-pointer border-none bg-transparent flex items-center gap-1"
+          (click)="toggleCalculator()"
+        >
+          <i class="pi pi-calculator"></i> {{ calculatorOpen ? 'Cerrar' : 'Calculadora' }}
+        </button>
+      </div>
+      <p-inputnumber
+        class="w-full"
+        inputId="txn-amount"
+        [(ngModel)]="form.amount"
+        (ngModelChange)="onAmountManuallyChanged()"
+        mode="decimal"
+        [minFractionDigits]="2"
+        [maxFractionDigits]="2"
+        placeholder="0.00"
+      />
+
+      @if (calculatorOpen) {
+        <div class="flex flex-col gap-1.5 p-3 rounded-lg bg-surface-input border border-border-subtle">
+          <input
+            type="text"
+            pInputText
+            placeholder="Ej: 1200 + 350 * 2 - 100"
+            [(ngModel)]="calculatorInput"
+            (ngModelChange)="onCalculatorInputChange()"
+            (keydown.enter)="applyCalculator()"
+          />
+          @if (calculatorError) {
+            <span class="text-xs text-expense">{{ calculatorError }}</span>
+          } @else if (calculatorPreview !== null) {
+            <span class="text-sm font-semibold text-text-primary [font-variant-numeric:tabular-nums]">
+              = {{ calculatorPreview | number: '1.2-2' }}
+            </span>
+          }
+          <div class="flex justify-end gap-2 mt-1">
+            <p-button label="Cancelar" severity="secondary" [text]="true" size="small" (onClick)="calculatorOpen = false" />
+            <p-button label="Usar resultado" size="small" [disabled]="calculatorPreview === null" (onClick)="applyCalculator()" />
+          </div>
+        </div>
+      } @else if (form.calculatorExpression) {
+        <span class="text-xs text-text-secondary">Calculado: {{ form.calculatorExpression }}</span>
+      }
+    }
 
     <label for="txn-date" class="text-sm font-medium mt-2 text-text-primary">Fecha</label>
-    <p-datepicker class="w-full" inputId="txn-date" [(ngModel)]="form.date" dateFormat="dd/mm/yy" />
+    <p-datepicker class="w-full" inputId="txn-date" [(ngModel)]="form.date" dateFormat="dd/mm/yy" appendTo="body" />
 
     @if (accounts.length > 0) {
       <label for="txn-account" class="text-sm font-medium mt-2 text-text-primary">Cuenta</label>

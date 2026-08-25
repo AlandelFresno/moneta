@@ -33,34 +33,41 @@ describe('DashboardService', () => {
   });
 
   describe('rangeForPreset', () => {
-    it('resolves "thisMonth" to the full calendar month of the reference date', () => {
-      const range = service.rangeForPreset('thisMonth', new Date(2026, 1, 15), [], null);
+    it('resolves "thisMonth" to the full calendar month of the reference date at the default start day', () => {
+      const range = service.rangeForPreset('thisMonth', new Date(2026, 1, 15), [], null, 1);
       expect(range.start).toEqual(new Date(2026, 1, 1));
       expect(range.end).toEqual(new Date(2026, 1, 28));
     });
 
+    it('resolves "thisMonth" to the custom period when a period start day is set', () => {
+      // Paid the 6th of each month: the 1st-5th belong to the previous period.
+      const range = service.rangeForPreset('thisMonth', new Date(2026, 7, 3), [], null, 6);
+      expect(range.start).toEqual(new Date(2026, 6, 6));
+      expect(range.end).toEqual(new Date(2026, 7, 5));
+    });
+
     it('resolves "last3" to a 3-month window ending on the reference month', () => {
-      const range = service.rangeForPreset('last3', new Date(2026, 2, 10), [], null);
+      const range = service.rangeForPreset('last3', new Date(2026, 2, 10), [], null, 1);
       expect(range.start).toEqual(new Date(2026, 0, 1));
       expect(range.end).toEqual(new Date(2026, 2, 31));
     });
 
     it('resolves "thisYear" to Jan 1 - Dec 31 of the reference year', () => {
-      const range = service.rangeForPreset('thisYear', new Date(2026, 5, 1), [], null);
+      const range = service.rangeForPreset('thisYear', new Date(2026, 5, 1), [], null, 1);
       expect(range.start).toEqual(new Date(2026, 0, 1));
       expect(range.end).toEqual(new Date(2026, 11, 31));
     });
 
     it('resolves "allTime" to the min/max transaction dates', () => {
       const transactions = [txn({ date: new Date(2024, 3, 1) }), txn({ date: new Date(2026, 0, 20) })];
-      const range = service.rangeForPreset('allTime', new Date(2026, 5, 1), transactions, null);
+      const range = service.rangeForPreset('allTime', new Date(2026, 5, 1), transactions, null, 1);
       expect(range.start).toEqual(new Date(2024, 3, 1));
       expect(range.end).toEqual(new Date(2026, 0, 20));
     });
 
     it('resolves "custom" to the provided range', () => {
       const custom = { start: new Date(2026, 0, 5), end: new Date(2026, 0, 10) };
-      const range = service.rangeForPreset('custom', new Date(2026, 5, 1), [], custom);
+      const range = service.rangeForPreset('custom', new Date(2026, 5, 1), [], custom, 1);
       expect(range).toEqual(custom);
     });
   });
@@ -192,6 +199,50 @@ describe('DashboardService', () => {
       expect(result.length).toBe(2);
       expect(result[0].amount).toBe(300);
       expect(result[1].amount).toBe(150);
+    });
+  });
+
+  describe('dailyHeatmap', () => {
+    it('returns a Monday-aligned grid of weeks*7 days ending on the week containing the reference date', () => {
+      const reference = new Date(2026, 0, 15);
+
+      const result = service.dailyHeatmap([], reference, 2);
+
+      expect(result.length).toBe(14);
+      expect(result[0].date.getDay()).toBe(1);
+      expect(result[result.length - 1].date.getDay()).toBe(0);
+    });
+
+    it('sums expense amounts per day and ignores income', () => {
+      const reference = new Date(2026, 0, 15);
+      const transactions = [
+        txn({ date: reference, amount: 100, type: 'expense' }),
+        txn({ date: reference, amount: 50, type: 'expense' }),
+        txn({ date: reference, amount: 999, type: 'income' })
+      ];
+
+      const result = service.dailyHeatmap(transactions, reference, 2);
+      const day = result.find(
+        (d) =>
+          d.date.getFullYear() === reference.getFullYear() &&
+          d.date.getMonth() === reference.getMonth() &&
+          d.date.getDate() === reference.getDate()
+      );
+
+      expect(day?.total).toBe(150);
+      expect(day?.isFuture).toBe(false);
+    });
+
+    it('marks days after the reference date as future and excludes them from totals', () => {
+      const reference = new Date(2026, 0, 15);
+      const tomorrow = new Date(2026, 0, 16);
+      const transactions = [txn({ date: tomorrow, amount: 500, type: 'expense' })];
+
+      const result = service.dailyHeatmap(transactions, reference, 2);
+      const future = result.find((d) => d.date.getTime() === tomorrow.getTime());
+
+      expect(future?.isFuture).toBe(true);
+      expect(future?.total).toBe(0);
     });
   });
 });

@@ -43,8 +43,6 @@ __screenshots__/
 Thumbs.db
 
 # Capacitor
-android/
-ios/
 .capacitor/
 
 # Environment files with secrets (use environment.example.ts as template)

@@ -28,6 +28,8 @@ import { TransactionService } from '../../services/transaction.service';
 import { GoalService } from '../../services/goal.service';
 import { AccountService } from '../../services/account.service';
 import { DashboardService } from '../../services/dashboard.service';
+import { PeriodSettingsService } from '../../services/period-settings.service';
+import { periodLabelMonth, periodRange, addMonths } from '../../core/utils/period.util';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { BudgetProgressComponent } from '../../shared/budget-progress/budget-progress.component';
 
@@ -82,6 +84,7 @@ const EMPTY_ROLLOVER_FORM: RolloverForm = {
 })
 export class BudgetsPage implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
+  private budgets: Budget[] = [];
 
   categories: Category[] = [];
   expenseCategories: Category[] = [];
@@ -122,6 +125,9 @@ export class BudgetsPage implements OnInit, OnDestroy {
     { label: 'Ahorrar en la meta', value: 'saved' }
   ];
 
+  periodStartDay = 1;
+  currentPeriodRange: { start: Date; end: Date } | null = null;
+
   constructor(
     private readonly budgetService: BudgetService,
     private readonly categoryService: CategoryService,
@@ -129,12 +135,15 @@ export class BudgetsPage implements OnInit, OnDestroy {
     private readonly goalService: GoalService,
     private readonly accountService: AccountService,
     private readonly dashboardService: DashboardService,
+    private readonly periodSettingsService: PeriodSettingsService,
     private readonly confirmationService: ConfirmationService,
     private readonly messageService: MessageService,
     private readonly cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
+    this.periodStartDay = this.periodSettingsService.getStartDay();
+
     combineLatest([
       this.budgetService.getAll(),
       this.transactionService.getAll(),
@@ -145,6 +154,7 @@ export class BudgetsPage implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(([budgets, transactions, categories, goals, accounts]) => {
         const reference = new Date();
+        this.budgets = budgets;
         this.categories = categories;
         this.expenseCategories = categories.filter((cat) => cat.type === 'expense');
         this.allTransactions = transactions;
@@ -154,9 +164,10 @@ export class BudgetsPage implements OnInit, OnDestroy {
         this.upcoming = this.budgetService.upcomingBudget(budgets, reference);
         this.history = this.budgetService.historyBudgets(budgets, reference);
         this.pendingRollovers = this.budgetService.pendingGoalRollovers(budgets, reference);
+        this.currentPeriodRange = periodRange(reference, this.periodStartDay);
 
         if (this.current) {
-          const range = this.dashboardService.rangeForPreset('thisMonth', reference, transactions, null);
+          const range = this.dashboardService.rangeForPreset('thisMonth', reference, transactions, null, this.periodStartDay);
           const thisMonth = this.dashboardService.transactionsInRange(transactions, range);
           this.progress = this.budgetService.budgetProgress(this.current, thisMonth);
         } else {
@@ -165,6 +176,24 @@ export class BudgetsPage implements OnInit, OnDestroy {
 
         this.cdr.markForCheck();
       });
+  }
+
+  onPeriodStartDayChange(): void {
+    this.periodSettingsService.setStartDay(this.periodStartDay);
+    this.periodStartDay = this.periodSettingsService.getStartDay();
+    const reference = new Date();
+    this.current = this.budgetService.currentBudget(this.budgets, reference);
+    this.upcoming = this.budgetService.upcomingBudget(this.budgets, reference);
+    this.history = this.budgetService.historyBudgets(this.budgets, reference);
+    this.currentPeriodRange = periodRange(reference, this.periodStartDay);
+
+    if (this.current) {
+      const range = this.dashboardService.rangeForPreset('thisMonth', new Date(), this.allTransactions, null, this.periodStartDay);
+      const thisMonth = this.dashboardService.transactionsInRange(this.allTransactions, range);
+      this.progress = this.budgetService.budgetProgress(this.current, thisMonth);
+    } else {
+      this.progress = null;
+    }
   }
 
   ngOnDestroy(): void {
@@ -188,13 +217,11 @@ export class BudgetsPage implements OnInit, OnDestroy {
   }
 
   private currentMonthStart(): Date {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
+    return periodLabelMonth(new Date(), this.periodStartDay);
   }
 
   private nextMonthStart(): Date {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return addMonths(this.currentMonthStart(), 1);
   }
 
   openPlanNextMonthDialog(): void {

@@ -181,7 +181,7 @@
     />
 
     <label for="transfer-date" class="text-sm font-medium mt-2 text-text-primary">Fecha</label>
-    <p-datepicker inputId="transfer-date" class="w-full" [(ngModel)]="transferForm.date" dateFormat="dd/mm/yy" />
+    <p-datepicker inputId="transfer-date" class="w-full" [(ngModel)]="transferForm.date" dateFormat="dd/mm/yy" appendTo="body" />
 
     <label for="transfer-description" class="text-sm font-medium mt-2 text-text-primary">Descripción</label>
     <input id="transfer-description" type="text" pInputText [(ngModel)]="transferForm.description" placeholder="Opcional" />

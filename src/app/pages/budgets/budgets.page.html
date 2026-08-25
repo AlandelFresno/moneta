@@ -5,6 +5,9 @@
       <p class="text-sm text-text-secondary mt-0.5">
         @if (current) {
           {{ formatMonthLabel(current.month) }}
+          @if (periodStartDay !== 1 && currentPeriodRange) {
+            · {{ formatDate(currentPeriodRange.start) }} – {{ formatDate(currentPeriodRange.end) }}
+          }
         } @else {
           Sin presupuesto este mes
         }
@@ -17,6 +20,19 @@
         <p-button label="Desactivar" severity="danger" [outlined]="true" (onClick)="deactivateCurrent()" />
       </div>
     }
+  </div>
+
+  <div class="flex items-center gap-3 flex-wrap mb-6 p-3.5 rounded-2xl bg-surface-card border border-border-subtle">
+    <span class="text-sm font-medium text-text-primary">Tu período empieza el día</span>
+    <p-inputnumber
+      [(ngModel)]="periodStartDay"
+      [min]="1"
+      [max]="28"
+      [showButtons]="false"
+      [inputStyle]="{ width: '4rem' }"
+      (onBlur)="onPeriodStartDayChange()"
+    />
+    <span class="text-xs text-text-secondary">de cada mes — también define "Este mes" en el Dashboard</span>
   </div>
 
   @if (pendingRollovers.length > 0) {

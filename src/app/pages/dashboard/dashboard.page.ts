@@ -29,10 +29,13 @@ import {
   DashboardService,
   CategoryBreakdownEntry,
   DateRange,
+  HeatmapDay,
   PeriodStats,
   PeriodComparison,
   RangePreset
 } from '../../services/dashboard.service';
+import { ReportExportService } from '../../services/report-export.service';
+import { PeriodSettingsService } from '../../services/period-settings.service';
 import { ThemeService } from '../../services/theme.service';
 import { Transaction } from '../../core/types/transaction.types';
 import { Category } from '../../core/types/category.types';
@@ -134,6 +137,11 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   activeBudget: Budget | null = null;
   budgetProgress: BudgetProgress | null = null;
 
+  heatmapWeeks: HeatmapDay[][] = [];
+  heatmapMonthLabels: { label: string; weekIndex: number }[] = [];
+  heatmapMax = 0;
+  readonly heatmapWeekdayLabels = ['Lun', '', 'Mié', '', 'Vie', '', 'Dom'];
+
   constructor(
     private readonly transactionService: TransactionService,
     private readonly categoryService: CategoryService,
@@ -141,6 +149,8 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     private readonly budgetService: BudgetService,
     private readonly accountService: AccountService,
     private readonly dashboardService: DashboardService,
+    private readonly reportExportService: ReportExportService,
+    private readonly periodSettingsService: PeriodSettingsService,
     private readonly themeService: ThemeService,
     private readonly router: Router,
     private readonly cdr: ChangeDetectorRef
@@ -174,7 +184,13 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
       .subscribe(([budget, transactions]) => {
         this.activeBudget = budget;
         if (budget) {
-          const range = this.dashboardService.rangeForPreset('thisMonth', new Date(), transactions, null);
+          const range = this.dashboardService.rangeForPreset(
+            'thisMonth',
+            new Date(),
+            transactions,
+            null,
+            this.periodSettingsService.getStartDay()
+          );
           const thisMonth = this.dashboardService.transactionsInRange(transactions, range);
           this.budgetProgress = this.budgetService.budgetProgress(budget, thisMonth);
         } else {
@@ -291,7 +307,13 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.currentRange = this.dashboardService.rangeForPreset(this.rangePreset, reference, this.allTransactions, custom);
+    this.currentRange = this.dashboardService.rangeForPreset(
+      this.rangePreset,
+      reference,
+      this.allTransactions,
+      custom,
+      this.periodSettingsService.getStartDay()
+    );
     this.scopedTransactions = this.selectedAccountId
       ? this.allTransactions.filter((t) => t.accountId === this.selectedAccountId)
       : this.allTransactions;
@@ -346,8 +368,65 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
       };
     });
 
+    this.buildHeatmap();
+
     this.cdr.detectChanges();
     this.renderCharts();
+  }
+
+  private buildHeatmap(): void {
+    const days = this.dashboardService.dailyHeatmap(this.scopedTransactions, new Date());
+    this.heatmapMax = Math.max(0, ...days.filter((d) => !d.isFuture).map((d) => d.total));
+
+    const weeks: HeatmapDay[][] = [];
+    for (let i = 0; i < days.length; i += 7) {
+      weeks.push(days.slice(i, i + 7));
+    }
+    this.heatmapWeeks = weeks;
+
+    const labels: { label: string; weekIndex: number }[] = [];
+    let lastMonth = -1;
+    weeks.forEach((week, weekIndex) => {
+      const month = week[0].date.getMonth();
+      if (month !== lastMonth) {
+        labels.push({ label: new Intl.DateTimeFormat('es-AR', { month: 'short' }).format(week[0].date), weekIndex });
+        lastMonth = month;
+      }
+    });
+    this.heatmapMonthLabels = labels;
+  }
+
+  heatmapLevel(day: HeatmapDay): number {
+    if (day.isFuture) return -1;
+    if (day.total <= 0 || this.heatmapMax <= 0) return 0;
+    const ratio = day.total / this.heatmapMax;
+    if (ratio > 0.75) return 4;
+    if (ratio > 0.5) return 3;
+    if (ratio > 0.25) return 2;
+    return 1;
+  }
+
+  heatmapTooltip(day: HeatmapDay): string {
+    if (day.isFuture) return '';
+    return `${this.formatDate(day.date)}: ${day.total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  async exportPdf(): Promise<void> {
+    if (!this.currentRange) return;
+
+    const inRange = this.dashboardService.transactionsInRange(this.scopedTransactions, this.currentRange);
+    const topTransactions = this.dashboardService.topTransactionsByAmount(inRange, 10);
+
+    await this.reportExportService.exportMonthlyReport({
+      range: this.currentRange,
+      stats: this.stats,
+      comparison: this.comparison,
+      expenseBreakdown: this.expenseBreakdown,
+      incomeBreakdown: this.incomeBreakdown,
+      topTransactions,
+      categories: this.categories,
+      trendChartImage: this.trendChart ? this.trendChart.toBase64Image() : null
+    });
   }
 
   private renderCharts(): void {

@@ -1,6 +1,6 @@
 {
   "name": "moneta",
-  "version": "0.7.0",
+  "version": "0.9.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -41,11 +41,13 @@
     "@capacitor/cli": "7.4.4",
     "@capacitor/core": "7.4.4",
     "@capacitor/ios": "7.4.4",
+    "@capacitor/local-notifications": "^7.0.7",
     "@capacitor/preferences": "^7.0.4",
     "@primeuix/styled": "0.7.4",
     "@primeuix/themes": "^1.2.5",
     "@primeuix/utils": "0.6.2",
     "chart.js": "4.5.1",
+    "jspdf": "^4.2.1",
     "primeicons": "7.0.0",
     "primeng": "20.4.0",
     "rxjs": "7.8.1",
