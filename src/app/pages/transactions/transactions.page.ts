@@ -153,6 +153,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   dialogVisible = false;
   form: TransactionForm = { ...EMPTY_FORM };
+  private periodStartBeforeSplit = false;
 
   categoryDialogVisible = false;
   categoryForm: CategoryQuickForm = { ...EMPTY_CATEGORY_FORM };
@@ -596,6 +597,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   onSplitToggle(): void {
     if (this.form.isSplit) {
+      this.periodStartBeforeSplit = this.form.isPeriodStart;
       this.form.isPeriodStart = false;
       if (this.form.splitLines.length < 2) {
         this.form.splitLines = [
@@ -605,6 +607,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       }
     } else {
       this.form.amount = this.splitTotal || this.form.amount;
+      this.form.isPeriodStart = this.periodStartBeforeSplit;
     }
   }
 
