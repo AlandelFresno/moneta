@@ -22,7 +22,7 @@
     }
   </div>
 
-  <app-period-start-day class="block mb-6" (dayChange)="onPeriodStartDayChange($event)" />
+  <app-period-start-day class="block mb-6" (settingsChange)="onPeriodSettingsChange()" />
 
   @if (pendingRollovers.length > 0) {
     <div class="mb-6">

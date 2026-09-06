@@ -7,6 +7,9 @@ export interface Account {
   balance: number;
   color: string;
   icon: string;
+  /** Last time the tracked balance was checked against a real statement — set together with reconciledBalance. */
+  reconciledAt?: Date;
+  reconciledBalance?: number;
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;

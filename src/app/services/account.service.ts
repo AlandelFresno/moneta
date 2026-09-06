@@ -2,10 +2,11 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, map } from 'rxjs';
 import { Account, AccountTransfer } from '../core/types/account.types';
 
-export interface StoredAccount extends Omit<Account, 'createdAt' | 'updatedAt' | 'deletedAt'> {
+export interface StoredAccount extends Omit<Account, 'createdAt' | 'updatedAt' | 'deletedAt' | 'reconciledAt'> {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
+  reconciledAt?: string;
 }
 
 export interface StoredAccountTransfer extends Omit<AccountTransfer, 'date' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
@@ -20,7 +21,8 @@ export function toAccount(stored: StoredAccount): Account {
     ...stored,
     createdAt: new Date(stored.createdAt),
     updatedAt: new Date(stored.updatedAt),
-    deletedAt: stored.deletedAt ? new Date(stored.deletedAt) : undefined
+    deletedAt: stored.deletedAt ? new Date(stored.deletedAt) : undefined,
+    reconciledAt: stored.reconciledAt ? new Date(stored.reconciledAt) : undefined
   };
 }
 
@@ -29,7 +31,8 @@ export function fromAccount(account: Account): StoredAccount {
     ...account,
     createdAt: account.createdAt.toISOString(),
     updatedAt: account.updatedAt.toISOString(),
-    deletedAt: account.deletedAt ? account.deletedAt.toISOString() : undefined
+    deletedAt: account.deletedAt ? account.deletedAt.toISOString() : undefined,
+    reconciledAt: account.reconciledAt ? account.reconciledAt.toISOString() : undefined
   };
 }
 

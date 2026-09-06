@@ -83,12 +83,14 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
 
   @ViewChild('trendCanvas') trendCanvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('netWorthCanvas') netWorthCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('expenseBreakdownCanvas') expenseBreakdownCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('incomeBreakdownCanvas') incomeBreakdownCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('categoryTrendCanvas') categoryTrendCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('weekdayCanvas') weekdayCanvasRef!: ElementRef<HTMLCanvasElement>;
 
   private trendChart: Chart | null = null;
+  private netWorthChart: Chart | null = null;
   private expenseBreakdownChart: Chart | null = null;
   private incomeBreakdownChart: Chart | null = null;
   private categoryTrendChart: Chart | null = null;
@@ -191,7 +193,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
       });
   }
 
-  onPeriodStartDayChange(): void {
+  onPeriodSettingsChange(): void {
     this.recomputeBudgetProgress();
     this.recompute();
   }
@@ -203,13 +205,21 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
         new Date(),
         this.budgetTransactions,
         null,
-        this.periodSettingsService.getStartDay()
+        this.periodSettingsService.getStartDay(),
+        this.periodSettingsService.getStartHour()
       );
-      const thisMonth = this.dashboardService.transactionsInRange(this.budgetTransactions, range);
+      const thisMonth = this.dashboardService.transactionsInPeriod(this.budgetTransactions, range);
       this.budgetProgress = this.budgetService.budgetProgress(this.activeBudget, thisMonth);
     } else {
       this.budgetProgress = null;
     }
+  }
+
+  /** Exact matching for boundaries that may carry real hour precision from a marker transaction; whole-day matching for calendar-picker ranges. */
+  private matchRange(transactions: Transaction[], range: DateRange, precise: boolean): Transaction[] {
+    return precise
+      ? this.dashboardService.transactionsInPeriod(transactions, range)
+      : this.dashboardService.transactionsInRange(transactions, range);
   }
 
   ngAfterViewInit(): void {
@@ -221,6 +231,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
     this.trendChart?.destroy();
+    this.netWorthChart?.destroy();
     this.expenseBreakdownChart?.destroy();
     this.incomeBreakdownChart?.destroy();
     this.categoryTrendChart?.destroy();
@@ -324,17 +335,21 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
       reference,
       this.allTransactions,
       custom,
-      this.periodSettingsService.getStartDay()
+      this.periodSettingsService.getStartDay(),
+      this.periodSettingsService.getStartHour()
     );
     this.scopedTransactions = this.selectedAccountId
       ? this.allTransactions.filter((t) => t.accountId === this.selectedAccountId)
       : this.allTransactions;
-    const inRange = this.dashboardService.transactionsInRange(this.scopedTransactions, this.currentRange);
+    const isThisMonth = this.rangePreset === 'thisMonth';
+    const inRange = this.matchRange(this.scopedTransactions, this.currentRange, isThisMonth);
 
     this.stats = this.dashboardService.periodStats(inRange);
 
+    let compareIsCustom = false;
     if (this.compareEnabled) {
       if (this.compareOffset === 'custom') {
+        compareIsCustom = true;
         const compareCustom =
           this.compareRangeDates?.length === 2 && this.compareRangeDates[1]
             ? { start: this.compareRangeDates[0], end: this.compareRangeDates[1] }
@@ -350,7 +365,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const inCompareRange = this.compareRange
-      ? this.dashboardService.transactionsInRange(this.scopedTransactions, this.compareRange)
+      ? this.matchRange(this.scopedTransactions, this.compareRange, isThisMonth && !compareIsCustom)
       : [];
     this.compareStats = this.dashboardService.periodStats(inCompareRange);
     this.comparison = this.dashboardService.comparePeriods(this.stats, this.compareStats);
@@ -426,7 +441,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   async exportPdf(): Promise<void> {
     if (!this.currentRange) return;
 
-    const inRange = this.dashboardService.transactionsInRange(this.scopedTransactions, this.currentRange);
+    const inRange = this.matchRange(this.scopedTransactions, this.currentRange, this.rangePreset === 'thisMonth');
     const topTransactions = this.dashboardService.topTransactionsByAmount(inRange, 10);
 
     await this.reportExportService.exportMonthlyReport({
@@ -444,6 +459,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   private renderCharts(): void {
     if (!this.viewReady || !this.currentRange) return;
     this.renderTrendChart(this.currentRange);
+    this.renderNetWorthChart(this.currentRange);
     this.renderBreakdownCharts();
     this.renderCategoryTrendChart(this.currentRange);
     this.renderWeekdayChart(this.currentRange);
@@ -520,6 +536,65 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
             grid: { color: colors.borderSubtle },
             ticks: { color: colors.textSecondary },
             beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  /** Always whole-portfolio, ignoring the account filter — net worth is a total, not a per-account figure. */
+  private renderNetWorthChart(range: DateRange): void {
+    const today = new Date();
+    const trendRange: DateRange = { start: range.start, end: range.end > today ? today : range.end };
+    const trend = this.dashboardService.netWorthTrendInRange(this.allTransactions, this.accounts, trendRange);
+    const colors = palette[this.themeService.theme()];
+    const pointRadius = trend.length > 15 ? 0 : 4;
+
+    this.netWorthChart?.destroy();
+    this.netWorthChart = new Chart(this.netWorthCanvasRef.nativeElement, {
+      type: 'line',
+      data: {
+        labels: trend.map((p) => p.label),
+        datasets: [
+          {
+            label: 'Patrimonio neto',
+            data: trend.map((p) => p.netWorth),
+            borderColor: colors.accent,
+            backgroundColor: `${colors.accent}1a`,
+            borderWidth: 2,
+            pointRadius,
+            pointHoverRadius: 4,
+            pointBackgroundColor: colors.accent,
+            pointBorderColor: colors.surfaceCard,
+            pointBorderWidth: 2,
+            fill: true,
+            tension: 0.3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: colors.surfaceCard,
+            titleColor: colors.textPrimary,
+            bodyColor: colors.textPrimary,
+            borderColor: colors.borderSubtle,
+            borderWidth: 1,
+            padding: 10
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: colors.textSecondary }
+          },
+          y: {
+            grid: { color: colors.borderSubtle },
+            ticks: { color: colors.textSecondary }
           }
         }
       }
@@ -647,7 +722,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private renderWeekdayChart(range: DateRange): void {
-    const inRange = this.dashboardService.transactionsInRange(this.scopedTransactions, range);
+    const inRange = this.matchRange(this.scopedTransactions, range, this.rangePreset === 'thisMonth');
     const weekdaySpend = this.dashboardService.weekdaySpendInRange(inRange);
     const colors = palette[this.themeService.theme()];
 

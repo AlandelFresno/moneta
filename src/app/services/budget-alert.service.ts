@@ -34,9 +34,10 @@ export class BudgetAlertService {
           new Date(),
           transactions,
           null,
-          this.periodSettingsService.getStartDay()
+          this.periodSettingsService.getStartDay(),
+          this.periodSettingsService.getStartHour()
         );
-        const thisMonth = this.dashboardService.transactionsInRange(transactions, range);
+        const thisMonth = this.dashboardService.transactionsInPeriod(transactions, range);
         const progress = this.budgetService.budgetProgress(budget, thisMonth);
 
         this.checkAndAlert(budget.id, 'total', progress.totalPct, {

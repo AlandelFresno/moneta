@@ -51,7 +51,7 @@
     </div>
   </div>
 
-  <app-period-start-day class="block mb-5" (dayChange)="onPeriodStartDayChange()" />
+  <app-period-start-day class="block mb-5" (settingsChange)="onPeriodSettingsChange()" />
 
   <div class="flex items-center gap-3 flex-wrap mb-5 p-3.5 rounded-2xl bg-surface-card border border-border-subtle">
     <div class="flex items-center gap-2.5">
@@ -200,6 +200,13 @@
     <h2 class="text-sm font-semibold text-text-primary mb-4">Ingresos vs. gastos</h2>
     <div class="h-64 min-w-0">
       <canvas #trendCanvas class="block max-w-full"></canvas>
+    </div>
+  </div>
+
+  <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle mb-4">
+    <h2 class="text-sm font-semibold text-text-primary mb-4">Patrimonio neto en el tiempo</h2>
+    <div class="h-64 min-w-0">
+      <canvas #netWorthCanvas class="block max-w-full"></canvas>
     </div>
   </div>
 

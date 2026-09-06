@@ -11,7 +11,10 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
 import { Account, AccountType, AccountTransfer } from '../../core/types/account.types';
+import { Category } from '../../core/types/category.types';
 import { AccountService } from '../../services/account.service';
+import { TransactionService } from '../../services/transaction.service';
+import { CategoryService } from '../../services/category.service';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { CATEGORY_ICON_OPTIONS } from '../../core/utils/category-icons.util';
 
@@ -54,6 +57,16 @@ interface TransferDisplay extends AccountTransfer {
   toName: string;
 }
 
+interface ReconcileForm {
+  statementBalance: number | null;
+  categoryId: string | null;
+}
+
+const EMPTY_RECONCILE_FORM: ReconcileForm = {
+  statementBalance: null,
+  categoryId: null
+};
+
 @Component({
   selector: 'app-accounts',
   standalone: true,
@@ -76,6 +89,7 @@ export class AccountsPage implements OnInit, OnDestroy {
 
   accounts: Account[] = [];
   recentTransfers: TransferDisplay[] = [];
+  categories: Category[] = [];
   readonly iconOptions = CATEGORY_ICON_OPTIONS;
 
   readonly typeOptions: { label: string; value: AccountType }[] = [
@@ -92,8 +106,14 @@ export class AccountsPage implements OnInit, OnDestroy {
   transferDialogVisible = false;
   transferForm: TransferForm = { ...EMPTY_TRANSFER_FORM };
 
+  reconcileDialogVisible = false;
+  reconcilingAccount: Account | null = null;
+  reconcileForm: ReconcileForm = { ...EMPTY_RECONCILE_FORM };
+
   constructor(
     private readonly accountService: AccountService,
+    private readonly transactionService: TransactionService,
+    private readonly categoryService: CategoryService,
     private readonly confirmationService: ConfirmationService,
     private readonly messageService: MessageService
   ) {}
@@ -111,6 +131,17 @@ export class AccountsPage implements OnInit, OnDestroy {
             fromName: this.accountName(transfer.fromAccountId, accounts),
             toName: this.accountName(transfer.toAccountId, accounts)
           }));
+
+        if (this.reconcilingAccount) {
+          this.reconcilingAccount = accounts.find((a) => a.id === this.reconcilingAccount!.id) ?? null;
+        }
+      });
+
+    this.categoryService
+      .getAll()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((categories) => {
+        this.categories = categories;
       });
   }
 
@@ -229,5 +260,61 @@ export class AccountsPage implements OnInit, OnDestroy {
 
   formatDate(date: Date): string {
     return new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+  }
+
+  openReconcileDialog(account: Account): void {
+    this.reconcilingAccount = account;
+    this.reconcileForm = { statementBalance: account.balance, categoryId: null };
+    this.reconcileDialogVisible = true;
+  }
+
+  get reconcileDiff(): number | null {
+    if (!this.reconcilingAccount || this.reconcileForm.statementBalance === null) return null;
+    return Math.round((this.reconcileForm.statementBalance - this.reconcilingAccount.balance) * 100) / 100;
+  }
+
+  get reconcileCategories(): Category[] {
+    const diff = this.reconcileDiff;
+    if (diff === null) return [];
+    return this.categories.filter((cat) => cat.type === (diff > 0 ? 'income' : 'expense'));
+  }
+
+  async saveReconciliation(): Promise<void> {
+    const account = this.reconcilingAccount;
+    const diff = this.reconcileDiff;
+    if (!account || diff === null) {
+      this.messageService.add({ severity: 'warn', summary: 'Ingresá el saldo real' });
+      return;
+    }
+
+    if (Math.abs(diff) >= 0.01 && !this.reconcileForm.categoryId) {
+      this.messageService.add({ severity: 'warn', summary: 'Elegí una categoría para el ajuste' });
+      return;
+    }
+
+    if (Math.abs(diff) >= 0.01) {
+      await lastValueFrom(
+        this.transactionService.create({
+          categoryId: this.reconcileForm.categoryId!,
+          accountId: account.id,
+          type: diff > 0 ? 'income' : 'expense',
+          name: 'Ajuste de conciliación',
+          description: `Conciliación de ${account.name}`,
+          amount: Math.abs(diff),
+          date: new Date()
+        })
+      );
+    }
+
+    await lastValueFrom(
+      this.accountService.update(account.id, {
+        reconciledAt: new Date(),
+        reconciledBalance: this.reconcileForm.statementBalance!
+      })
+    );
+
+    this.messageService.add({ severity: 'success', summary: 'Cuenta conciliada' });
+    this.reconcileDialogVisible = false;
+    this.reconcilingAccount = null;
   }
 }
