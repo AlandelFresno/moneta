@@ -139,7 +139,9 @@ export class TransactionsPage implements OnInit, OnDestroy {
   filters = {
     type: 'all' as 'all' | TransactionType,
     categoryId: 'all',
-    searchText: ''
+    searchText: '',
+    minAmount: null as number | null,
+    maxAmount: null as number | null
   };
 
   stats = {
@@ -299,6 +301,14 @@ export class TransactionsPage implements OnInit, OnDestroy {
       );
     }
 
+    if (this.filters.minAmount !== null) {
+      filtered = filtered.filter((txn) => txn.amount >= this.filters.minAmount!);
+    }
+
+    if (this.filters.maxAmount !== null) {
+      filtered = filtered.filter((txn) => txn.amount <= this.filters.maxAmount!);
+    }
+
     this.filteredTransactions = filtered;
     this.calculateStats();
 
@@ -320,7 +330,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   clearFilters(): void {
-    this.filters = { type: 'all', categoryId: 'all', searchText: '' };
+    this.filters = { type: 'all', categoryId: 'all', searchText: '', minAmount: null, maxAmount: null };
     this.applyFilters();
   }
 

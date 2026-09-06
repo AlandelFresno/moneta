@@ -7,6 +7,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/welcome/welcome.page').then((m) => m.WelcomePage)
   },
   {
+    path: 'oauth2redirect',
+    loadComponent: () => import('./pages/oauth-redirect/oauth-redirect.page').then((m) => m.OauthRedirectPage)
+  },
+  {
     path: '',
     component: LayoutComponent,
     children: [

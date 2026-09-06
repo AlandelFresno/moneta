@@ -3,6 +3,21 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { DashboardService } from './dashboard.service';
 import { Transaction } from '../core/types/transaction.types';
 import { Category } from '../core/types/category.types';
+import { Account } from '../core/types/account.types';
+
+function account(overrides: Partial<Account>): Account {
+  return {
+    id: Math.random().toString(),
+    name: 'Cuenta',
+    type: 'cash',
+    balance: 0,
+    color: '#3b82f6',
+    icon: 'wallet',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides
+  };
+}
 
 const CATEGORIES: Category[] = [
   { id: 'cat-1', name: 'Almacén', type: 'expense', color: '#f00', icon: 'tag', createdAt: new Date(), updatedAt: new Date() },
@@ -166,6 +181,32 @@ describe('DashboardService', () => {
       expect(result[0].expense).toBe(100);
       expect(result[1].income).toBe(1000);
       expect(result[1].expense).toBe(300);
+    });
+  });
+
+  describe('netWorthTrendInRange', () => {
+    it('reconstructs each bucket end-of-period net worth backward from the current account totals', () => {
+      const accounts = [account({ id: 'acc-1', balance: 1000 })];
+      const transactions = [txn({ accountId: 'acc-1', type: 'income', amount: 500, date: new Date(2026, 0, 2) })];
+
+      const result = service.netWorthTrendInRange(transactions, accounts, {
+        start: new Date(2026, 0, 1),
+        end: new Date(2026, 0, 3)
+      });
+
+      expect(result.map((p) => p.netWorth)).toEqual([500, 1000, 1000]);
+    });
+
+    it('ignores transactions with no accountId — they never moved any tracked balance', () => {
+      const accounts = [account({ id: 'acc-1', balance: 1000 })];
+      const transactions = [txn({ type: 'income', amount: 500, date: new Date(2026, 0, 2) })];
+
+      const result = service.netWorthTrendInRange(transactions, accounts, {
+        start: new Date(2026, 0, 1),
+        end: new Date(2026, 0, 3)
+      });
+
+      expect(result.every((p) => p.netWorth === 1000)).toBeTrue();
     });
   });
 

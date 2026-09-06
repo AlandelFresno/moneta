@@ -56,6 +56,22 @@ describe('AccountService', () => {
     });
   });
 
+  describe('reconciliation fields', () => {
+    it('persists reconciledAt/reconciledBalance and round-trips the date through storage', async () => {
+      const created = await firstValueFrom(service.create({ name: 'Banco', type: 'bank', balance: 1200, color: '#3b82f6', icon: 'building' }));
+      const reconciledAt = new Date(2026, 0, 15);
+
+      await firstValueFrom(service.update(created.id, { reconciledAt, reconciledBalance: 1200 }));
+
+      const fresh = new AccountService();
+      const all = await firstValueFrom(fresh.getAll());
+      const updated = all.find((a) => a.id === created.id);
+
+      expect(updated?.reconciledBalance).toBe(1200);
+      expect(updated?.reconciledAt).toEqual(reconciledAt);
+    });
+  });
+
   describe('adjustBalance', () => {
     it('applies a positive or negative delta in place', async () => {
       const created = await firstValueFrom(service.create({ name: 'Efectivo', type: 'cash', balance: 1000, color: '#10b981', icon: 'wallet' }));

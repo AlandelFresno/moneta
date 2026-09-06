@@ -4,6 +4,7 @@ const content = `export const environment = {
   production: ${process.env['NODE_ENV'] === 'production'},
   googleClientId: '${process.env['GOOGLE_CLIENT_ID'] ?? ''}',
   googleApiKey: '${process.env['GOOGLE_API_KEY'] ?? ''}',
+  googleWebClientSecret: '${process.env['GOOGLE_WEB_CLIENT_SECRET'] ?? ''}',
   googleMobileClientId: '${process.env['GOOGLE_MOBILE_CLIENT_ID'] ?? ''}',
   googleMobileClientSecret: '${process.env['GOOGLE_MOBILE_CLIENT_SECRET'] ?? ''}',
 };

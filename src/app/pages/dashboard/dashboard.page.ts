@@ -83,12 +83,14 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
 
   @ViewChild('trendCanvas') trendCanvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('netWorthCanvas') netWorthCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('expenseBreakdownCanvas') expenseBreakdownCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('incomeBreakdownCanvas') incomeBreakdownCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('categoryTrendCanvas') categoryTrendCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('weekdayCanvas') weekdayCanvasRef!: ElementRef<HTMLCanvasElement>;
 
   private trendChart: Chart | null = null;
+  private netWorthChart: Chart | null = null;
   private expenseBreakdownChart: Chart | null = null;
   private incomeBreakdownChart: Chart | null = null;
   private categoryTrendChart: Chart | null = null;
@@ -229,6 +231,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
     this.trendChart?.destroy();
+    this.netWorthChart?.destroy();
     this.expenseBreakdownChart?.destroy();
     this.incomeBreakdownChart?.destroy();
     this.categoryTrendChart?.destroy();
@@ -456,6 +459,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   private renderCharts(): void {
     if (!this.viewReady || !this.currentRange) return;
     this.renderTrendChart(this.currentRange);
+    this.renderNetWorthChart(this.currentRange);
     this.renderBreakdownCharts();
     this.renderCategoryTrendChart(this.currentRange);
     this.renderWeekdayChart(this.currentRange);
@@ -532,6 +536,65 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
             grid: { color: colors.borderSubtle },
             ticks: { color: colors.textSecondary },
             beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  /** Always whole-portfolio, ignoring the account filter — net worth is a total, not a per-account figure. */
+  private renderNetWorthChart(range: DateRange): void {
+    const today = new Date();
+    const trendRange: DateRange = { start: range.start, end: range.end > today ? today : range.end };
+    const trend = this.dashboardService.netWorthTrendInRange(this.allTransactions, this.accounts, trendRange);
+    const colors = palette[this.themeService.theme()];
+    const pointRadius = trend.length > 15 ? 0 : 4;
+
+    this.netWorthChart?.destroy();
+    this.netWorthChart = new Chart(this.netWorthCanvasRef.nativeElement, {
+      type: 'line',
+      data: {
+        labels: trend.map((p) => p.label),
+        datasets: [
+          {
+            label: 'Patrimonio neto',
+            data: trend.map((p) => p.netWorth),
+            borderColor: colors.accent,
+            backgroundColor: `${colors.accent}1a`,
+            borderWidth: 2,
+            pointRadius,
+            pointHoverRadius: 4,
+            pointBackgroundColor: colors.accent,
+            pointBorderColor: colors.surfaceCard,
+            pointBorderWidth: 2,
+            fill: true,
+            tension: 0.3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: colors.surfaceCard,
+            titleColor: colors.textPrimary,
+            bodyColor: colors.textPrimary,
+            borderColor: colors.borderSubtle,
+            borderWidth: 1,
+            padding: 10
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: colors.textSecondary }
+          },
+          y: {
+            grid: { color: colors.borderSubtle },
+            ticks: { color: colors.textSecondary }
           }
         }
       }

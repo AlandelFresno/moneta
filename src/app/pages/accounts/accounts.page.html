@@ -33,6 +33,14 @@
         <div class="flex flex-col flex-1 min-w-0 gap-0.5">
           <span class="font-medium truncate text-text-primary">{{ account.name }}</span>
           <span class="text-sm text-text-secondary">{{ typeLabel(account.type) }}</span>
+          @if (account.reconciledAt) {
+            <span class="text-xs" [class.text-income]="account.reconciledBalance === account.balance" [class.text-text-secondary]="account.reconciledBalance !== account.balance">
+              <i class="pi" [class.pi-check-circle]="account.reconciledBalance === account.balance" [class.pi-exclamation-circle]="account.reconciledBalance !== account.balance"></i>
+              Conciliado {{ formatDate(account.reconciledAt) }}
+            </span>
+          } @else {
+            <span class="text-xs text-text-secondary">Sin conciliar</span>
+          }
         </div>
 
         <span
@@ -44,6 +52,14 @@
         </span>
 
         <div class="flex items-center gap-1 flex-shrink-0">
+          <button
+            type="button"
+            class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary hover:bg-surface-input hover:text-accent transition-colors duration-150"
+            title="Conciliar"
+            (click)="openReconcileDialog(account)"
+          >
+            <i class="pi pi-check-square"></i>
+          </button>
           <button
             type="button"
             class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary hover:bg-surface-input hover:text-accent transition-colors duration-150"
@@ -190,5 +206,57 @@
   <ng-template #footer>
     <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="transferDialogVisible = false" />
     <p-button label="Transferir" (onClick)="saveTransfer()" />
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="reconcileDialogVisible"
+  [modal]="true"
+  [style]="{ width: '24rem', maxWidth: '92vw' }"
+  [header]="'Conciliar ' + (reconcilingAccount?.name ?? '')"
+>
+  @if (reconcilingAccount) {
+    <div class="flex flex-col gap-1.5">
+      <span class="text-sm text-text-secondary mt-2">
+        Saldo registrado: <span class="font-medium text-text-primary">{{ reconcilingAccount.balance | number: '1.2-2' }}</span>
+      </span>
+
+      <label for="reconcile-balance" class="text-sm font-medium mt-2 text-text-primary">Saldo real (según extracto)</label>
+      <p-inputnumber
+        inputId="reconcile-balance"
+        class="w-full"
+        [(ngModel)]="reconcileForm.statementBalance"
+        mode="decimal"
+        [minFractionDigits]="2"
+        [maxFractionDigits]="2"
+        placeholder="0.00"
+      />
+
+      @if (reconcileDiff !== null) {
+        @if (reconcileDiff === 0) {
+          <span class="text-sm text-income mt-1">Coincide con el saldo registrado.</span>
+        } @else {
+          <span class="text-sm mt-1" [class.text-income]="reconcileDiff > 0" [class.text-expense]="reconcileDiff < 0">
+            Diferencia: {{ reconcileDiff > 0 ? '+' : '' }}{{ reconcileDiff | number: '1.2-2' }}
+          </span>
+
+          <label for="reconcile-category" class="text-sm font-medium mt-2 text-text-primary">Categoría del ajuste</label>
+          <p-select
+            inputId="reconcile-category"
+            class="w-full"
+            [options]="reconcileCategories"
+            optionLabel="name"
+            optionValue="id"
+            [(ngModel)]="reconcileForm.categoryId"
+            placeholder="Elegí una categoría"
+          />
+        }
+      }
+    </div>
+  }
+
+  <ng-template #footer>
+    <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="reconcileDialogVisible = false" />
+    <p-button label="Conciliar" (onClick)="saveReconciliation()" />
   </ng-template>
 </p-dialog>

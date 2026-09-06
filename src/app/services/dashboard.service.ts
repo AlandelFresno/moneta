@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Transaction } from '../core/types/transaction.types';
 import { Category } from '../core/types/category.types';
+import { Account } from '../core/types/account.types';
 import { periodRange } from '../core/utils/period.util';
 
 export type RangePreset = 'thisMonth' | 'last3' | 'last6' | 'last12' | 'thisYear' | 'allTime' | 'custom';
@@ -61,6 +62,11 @@ export interface HeatmapDay {
   date: Date;
   total: number;
   isFuture: boolean;
+}
+
+export interface NetWorthPoint {
+  label: string;
+  netWorth: number;
 }
 
 @Injectable({
@@ -165,6 +171,23 @@ export class DashboardService {
   /** Daily granularity reads better for short ranges; monthly avoids overcrowding for long ones. */
   trendInRange(transactions: Transaction[], range: DateRange): MonthlyTotals[] {
     return this.isShortRange(range) ? this.dailyTrendInRange(transactions, range) : this.monthlyTrendInRange(transactions, range);
+  }
+
+  /**
+   * Net worth is `sum(account.balance)`; transfers net to zero across owned accounts, so only
+   * dated, account-linked transactions move it. Reconstructed backward from the current total —
+   * no historical snapshot is stored.
+   */
+  netWorthTrendInRange(transactions: Transaction[], accounts: Account[], range: DateRange): NetWorthPoint[] {
+    const totalNow = accounts.reduce((sum, account) => sum + account.balance, 0);
+    const withAccount = transactions.filter((t) => t.accountId);
+
+    return this.periodEndDates(range).map(({ label, endDate }) => {
+      const deltaSinceEnd = withAccount
+        .filter((t) => t.date.getTime() > endDate.getTime())
+        .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
+      return { label, netWorth: totalNow - deltaSinceEnd };
+    });
   }
 
   /** Spend per category over the range (daily or monthly buckets depending on span), limited to the top `limit` categories by total. */
@@ -305,6 +328,37 @@ export class DashboardService {
     }
 
     return buckets;
+  }
+
+  /** Same granularity choice/labels as monthlyBuckets/dailyBuckets, but yields each bucket's end-of-period date instead of a membership predicate. */
+  private periodEndDates(range: DateRange): { label: string; endDate: Date }[] {
+    if (this.isShortRange(range)) {
+      const end = this.startOfDay(range.end);
+      const result: { label: string; endDate: Date }[] = [];
+      let cursor = this.startOfDay(range.start);
+      while (cursor.getTime() <= end.getTime()) {
+        result.push({
+          label: new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' }).format(cursor),
+          endDate: this.endOfDay(cursor)
+        });
+        cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1);
+      }
+      return result;
+    }
+
+    const result: { label: string; endDate: Date }[] = [];
+    let cursor = new Date(range.start.getFullYear(), range.start.getMonth(), 1);
+    const last = new Date(range.end.getFullYear(), range.end.getMonth(), 1);
+    while (cursor.getTime() <= last.getTime()) {
+      const year = cursor.getFullYear();
+      const month = cursor.getMonth();
+      result.push({
+        label: new Intl.DateTimeFormat('es-AR', { month: 'short', year: '2-digit' }).format(new Date(year, month, 1)),
+        endDate: this.endOfDay(new Date(year, month + 1, 0))
+      });
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+    }
+    return result;
   }
 
   private dailyBuckets(range: DateRange): { label: string; matches: (date: Date) => boolean }[] {

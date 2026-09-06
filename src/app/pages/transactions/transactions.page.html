@@ -130,7 +130,27 @@
       (onChange)="applyFilters()"
     />
 
-    @if (filters.type !== 'all' || filters.categoryId !== 'all' || filters.searchText) {
+    <p-inputnumber
+      class="w-[8rem]"
+      [(ngModel)]="filters.minAmount"
+      (onInput)="applyFilters()"
+      mode="decimal"
+      [minFractionDigits]="0"
+      [maxFractionDigits]="2"
+      placeholder="Monto mín."
+    />
+
+    <p-inputnumber
+      class="w-[8rem]"
+      [(ngModel)]="filters.maxAmount"
+      (onInput)="applyFilters()"
+      mode="decimal"
+      [minFractionDigits]="0"
+      [maxFractionDigits]="2"
+      placeholder="Monto máx."
+    />
+
+    @if (filters.type !== 'all' || filters.categoryId !== 'all' || filters.searchText || filters.minAmount !== null || filters.maxAmount !== null) {
       <p-button label="Limpiar" severity="secondary" [text]="true" icon="pi pi-times" (onClick)="clearFilters()" />
     }
   </div>
