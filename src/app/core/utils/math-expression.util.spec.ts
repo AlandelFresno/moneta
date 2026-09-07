@@ -1,4 +1,4 @@
-import { evaluateMathExpression } from './math-expression.util';
+import { evaluateMathExpression, evaluateCalculatorInput } from './math-expression.util';
 
 describe('evaluateMathExpression', () => {
   it('evaluates a plain number', () => {
@@ -47,5 +47,21 @@ describe('evaluateMathExpression', () => {
 
   it('throws on trailing garbage after a valid expression', () => {
     expect(() => evaluateMathExpression('2 + 2 3')).toThrow();
+  });
+});
+
+describe('evaluateCalculatorInput', () => {
+  it('returns the evaluated preview with no error for a valid expression', () => {
+    expect(evaluateCalculatorInput('2 + 3')).toEqual({ preview: 5, error: null });
+  });
+
+  it('clears both preview and error for blank input, instead of reporting the empty-expression error', () => {
+    expect(evaluateCalculatorInput('   ')).toEqual({ preview: null, error: null });
+  });
+
+  it('captures a thrown error message and clears the preview', () => {
+    const result = evaluateCalculatorInput('5 / 0');
+    expect(result.preview).toBeNull();
+    expect(result.error).toBe('División por cero');
   });
 });

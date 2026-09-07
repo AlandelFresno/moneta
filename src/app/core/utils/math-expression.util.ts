@@ -80,3 +80,18 @@ export function evaluateMathExpression(input: string): number {
   if (!Number.isFinite(result)) throw new Error('Resultado inválido');
   return result;
 }
+
+export interface CalculatorResult {
+  preview: number | null;
+  error: string | null;
+}
+
+/** Wraps evaluateMathExpression for a live-preview UI: blank input clears the preview, a thrown error becomes a display message. */
+export function evaluateCalculatorInput(input: string): CalculatorResult {
+  if (!input.trim()) return { preview: null, error: null };
+  try {
+    return { preview: evaluateMathExpression(input), error: null };
+  } catch (error) {
+    return { preview: null, error: error instanceof Error ? error.message : 'Expresión inválida' };
+  }
+}

@@ -19,22 +19,22 @@ import { Transaction, TransactionType } from '../../core/types/transaction.types
 import { Category, CategoryType } from '../../core/types/category.types';
 import { Bill } from '../../core/types/bill.types';
 import { Account } from '../../core/types/account.types';
-import { TransactionService } from '../../services/transaction.service';
+import { TransactionService, TransactionFormInput as TransactionForm } from '../../services/transaction.service';
 import { TransactionCalculationService } from '../../services/transaction-calculation.service';
 import { CategoryService } from '../../services/category.service';
-import { CsvService, ParsedCsvRow } from '../../services/csv.service';
+import { CsvService, ParsedCsvRow, CsvImportPlan } from '../../services/csv.service';
 import { BillService, BillDueStatus } from '../../services/bill.service';
 import { AccountService } from '../../services/account.service';
 import { BudgetService } from '../../services/budget.service';
-import { DashboardService } from '../../services/dashboard.service';
 import { PeriodSettingsService } from '../../services/period-settings.service';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { BudgetProgressComponent } from '../../shared/budget-progress/budget-progress.component';
 import { PeriodStartDayComponent } from '../../shared/period-start-day/period-start-day.component';
 import { TransactionWithCategory, withCategory } from '../../core/utils/transaction-display.util';
 import { CATEGORY_ICON_OPTIONS } from '../../core/utils/category-icons.util';
-import { evaluateMathExpression } from '../../core/utils/math-expression.util';
-import { periodStart } from '../../core/utils/period.util';
+import { evaluateCalculatorInput } from '../../core/utils/math-expression.util';
+import { splitLinesTotal, seedSplitLines, withoutSplitLine } from '../../core/utils/split-lines.util';
+import { formatDate as formatDateDisplay, formatMonthLabel } from '../../core/utils/date-display.util';
 import { Budget, BudgetProgress } from '../../core/types/budget.types';
 
 interface TransactionListItem {
@@ -49,27 +49,6 @@ interface TransactionGroup {
   key: string;
   label: string;
   items: TransactionListItem[];
-}
-
-interface SplitLine {
-  categoryId: string;
-  amount: number | null;
-}
-
-interface TransactionForm {
-  id: string | null;
-  categoryId: string;
-  accountId: string | null;
-  type: TransactionType;
-  name: string;
-  description: string;
-  amount: number | null;
-  date: Date;
-  isSplit: boolean;
-  splitGroupId: string | null;
-  splitLines: SplitLine[];
-  calculatorExpression: string | null;
-  isPeriodStart: boolean;
 }
 
 const EMPTY_FORM: TransactionForm = {
@@ -190,7 +169,6 @@ export class TransactionsPage implements OnInit, OnDestroy {
     private readonly billService: BillService,
     private readonly budgetService: BudgetService,
     private readonly accountService: AccountService,
-    private readonly dashboardService: DashboardService,
     private readonly periodSettingsService: PeriodSettingsService,
     private readonly confirmationService: ConfirmationService,
     private readonly messageService: MessageService,
@@ -256,20 +234,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   private recomputeBudgetProgress(): void {
-    if (this.activeBudget) {
-      const range = this.dashboardService.rangeForPreset(
-        'thisMonth',
-        new Date(),
-        this.budgetTransactions,
-        null,
-        this.periodSettingsService.getStartDay(),
-        this.periodSettingsService.getStartHour()
-      );
-      const thisMonth = this.dashboardService.transactionsInPeriod(this.budgetTransactions, range);
-      this.budgetProgress = this.budgetService.budgetProgress(this.activeBudget, thisMonth);
-    } else {
-      this.budgetProgress = null;
-    }
+    this.budgetProgress = this.budgetService.currentPeriodProgress(this.activeBudget, this.budgetTransactions);
   }
 
   ngOnDestroy(): void {
@@ -390,8 +355,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   private monthYearLabel(date: Date): string {
-    const label = new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric' }).format(date);
-    return label.charAt(0).toUpperCase() + label.slice(1);
+    return formatMonthLabel(date);
   }
 
   exportToCsv(): void {
@@ -404,9 +368,9 @@ export class TransactionsPage implements OnInit, OnDestroy {
     input.value = '';
     if (!file) return;
 
-    let lines: string[];
+    let plan: CsvImportPlan;
     try {
-      lines = await this.csvService.readCsvSections(file);
+      plan = await this.csvService.prepareImport(file, this.categories, this.bills, this.transactions);
     } catch (error) {
       this.messageService.add({
         severity: 'error',
@@ -416,37 +380,9 @@ export class TransactionsPage implements OnInit, OnDestroy {
       return;
     }
 
-    const newCategories = this.csvService.parseNewCategories(lines, this.categories);
-    const createdCategories: Category[] = [];
-
-    for (const category of newCategories) {
-      createdCategories.push(await lastValueFrom(this.categoryService.create(category)));
-    }
-
-    const categoriesForMatching = [...this.categories, ...createdCategories];
-
-    const billResult = this.csvService.parseNewBills(lines, categoriesForMatching, this.bills);
-    let createdBillsCount = 0;
-    for (const bill of billResult.bills) {
-      await lastValueFrom(this.billService.create(bill));
-      createdBillsCount++;
-    }
-
-    let result;
-    try {
-      result = this.csvService.parseTransactions(lines, categoriesForMatching, this.transactions);
-    } catch (error) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error al leer el CSV',
-        detail: error instanceof Error ? error.message : 'Formato inválido'
-      });
-      return;
-    }
-
-    if (result.rows.length === 0) {
-      if (createdBillsCount > 0 || createdCategories.length > 0) {
-        await this.importRows([], result.skippedUnknownCategory, createdCategories.length, createdBillsCount, billResult.skippedUnknownCategory);
+    if (plan.rows.length === 0) {
+      if (plan.createdBillsCount > 0 || plan.createdCategoriesCount > 0) {
+        await this.finishCsvImport([], plan);
         return;
       }
 
@@ -454,62 +390,54 @@ export class TransactionsPage implements OnInit, OnDestroy {
         severity: 'warn',
         summary: 'Nada para importar',
         detail:
-          result.skippedUnknownCategory > 0
-            ? `${result.skippedUnknownCategory} filas omitidas por categoría desconocida`
+          plan.skippedUnknownCategory > 0
+            ? `${plan.skippedUnknownCategory} filas omitidas por categoría desconocida`
             : 'El archivo no tiene filas válidas'
       });
       return;
     }
 
-    const duplicates = result.rows.filter((row) => row.isDuplicate);
-    const unique = result.rows.filter((row) => !row.isDuplicate);
+    const duplicates = plan.rows.filter((row) => row.isDuplicate);
+    const unique = plan.rows.filter((row) => !row.isDuplicate);
 
     if (duplicates.length === 0) {
-      await this.importRows(unique, result.skippedUnknownCategory, createdCategories.length, createdBillsCount, billResult.skippedUnknownCategory);
+      await this.finishCsvImport(unique, plan);
       return;
     }
 
     this.confirmationService.confirm({
       header: 'Se encontraron duplicados',
-      message: `${duplicates.length} de ${result.rows.length} filas parecen ya existir (misma fecha, nombre y monto). ¿Importar solo las ${unique.length} filas nuevas, o importar todo igual?`,
+      message: `${duplicates.length} de ${plan.rows.length} filas parecen ya existir (misma fecha, nombre y monto). ¿Importar solo las ${unique.length} filas nuevas, o importar todo igual?`,
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: 'Solo nuevas',
       rejectLabel: 'Importar todo',
       accept: async () => {
-        await this.importRows(unique, result.skippedUnknownCategory, createdCategories.length, createdBillsCount, billResult.skippedUnknownCategory);
+        await this.finishCsvImport(unique, plan);
       },
       reject: async () => {
-        await this.importRows(result.rows, result.skippedUnknownCategory, createdCategories.length, createdBillsCount, billResult.skippedUnknownCategory);
+        await this.finishCsvImport(plan.rows, plan);
       }
     });
   }
 
-  private async importRows(
-    rows: ParsedCsvRow[],
-    skippedUnknownCategory: number,
-    createdCategoriesCount: number,
-    createdBillsCount: number,
-    skippedBillsUnknownCategory: number
-  ): Promise<void> {
-    for (const row of rows) {
-      await lastValueFrom(this.transactionService.create(row.transaction));
-    }
+  private async finishCsvImport(rows: ParsedCsvRow[], plan: CsvImportPlan): Promise<void> {
+    await this.csvService.createTransactions(rows);
 
     const detailParts: string[] = [];
     if (rows.length > 0) {
       detailParts.push(`${rows.length} transacciones importadas`);
     }
-    if (createdCategoriesCount > 0) {
-      detailParts.push(`${createdCategoriesCount} categorías nuevas creadas`);
+    if (plan.createdCategoriesCount > 0) {
+      detailParts.push(`${plan.createdCategoriesCount} categorías nuevas creadas`);
     }
-    if (createdBillsCount > 0) {
-      detailParts.push(`${createdBillsCount} servicios nuevos creados`);
+    if (plan.createdBillsCount > 0) {
+      detailParts.push(`${plan.createdBillsCount} servicios nuevos creados`);
     }
-    if (skippedUnknownCategory > 0) {
-      detailParts.push(`${skippedUnknownCategory} transacciones omitidas por categoría desconocida`);
+    if (plan.skippedUnknownCategory > 0) {
+      detailParts.push(`${plan.skippedUnknownCategory} transacciones omitidas por categoría desconocida`);
     }
-    if (skippedBillsUnknownCategory > 0) {
-      detailParts.push(`${skippedBillsUnknownCategory} servicios omitidos por categoría desconocida`);
+    if (plan.skippedBillsUnknownCategory > 0) {
+      detailParts.push(`${plan.skippedBillsUnknownCategory} servicios omitidos por categoría desconocida`);
     }
 
     this.messageService.add({
@@ -600,10 +528,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       this.periodStartBeforeSplit = this.form.isPeriodStart;
       this.form.isPeriodStart = false;
       if (this.form.splitLines.length < 2) {
-        this.form.splitLines = [
-          { categoryId: this.form.categoryId || '', amount: this.form.amount },
-          { categoryId: '', amount: null }
-        ];
+        this.form.splitLines = seedSplitLines(this.form.categoryId || '', this.form.amount);
       }
     } else {
       this.form.amount = this.splitTotal || this.form.amount;
@@ -616,12 +541,11 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   removeSplitLine(index: number): void {
-    if (this.form.splitLines.length <= 2) return;
-    this.form.splitLines.splice(index, 1);
+    this.form.splitLines = withoutSplitLine(this.form.splitLines, index);
   }
 
   get splitTotal(): number {
-    return this.form.splitLines.reduce((sum, line) => sum + (line.amount ?? 0), 0);
+    return splitLinesTotal(this.form.splitLines);
   }
 
   private resetCalculator(): void {
@@ -640,19 +564,9 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   onCalculatorInputChange(): void {
-    if (!this.calculatorInput.trim()) {
-      this.calculatorPreview = null;
-      this.calculatorError = null;
-      return;
-    }
-
-    try {
-      this.calculatorPreview = evaluateMathExpression(this.calculatorInput);
-      this.calculatorError = null;
-    } catch (error) {
-      this.calculatorPreview = null;
-      this.calculatorError = error instanceof Error ? error.message : 'Expresión inválida';
-    }
+    const { preview, error } = evaluateCalculatorInput(this.calculatorInput);
+    this.calculatorPreview = preview;
+    this.calculatorError = error;
   }
 
   applyCalculator(): void {
@@ -701,126 +615,15 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   async saveTransaction(): Promise<void> {
-    if (!this.form.name) {
-      this.messageService.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Ingresá un nombre' });
+    const outcome = await this.transactionService.saveFromForm(this.form, this.periodSettingsService.getStartDay());
+
+    if (outcome.status === 'invalid') {
+      this.messageService.add({ severity: 'warn', summary: 'Datos incompletos', detail: outcome.detail });
       return;
     }
 
-    if (this.form.isSplit) {
-      await this.saveSplitTransaction();
-      return;
-    }
-
-    if (!this.form.categoryId || this.form.amount === null || this.form.amount <= 0) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'Completá categoría, nombre y un monto válido'
-      });
-      return;
-    }
-
-    // Editing a transaction that used to be split, now saved as a single line: drop the old group first.
-    if (this.form.splitGroupId) {
-      const oldIds = this.transactions.filter((t) => t.splitGroupId === this.form.splitGroupId).map((t) => t.id);
-      await lastValueFrom(this.transactionService.deleteMany(oldIds));
-      this.form.id = null;
-    }
-
-    const payload = {
-      categoryId: this.form.categoryId,
-      accountId: this.form.accountId ?? undefined,
-      type: this.form.type,
-      name: this.form.name,
-      description: this.form.description,
-      amount: this.form.amount,
-      date: this.form.date,
-      isPeriodStart: this.form.isPeriodStart
-    };
-
-    let transactionId: string;
-    if (this.form.id) {
-      await lastValueFrom(this.transactionService.update(this.form.id, payload));
-      transactionId = this.form.id;
-      this.messageService.add({ severity: 'success', summary: 'Transacción actualizada' });
-    } else {
-      const created = await lastValueFrom(this.transactionService.create(payload));
-      transactionId = created.id;
-      this.messageService.add({ severity: 'success', summary: 'Transacción creada' });
-    }
-
-    if (this.form.calculatorExpression) {
-      await lastValueFrom(
-        this.transactionCalculationService.create({
-          transactionId,
-          expression: this.form.calculatorExpression,
-          result: this.form.amount
-        })
-      );
-    }
-
-    if (this.form.isPeriodStart) {
-      await this.clearConflictingPeriodMarkers(this.form.date, transactionId);
-    }
-
+    this.messageService.add({ severity: 'success', summary: outcome.summary });
     this.dialogVisible = false;
-  }
-
-  /** At most one active period-start marker per nominal period bucket — re-marking a transaction clears any other one already marked for the same period. */
-  private async clearConflictingPeriodMarkers(date: Date, keepId: string): Promise<void> {
-    const startDay = this.periodSettingsService.getStartDay();
-    const bucket = periodStart(date, startDay).getTime();
-    const conflicts = this.transactions.filter(
-      (t) => t.isPeriodStart && t.id !== keepId && periodStart(t.date, startDay).getTime() === bucket
-    );
-    for (const conflict of conflicts) {
-      await lastValueFrom(this.transactionService.update(conflict.id, { isPeriodStart: false }));
-    }
-  }
-
-  private async saveSplitTransaction(): Promise<void> {
-    const validLines = this.form.splitLines.filter((line) => line.categoryId && line.amount !== null && line.amount > 0);
-    if (validLines.length < 2) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'Agregá al menos 2 líneas con categoría y monto'
-      });
-      return;
-    }
-
-    const isUpdate = this.form.splitGroupId !== null || this.form.id !== null;
-
-    if (this.form.splitGroupId) {
-      const oldIds = this.transactions.filter((t) => t.splitGroupId === this.form.splitGroupId).map((t) => t.id);
-      await lastValueFrom(this.transactionService.deleteMany(oldIds));
-    } else if (this.form.id) {
-      await lastValueFrom(this.transactionService.delete(this.form.id));
-      await lastValueFrom(this.transactionCalculationService.deleteForTransaction(this.form.id));
-    }
-
-    const groupId = this.form.splitGroupId ?? this.generateSplitGroupId();
-    for (const line of validLines) {
-      await lastValueFrom(
-        this.transactionService.create({
-          categoryId: line.categoryId,
-          accountId: this.form.accountId ?? undefined,
-          type: this.form.type,
-          name: this.form.name,
-          description: this.form.description,
-          amount: line.amount!,
-          date: this.form.date,
-          splitGroupId: groupId
-        })
-      );
-    }
-
-    this.messageService.add({ severity: 'success', summary: isUpdate ? 'Transacción actualizada' : 'Transacción dividida creada' });
-    this.dialogVisible = false;
-  }
-
-  private generateSplitGroupId(): string {
-    return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
   }
 
   deleteTransaction(txn: Transaction): void {
@@ -905,11 +708,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    return new Intl.DateTimeFormat('es-AR', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    }).format(date);
+    return formatDateDisplay(date);
   }
 
   openPayBillDialog(status: BillDueStatus): void {
@@ -924,21 +723,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       return;
     }
 
-    const bill = this.payingBill.bill;
-    const paidDate = new Date();
-
-    const transaction = await lastValueFrom(
-      this.transactionService.create({
-        categoryId: bill.categoryId,
-        type: 'expense',
-        name: bill.name,
-        description: bill.description || `Pago de servicio: ${bill.name}`,
-        amount: this.payAmount,
-        date: paidDate
-      })
-    );
-
-    await lastValueFrom(this.billService.recordPayment(bill.id, this.payAmount, transaction.id, paidDate));
+    await this.billService.payBill(this.payingBill.bill, this.payAmount, new Date());
 
     this.messageService.add({ severity: 'success', summary: 'Pago registrado', detail: 'Se creó la transacción correspondiente' });
     this.payDialogVisible = false;
