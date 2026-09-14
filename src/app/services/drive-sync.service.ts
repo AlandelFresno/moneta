@@ -96,6 +96,7 @@ export class DriveSyncService {
   private readonly SYNC_FOLDER_NAME = 'Moneta';
   private readonly SYNC_FILE_NAME = 'moneta-sync.json';
   private readonly LAST_SYNCED_KEY = 'google_drive_last_synced_at';
+  private readonly FOLDER_ID_KEY = 'google_drive_folder_id';
   private readonly FILES_URL = 'https://www.googleapis.com/drive/v3/files';
   private readonly UPLOAD_URL = 'https://www.googleapis.com/upload/drive/v3/files';
 
@@ -270,6 +271,11 @@ export class DriveSyncService {
 
   private findOrCreateFolder(name: string): Promise<string> {
     return this.withAuth(async (headers) => {
+      const cachedFolderId = await this.getCachedFolderId();
+      if (cachedFolderId && (await this.folderStillValid(cachedFolderId, headers))) {
+        return cachedFolderId;
+      }
+
       const query = new HttpParams({
         fromObject: {
           q: `mimeType='application/vnd.google-apps.folder' and name='${name}' and trashed=false and 'root' in parents`,
@@ -282,7 +288,9 @@ export class DriveSyncService {
         this.http.get<DriveFileListResponse>(this.FILES_URL, { headers, params: query })
       );
       if (listResult.files.length > 0) {
-        return listResult.files[0].id;
+        const folderId = listResult.files[0].id;
+        await this.setCachedFolderId(folderId);
+        return folderId;
       }
 
       const created = await lastValueFrom(
@@ -292,8 +300,36 @@ export class DriveSyncService {
           { headers }
         )
       );
+      await this.setCachedFolderId(created.id);
       return created.id;
     });
+  }
+
+  /** The cached id can go stale (folder trashed/removed, or from an account this session no longer has access to) — verify before trusting it. */
+  private async folderStillValid(folderId: string, headers: Record<string, string>): Promise<boolean> {
+    try {
+      const folder = await lastValueFrom(
+        this.http.get<DriveFile & { trashed?: boolean }>(`${this.FILES_URL}/${folderId}`, {
+          headers,
+          params: new HttpParams({ fromObject: { fields: 'id,trashed' } })
+        })
+      );
+      return folder.trashed !== true;
+    } catch (err) {
+      if (err instanceof HttpErrorResponse && (err.status === 404 || err.status === 403)) {
+        return false;
+      }
+      throw err;
+    }
+  }
+
+  private async getCachedFolderId(): Promise<string | null> {
+    const { value } = await Preferences.get({ key: this.FOLDER_ID_KEY });
+    return value;
+  }
+
+  private async setCachedFolderId(folderId: string): Promise<void> {
+    await Preferences.set({ key: this.FOLDER_ID_KEY, value: folderId });
   }
 
   private findSyncFile(folderId: string): Promise<DriveFile | null> {
