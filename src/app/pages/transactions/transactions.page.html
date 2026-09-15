@@ -224,6 +224,9 @@
                 {{ item.primary.name }}
                 @if (item.primary.isPeriodStart) {
                   <i class="pi pi-flag-fill text-accent text-xs" title="Inicio de período"></i>
+                  @if (occurrenceFor(item.primary.date); as occ) {
+                    <span class="text-[11px] font-normal text-text-secondary">({{ occ.days }} días)</span>
+                  }
                 }
               </span>
               @if (item.isSplit) {
@@ -488,6 +491,11 @@
         <p-toggleswitch [(ngModel)]="form.isPeriodStart" />
         <span class="text-sm text-text-primary">Marca el inicio de un nuevo período</span>
       </div>
+      @if (periodMarkerPreview; as preview) {
+        <span class="text-xs text-text-secondary">
+          Con esta marca: {{ preview.withMarker }} días · sin marca: {{ preview.withoutMarker }} días
+        </span>
+      }
     }
 
     @if (accounts.length > 0) {

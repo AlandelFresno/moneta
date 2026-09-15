@@ -2,7 +2,12 @@
   <div class="flex items-start justify-between gap-4 flex-wrap mb-7">
     <div>
       <h1 class="text-[1.75rem] font-semibold tracking-tight text-text-primary">Dashboard</h1>
-      <p class="text-sm text-text-secondary mt-0.5">Resumen y análisis de tus movimientos</p>
+      <p class="text-sm text-text-secondary mt-0.5">
+        Resumen y análisis de tus movimientos
+        @if (currentRange && currentRangeDays !== null) {
+          · {{ formatRange(currentRange) }} ({{ currentRangeDays }} días)
+        }
+      </p>
     </div>
 
     <div class="flex items-center gap-2 flex-wrap">
@@ -24,6 +29,18 @@
         [(ngModel)]="rangePreset"
         (onChange)="onPresetChange()"
       />
+
+      @if (rangePreset === 'periodHistory') {
+        <p-select
+          class="min-w-[18rem]"
+          [options]="periodHistoryOptions"
+          optionLabel="label"
+          optionValue="value"
+          [(ngModel)]="selectedPeriodKey"
+          placeholder="Elegí un período"
+          (onChange)="onPeriodHistorySelectionChange()"
+        />
+      }
 
       @if (accounts.length > 0) {
         <p-select

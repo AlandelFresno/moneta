@@ -35,6 +35,7 @@ import { CATEGORY_ICON_OPTIONS } from '../../core/utils/category-icons.util';
 import { evaluateCalculatorInput } from '../../core/utils/math-expression.util';
 import { splitLinesTotal, seedSplitLines, withoutSplitLine } from '../../core/utils/split-lines.util';
 import { formatDate as formatDateDisplay, formatMonthLabel } from '../../core/utils/date-display.util';
+import { periodHistory, PeriodOccurrence } from '../../core/utils/period.util';
 import { Budget, BudgetProgress } from '../../core/types/budget.types';
 
 interface TransactionListItem {
@@ -161,6 +162,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
   calculatorPreview: number | null = null;
   calculatorError: string | null = null;
 
+  private periodStartDay = 1;
+  private periodStartHour = 0;
+  private periodOccurrences: PeriodOccurrence[] = [];
+
   constructor(
     private readonly transactionService: TransactionService,
     private readonly transactionCalculationService: TransactionCalculationService,
@@ -177,6 +182,9 @@ export class TransactionsPage implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.periodStartDay = this.periodSettingsService.getStartDay();
+    this.periodStartHour = this.periodSettingsService.getStartHour();
+
     combineLatest([this.transactionService.getAll(), this.categoryService.getAll()])
       .pipe(takeUntil(this.destroy$))
       .subscribe(([transactions, categories]) => {
@@ -184,6 +192,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
         this.transactions = transactions
           .map((txn) => withCategory(txn, categories))
           .sort((a, b) => b.date.getTime() - a.date.getTime());
+        this.periodOccurrences = this.computePeriodOccurrences(transactions);
         this.applyFilters();
         this.cdr.markForCheck();
       });
@@ -229,12 +238,52 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   onPeriodSettingsChange(): void {
+    this.periodStartDay = this.periodSettingsService.getStartDay();
+    this.periodStartHour = this.periodSettingsService.getStartHour();
+    this.periodOccurrences = this.computePeriodOccurrences(this.transactions);
     this.recomputeBudgetProgress();
     this.cdr.markForCheck();
   }
 
   private recomputeBudgetProgress(): void {
     this.budgetProgress = this.budgetService.currentPeriodProgress(this.activeBudget, this.budgetTransactions);
+  }
+
+  /** Every real period touched by these transactions, through today — lengths vary once a marked transaction shifts a boundary. */
+  private computePeriodOccurrences(transactions: Transaction[]): PeriodOccurrence[] {
+    if (transactions.length === 0) return [];
+    const earliest = transactions.reduce((min, txn) => (txn.date.getTime() < min.getTime() ? txn.date : min), transactions[0].date);
+    return periodHistory(earliest, new Date(), this.periodStartDay, this.periodStartHour, transactions);
+  }
+
+  /** The real period `date` falls into, if any of the loaded transactions' periods cover it. */
+  occurrenceFor(date: Date): PeriodOccurrence | undefined {
+    return this.periodOccurrences.find((occurrence) => date >= occurrence.start && date <= occurrence.end);
+  }
+
+  /** How marking (or not) this exact transaction as a period start would change that period's real length — null when it makes no difference. */
+  get periodMarkerPreview(): { withMarker: number; withoutMarker: number } | null {
+    if (this.form.type !== 'income' || this.form.isSplit || !this.form.date) return null;
+
+    const reference = this.form.date;
+    const others: Transaction[] = this.transactions.filter((txn) => txn.id !== this.form.id);
+    const candidate: Transaction = {
+      id: this.form.id ?? '__preview__',
+      categoryId: this.form.categoryId,
+      type: 'income',
+      name: this.form.name,
+      description: this.form.description,
+      amount: this.form.amount ?? 0,
+      date: reference,
+      isPeriodStart: true,
+      createdAt: reference,
+      updatedAt: reference
+    };
+
+    const withMarker = periodHistory(reference, reference, this.periodStartDay, this.periodStartHour, [...others, candidate])[0]?.days ?? 0;
+    const withoutMarker = periodHistory(reference, reference, this.periodStartDay, this.periodStartHour, others)[0]?.days ?? 0;
+
+    return withMarker !== withoutMarker ? { withMarker, withoutMarker } : null;
   }
 
   ngOnDestroy(): void {
@@ -308,10 +357,11 @@ export class TransactionsPage implements OnInit, OnDestroy {
     for (const txn of this.filteredTransactions) {
       if (txn.splitGroupId && seenSplitGroups.has(txn.splitGroupId)) continue;
 
-      const key = `${txn.date.getFullYear()}-${txn.date.getMonth()}`;
+      const occurrence = this.occurrenceFor(txn.date);
+      const key = occurrence ? String(occurrence.start.getTime()) : `${txn.date.getFullYear()}-${txn.date.getMonth()}`;
       let group = groups.get(key);
       if (!group) {
-        group = { key, label: this.monthYearLabel(txn.date), items: [] };
+        group = { key, label: occurrence ? this.periodGroupLabel(occurrence) : this.monthYearLabel(txn.date), items: [] };
         groups.set(key, group);
       }
 
@@ -356,6 +406,13 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   private monthYearLabel(date: Date): string {
     return formatMonthLabel(date);
+  }
+
+  /** Plain "Month Year" when the period's real start is still the untouched calendar-month boundary; the actual date range + day count once a marker has shifted it. */
+  private periodGroupLabel(occurrence: PeriodOccurrence): string {
+    const isPlainCalendarMonth = occurrence.start.getDate() === 1 && occurrence.start.getHours() === 0 && occurrence.start.getMinutes() === 0;
+    if (isPlainCalendarMonth) return formatMonthLabel(occurrence.start);
+    return `${this.formatDate(occurrence.start)} – ${this.formatDate(occurrence.end)} · ${occurrence.days} días`;
   }
 
   exportToCsv(): void {

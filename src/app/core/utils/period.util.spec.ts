@@ -1,4 +1,4 @@
-import { periodStart, actualPeriodStart, periodRange, periodLabelMonth, addMonths } from './period.util';
+import { periodStart, actualPeriodStart, periodRange, periodLabelMonth, addMonths, periodHistory } from './period.util';
 import { Transaction } from '../types/transaction.types';
 
 function makeTxn(overrides: Partial<Transaction>): Transaction {
@@ -122,5 +122,29 @@ describe('addMonths', () => {
 
   it('rolls the year forward across December', () => {
     expect(addMonths(new Date(2026, 11, 1), 1)).toEqual(new Date(2027, 0, 1));
+  });
+});
+
+describe('periodHistory', () => {
+  it('returns one occurrence per month, oldest first, each as long as its calendar month with no markers', () => {
+    const result = periodHistory(new Date(2026, 5, 10), new Date(2026, 7, 20), 6, 0, []);
+    expect(result.map((o) => o.start)).toEqual([new Date(2026, 5, 6), new Date(2026, 6, 6), new Date(2026, 7, 6)]);
+    expect(result.map((o) => o.days)).toEqual([30, 31, 31]);
+  });
+
+  it('lengthens the preceding period and shortens the following one when a marker lands late', () => {
+    const lateMarker = makeTxn({ isPeriodStart: true, date: new Date(2026, 6, 9) });
+    const result = periodHistory(new Date(2026, 5, 10), new Date(2026, 7, 20), 6, 0, [lateMarker]);
+
+    expect(result[0].end).toEqual(new Date(new Date(2026, 6, 9).getTime() - 1));
+    expect(result[0].days).toBe(33);
+    expect(result[1].start).toEqual(new Date(2026, 6, 9));
+    expect(result[1].days).toBe(28);
+  });
+
+  it('includes only the single current period when from and to fall in the same nominal bucket', () => {
+    const result = periodHistory(new Date(2026, 7, 8), new Date(2026, 7, 20), 6, 0, []);
+    expect(result.length).toBe(1);
+    expect(result[0]).toEqual({ start: new Date(2026, 7, 6), end: new Date(new Date(2026, 8, 6).getTime() - 1), days: 31 });
   });
 });
