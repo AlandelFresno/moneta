@@ -56,6 +56,8 @@ export interface SyncResult {
   transactionCalculations: EntitySyncStats;
 }
 
+type SyncStats = Omit<SyncResult, 'syncedAt'>;
+
 interface DriveFile {
   id: string;
   name?: string;
@@ -93,10 +95,8 @@ const EMPTY_PAYLOAD: DriveSyncPayload = {
   providedIn: 'root'
 })
 export class DriveSyncService {
-  private readonly SYNC_FOLDER_NAME = 'Moneta';
   private readonly SYNC_FILE_NAME = 'moneta-sync.json';
   private readonly LAST_SYNCED_KEY = 'google_drive_last_synced_at';
-  private readonly FOLDER_ID_KEY = 'google_drive_folder_id';
   private readonly FILES_URL = 'https://www.googleapis.com/drive/v3/files';
   private readonly UPLOAD_URL = 'https://www.googleapis.com/upload/drive/v3/files';
 
@@ -114,8 +114,7 @@ export class DriveSyncService {
 
   /** Downloads remote data, merges it into local storage, and writes the merged result locally. Does not upload. */
   async pull(): Promise<SyncResult> {
-    const folderId = await this.findOrCreateFolder(this.SYNC_FOLDER_NAME);
-    const existingFile = await this.findSyncFile(folderId);
+    const existingFile = await this.findSyncFile();
     const remotePayload = existingFile ? await this.downloadPayload(existingFile.id) : EMPTY_PAYLOAD;
 
     const { deduped, stats } = this.mergeWithLocal(remotePayload);
@@ -135,13 +134,59 @@ export class DriveSyncService {
 
   /** Merges remote data with local (without persisting it locally), then uploads the merged result to Drive. */
   async push(): Promise<SyncResult> {
-    const folderId = await this.findOrCreateFolder(this.SYNC_FOLDER_NAME);
-    const existingFile = await this.findSyncFile(folderId);
+    const existingFile = await this.findSyncFile();
     const remotePayload = existingFile ? await this.downloadPayload(existingFile.id) : EMPTY_PAYLOAD;
 
     const { deduped, stats } = this.mergeWithLocal(remotePayload);
 
-    const outgoingPayload: DriveSyncPayload = {
+    await this.uploadPayload(existingFile?.id ?? null, this.toOutgoingPayload(deduped));
+
+    return this.finalizeResult(stats);
+  }
+
+  /** Serializes the current local data (deduped, same shape as a Drive backup) for the user to save as a .json file. */
+  async exportToJson(): Promise<string> {
+    const { deduped } = this.mergeWithLocal(EMPTY_PAYLOAD);
+    return JSON.stringify(this.toOutgoingPayload(deduped), null, 2);
+  }
+
+  /** Merges a previously exported .json backup into local storage, same semantics as pull() (newest wins, ties go to local). */
+  async importFromJson(json: string): Promise<SyncResult> {
+    let parsed: Partial<DriveSyncPayload>;
+    try {
+      parsed = JSON.parse(json) as Partial<DriveSyncPayload>;
+    } catch {
+      throw new Error('El archivo no es un JSON válido.');
+    }
+
+    const importedPayload: DriveSyncPayload = { ...EMPTY_PAYLOAD, ...parsed };
+    const { deduped, stats } = this.mergeWithLocal(importedPayload);
+
+    this.transactionService.replaceAll(deduped.transactions);
+    this.categoryService.replaceAll(deduped.categories);
+    this.billService.replaceAll(deduped.bills);
+    this.budgetService.replaceAll(deduped.budgets);
+    this.accountService.replaceAll(deduped.accounts);
+    this.accountService.replaceAllTransfers(deduped.transfers);
+    this.goalService.replaceAll(deduped.goals);
+    this.goalService.replaceAllContributions(deduped.goalContributions);
+    this.transactionCalculationService.replaceAll(deduped.transactionCalculations);
+
+    return this.buildResult(stats);
+  }
+
+  private toOutgoingPayload(deduped: {
+    transactions: ReturnType<typeof dedupeCategories>['transactions'];
+    categories: ReturnType<typeof dedupeCategories>['categories'];
+    bills: ReturnType<typeof dedupeCategories>['bills'];
+    budgets: ReturnType<typeof dedupeCategories>['budgets'];
+    accounts: Account[];
+    transfers: AccountTransfer[];
+    goals: Goal[];
+    goalContributions: GoalContribution[];
+    transactionCalculations: TransactionCalculation[];
+  }): DriveSyncPayload {
+    return {
       transactions: deduped.transactions.map(fromTransaction),
       categories: deduped.categories.map(fromCategory),
       bills: deduped.bills.map(fromBill),
@@ -152,10 +197,6 @@ export class DriveSyncService {
       goalContributions: deduped.goalContributions.map(fromGoalContribution),
       transactionCalculations: deduped.transactionCalculations.map(fromTransactionCalculation)
     };
-
-    await this.uploadPayload(folderId, existingFile?.id ?? null, outgoingPayload);
-
-    return this.finalizeResult(stats);
   }
 
   private mergeWithLocal(remotePayload: DriveSyncPayload): {
@@ -166,17 +207,7 @@ export class DriveSyncService {
       goalContributions: GoalContribution[];
       transactionCalculations: TransactionCalculation[];
     };
-    stats: {
-      transactions: EntitySyncStats;
-      categories: EntitySyncStats;
-      bills: EntitySyncStats;
-      budgets: EntitySyncStats;
-      accounts: EntitySyncStats;
-      transfers: EntitySyncStats;
-      goals: EntitySyncStats;
-      goalContributions: EntitySyncStats;
-      transactionCalculations: EntitySyncStats;
-    };
+    stats: SyncStats;
   } {
     const now = new Date();
 
@@ -247,21 +278,15 @@ export class DriveSyncService {
     };
   }
 
-  private async finalizeResult(stats: {
-    transactions: EntitySyncStats;
-    categories: EntitySyncStats;
-    bills: EntitySyncStats;
-    budgets: EntitySyncStats;
-    accounts: EntitySyncStats;
-    transfers: EntitySyncStats;
-    goals: EntitySyncStats;
-    goalContributions: EntitySyncStats;
-    transactionCalculations: EntitySyncStats;
-  }): Promise<SyncResult> {
-    const syncedAt = new Date();
-    await Preferences.set({ key: this.LAST_SYNCED_KEY, value: syncedAt.toISOString() });
+  private buildResult(stats: SyncStats): SyncResult {
+    return { syncedAt: new Date(), ...stats };
+  }
 
-    return { syncedAt, ...stats };
+  /** Only pull()/push() persist this — it specifically tracks Google Drive sync recency, not local imports. */
+  private async finalizeResult(stats: SyncStats): Promise<SyncResult> {
+    const result = this.buildResult(stats);
+    await Preferences.set({ key: this.LAST_SYNCED_KEY, value: result.syncedAt.toISOString() });
+    return result;
   }
 
   async getLastSyncedAt(): Promise<Date | null> {
@@ -269,76 +294,14 @@ export class DriveSyncService {
     return value ? new Date(value) : null;
   }
 
-  private findOrCreateFolder(name: string): Promise<string> {
-    return this.withAuth(async (headers) => {
-      const cachedFolderId = await this.getCachedFolderId();
-      if (cachedFolderId && (await this.folderStillValid(cachedFolderId, headers))) {
-        return cachedFolderId;
-      }
-
-      const query = new HttpParams({
-        fromObject: {
-          q: `mimeType='application/vnd.google-apps.folder' and name='${name}' and trashed=false and 'root' in parents`,
-          fields: 'files(id,name)',
-          spaces: 'drive'
-        }
-      });
-
-      const listResult = await lastValueFrom(
-        this.http.get<DriveFileListResponse>(this.FILES_URL, { headers, params: query })
-      );
-      if (listResult.files.length > 0) {
-        const folderId = listResult.files[0].id;
-        await this.setCachedFolderId(folderId);
-        return folderId;
-      }
-
-      const created = await lastValueFrom(
-        this.http.post<DriveFile>(
-          `${this.FILES_URL}?fields=id`,
-          { name, mimeType: 'application/vnd.google-apps.folder', parents: ['root'] },
-          { headers }
-        )
-      );
-      await this.setCachedFolderId(created.id);
-      return created.id;
-    });
-  }
-
-  /** The cached id can go stale (folder trashed/removed, or from an account this session no longer has access to) — verify before trusting it. */
-  private async folderStillValid(folderId: string, headers: Record<string, string>): Promise<boolean> {
-    try {
-      const folder = await lastValueFrom(
-        this.http.get<DriveFile & { trashed?: boolean }>(`${this.FILES_URL}/${folderId}`, {
-          headers,
-          params: new HttpParams({ fromObject: { fields: 'id,trashed' } })
-        })
-      );
-      return folder.trashed !== true;
-    } catch (err) {
-      if (err instanceof HttpErrorResponse && (err.status === 404 || err.status === 403)) {
-        return false;
-      }
-      throw err;
-    }
-  }
-
-  private async getCachedFolderId(): Promise<string | null> {
-    const { value } = await Preferences.get({ key: this.FOLDER_ID_KEY });
-    return value;
-  }
-
-  private async setCachedFolderId(folderId: string): Promise<void> {
-    await Preferences.set({ key: this.FOLDER_ID_KEY, value: folderId });
-  }
-
-  private findSyncFile(folderId: string): Promise<DriveFile | null> {
+  /** appDataFolder is a special, hidden Drive space Google guarantees is exactly one folder per (account, app) — no name search, no risk of duplicates. */
+  private findSyncFile(): Promise<DriveFile | null> {
     return this.withAuth(async (headers) => {
       const query = new HttpParams({
         fromObject: {
-          q: `name='${this.SYNC_FILE_NAME}' and '${folderId}' in parents and trashed=false`,
+          q: `name='${this.SYNC_FILE_NAME}' and trashed=false`,
           fields: 'files(id,name)',
-          spaces: 'drive'
+          spaces: 'appDataFolder'
         }
       });
 
@@ -361,7 +324,7 @@ export class DriveSyncService {
     return { ...EMPTY_PAYLOAD, ...payload };
   }
 
-  private uploadPayload(folderId: string, existingFileId: string | null, payload: DriveSyncPayload): Promise<string> {
+  private uploadPayload(existingFileId: string | null, payload: DriveSyncPayload): Promise<string> {
     return this.withAuth(async (headers) => {
       const content = JSON.stringify(payload);
 
@@ -377,9 +340,10 @@ export class DriveSyncService {
       const form = new FormData();
       form.append(
         'metadata',
-        new Blob([JSON.stringify({ name: this.SYNC_FILE_NAME, mimeType: 'application/json', parents: [folderId] })], {
-          type: 'application/json'
-        })
+        new Blob(
+          [JSON.stringify({ name: this.SYNC_FILE_NAME, mimeType: 'application/json', parents: ['appDataFolder'] })],
+          { type: 'application/json' }
+        )
       );
       form.append('file', new Blob([content], { type: 'application/json' }));
 
