@@ -20,7 +20,7 @@ import { TransactionService } from '../../services/transaction.service';
 import { GoalService } from '../../services/goal.service';
 import { AccountService } from '../../services/account.service';
 import { PeriodSettingsService } from '../../services/period-settings.service';
-import { periodLabelMonth, periodRange, addMonths } from '../../core/utils/period.util';
+import { periodLabelMonth, periodRange, periodHistory, addMonths, PeriodOccurrence } from '../../core/utils/period.util';
 import { formatDate as formatDateDisplay, formatMonthLabel as formatMonthLabelDisplay } from '../../core/utils/date-display.util';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { BudgetProgressComponent } from '../../shared/budget-progress/budget-progress.component';
@@ -96,6 +96,8 @@ export class BudgetsPage implements OnInit, OnDestroy {
   periodStartDay = 1;
   periodStartHour = 0;
   currentPeriodRange: { start: Date; end: Date } | null = null;
+  periodHistoryList: PeriodOccurrence[] = [];
+  periodHistoryPanelOpen = false;
 
   constructor(
     private readonly budgetService: BudgetService,
@@ -134,6 +136,7 @@ export class BudgetsPage implements OnInit, OnDestroy {
         this.history = this.budgetService.historyBudgets(budgets, reference);
         this.pendingRollovers = this.budgetService.pendingGoalRollovers(budgets, reference);
         this.currentPeriodRange = periodRange(reference, this.periodStartDay, this.periodStartHour, transactions);
+        this.periodHistoryList = this.computePeriodHistory(transactions, reference);
         this.progress = this.budgetService.currentPeriodProgress(this.current, transactions);
 
         this.cdr.markForCheck();
@@ -148,7 +151,19 @@ export class BudgetsPage implements OnInit, OnDestroy {
     this.upcoming = this.budgetService.upcomingBudget(this.budgets, reference);
     this.history = this.budgetService.historyBudgets(this.budgets, reference);
     this.currentPeriodRange = periodRange(reference, this.periodStartDay, this.periodStartHour, this.allTransactions);
+    this.periodHistoryList = this.computePeriodHistory(this.allTransactions, reference);
     this.progress = this.budgetService.currentPeriodProgress(this.current, this.allTransactions);
+  }
+
+  /** Every period's real span up to now, most recent first — lengths vary once a marked transaction shifts a boundary off the nominal startDay. */
+  private computePeriodHistory(transactions: Transaction[], reference: Date): PeriodOccurrence[] {
+    const earliest = this.budgets.reduce<Date | null>(
+      (min, budget) => (min === null || budget.month.getTime() < min.getTime() ? budget.month : min),
+      transactions.reduce<Date | null>((min, txn) => (min === null || txn.date.getTime() < min.getTime() ? txn.date : min), null)
+    );
+    if (!earliest) return [];
+
+    return periodHistory(earliest, reference, this.periodStartDay, this.periodStartHour, transactions).reverse();
   }
 
   ngOnDestroy(): void {

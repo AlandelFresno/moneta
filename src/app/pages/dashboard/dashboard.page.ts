@@ -43,6 +43,7 @@ import { Category } from '../../core/types/category.types';
 import { Bill } from '../../core/types/bill.types';
 import { TransactionWithCategory, withCategory } from '../../core/utils/transaction-display.util';
 import { formatDate as formatDateDisplay } from '../../core/utils/date-display.util';
+import { periodHistory, PeriodOccurrence } from '../../core/utils/period.util';
 import {
   renderTrendChart as buildTrendChart,
   renderNetWorthChart as buildNetWorthChart,
@@ -113,19 +114,25 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   accounts: Account[] = [];
   selectedAccountId: string | null = null;
 
-  readonly presetOptions: { label: string; value: RangePreset }[] = [
+  readonly presetOptions: { label: string; value: RangePreset | 'periodHistory' }[] = [
     { label: 'Este mes', value: 'thisMonth' },
     { label: 'Últimos 3 meses', value: 'last3' },
     { label: 'Últimos 6 meses', value: 'last6' },
     { label: 'Últimos 12 meses', value: 'last12' },
     { label: 'Este año', value: 'thisYear' },
     { label: 'Todo', value: 'allTime' },
-    { label: 'Rango personalizado', value: 'custom' }
+    { label: 'Rango personalizado', value: 'custom' },
+    { label: 'Período específico', value: 'periodHistory' }
   ];
 
-  rangePreset: RangePreset = 'thisMonth';
+  rangePreset: RangePreset | 'periodHistory' = 'thisMonth';
   customRangeDates: Date[] | null = null;
   currentRange: DateRange | null = null;
+  currentRangeDays: number | null = null;
+
+  periodHistoryOptions: { label: string; value: number }[] = [];
+  selectedPeriodKey: number | null = null;
+  private periodOccurrences: PeriodOccurrence[] = [];
 
   compareEnabled = false;
   compareOffset: number | 'custom' = 1;
@@ -188,6 +195,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
         this.categories = categories;
         this.allBills = bills;
         this.accounts = [...accounts].sort((a, b) => a.name.localeCompare(b.name));
+        this.computePeriodOccurrences();
         this.recompute();
       });
 
@@ -203,7 +211,58 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
 
   onPeriodSettingsChange(): void {
     this.recomputeBudgetProgress();
+    this.computePeriodOccurrences();
     this.recompute();
+  }
+
+  onPeriodHistorySelectionChange(): void {
+    this.recompute();
+  }
+
+  /** Every real period touched by the loaded transactions, through today — used for both the "specific period" picker and the current period's real day count. */
+  private computePeriodOccurrences(): void {
+    if (this.allTransactions.length === 0) {
+      this.periodOccurrences = [];
+      this.periodHistoryOptions = [];
+      return;
+    }
+
+    const earliest = this.allTransactions.reduce(
+      (min, txn) => (txn.date.getTime() < min.getTime() ? txn.date : min),
+      this.allTransactions[0].date
+    );
+    this.periodOccurrences = periodHistory(
+      earliest,
+      new Date(),
+      this.periodSettingsService.getStartDay(),
+      this.periodSettingsService.getStartHour(),
+      this.allTransactions
+    ).reverse();
+
+    this.periodHistoryOptions = this.periodOccurrences.map((occurrence) => ({
+      label: `${this.formatDate(occurrence.start)} – ${this.formatDate(occurrence.end)} (${occurrence.days} días)`,
+      value: occurrence.start.getTime()
+    }));
+
+    if (this.selectedPeriodKey === null || !this.periodOccurrences.some((o) => o.start.getTime() === this.selectedPeriodKey)) {
+      this.selectedPeriodKey = this.periodOccurrences[0]?.start.getTime() ?? null;
+    }
+  }
+
+  private selectedPeriodOccurrence(): PeriodOccurrence | undefined {
+    return this.periodOccurrences.find((occurrence) => occurrence.start.getTime() === this.selectedPeriodKey) ?? this.periodOccurrences[0];
+  }
+
+  private periodDaysAt(reference: Date): number {
+    return (
+      periodHistory(
+        reference,
+        reference,
+        this.periodSettingsService.getStartDay(),
+        this.periodSettingsService.getStartHour(),
+        this.allTransactions
+      )[0]?.days ?? 0
+    );
   }
 
   private recomputeBudgetProgress(): void {
@@ -325,18 +384,27 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.currentRange = this.dashboardService.rangeForPreset(
-      this.rangePreset,
-      reference,
-      this.allTransactions,
-      custom,
-      this.periodSettingsService.getStartDay(),
-      this.periodSettingsService.getStartHour()
-    );
+    if (this.rangePreset === 'periodHistory') {
+      const occurrence = this.selectedPeriodOccurrence();
+      if (!occurrence) return;
+      this.currentRange = { start: occurrence.start, end: occurrence.end };
+      this.currentRangeDays = occurrence.days;
+    } else {
+      this.currentRange = this.dashboardService.rangeForPreset(
+        this.rangePreset,
+        reference,
+        this.allTransactions,
+        custom,
+        this.periodSettingsService.getStartDay(),
+        this.periodSettingsService.getStartHour()
+      );
+      this.currentRangeDays = this.rangePreset === 'thisMonth' ? this.periodDaysAt(reference) : null;
+    }
+
     this.scopedTransactions = this.selectedAccountId
       ? this.allTransactions.filter((t) => t.accountId === this.selectedAccountId)
       : this.allTransactions;
-    const isThisMonth = this.rangePreset === 'thisMonth';
+    const isThisMonth = this.rangePreset === 'thisMonth' || this.rangePreset === 'periodHistory';
     const inRange = this.matchRange(this.scopedTransactions, this.currentRange, isThisMonth);
 
     this.stats = this.dashboardService.periodStats(inRange);
@@ -436,7 +504,11 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   async exportPdf(): Promise<void> {
     if (!this.currentRange) return;
 
-    const inRange = this.matchRange(this.scopedTransactions, this.currentRange, this.rangePreset === 'thisMonth');
+    const inRange = this.matchRange(
+      this.scopedTransactions,
+      this.currentRange,
+      this.rangePreset === 'thisMonth' || this.rangePreset === 'periodHistory'
+    );
     const topTransactions = this.dashboardService.topTransactionsByAmount(inRange, 10);
 
     await this.reportExportService.exportMonthlyReport({
@@ -511,7 +583,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private renderWeekdayChart(range: DateRange): void {
-    const inRange = this.matchRange(this.scopedTransactions, range, this.rangePreset === 'thisMonth');
+    const inRange = this.matchRange(this.scopedTransactions, range, this.rangePreset === 'thisMonth' || this.rangePreset === 'periodHistory');
     const weekdaySpend = this.dashboardService.weekdaySpendInRange(inRange);
     const colors = palette[this.themeService.theme()];
 

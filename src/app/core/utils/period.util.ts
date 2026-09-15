@@ -41,3 +41,25 @@ export function periodLabelMonth(date: Date, startDay: number): Date {
 export function addMonths(date: Date, months: number): Date {
   return new Date(date.getFullYear(), date.getMonth() + months, date.getDate());
 }
+
+/** One past or current period's real span — length varies once a marker transaction shifts a boundary off the nominal startDay. */
+export interface PeriodOccurrence {
+  start: Date;
+  end: Date;
+  days: number;
+}
+
+/** Every period's real [start, end, days] from the one containing `from` through the one containing `to` (inclusive), oldest first. */
+export function periodHistory(from: Date, to: Date, startDay: number, startHour: number, transactions: Transaction[]): PeriodOccurrence[] {
+  const occurrences: PeriodOccurrence[] = [];
+  let bucket = periodStart(from, startDay);
+  const lastBucket = periodStart(to, startDay);
+
+  while (bucket.getTime() <= lastBucket.getTime()) {
+    const { start, end } = periodRange(bucket, startDay, startHour, transactions);
+    occurrences.push({ start, end, days: Math.round((end.getTime() - start.getTime() + 1) / 86400000) });
+    bucket = addMonths(bucket, 1);
+  }
+
+  return occurrences;
+}
