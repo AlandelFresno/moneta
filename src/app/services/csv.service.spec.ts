@@ -1,6 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { CsvService } from './csv.service';
+import { CategoryService } from './category.service';
+import { BillService } from './bill.service';
+import { TransactionService } from './transaction.service';
 import { Category } from '../core/types/category.types';
 import { Transaction } from '../core/types/transaction.types';
 import { Bill } from '../core/types/bill.types';
@@ -18,8 +22,14 @@ describe('CsvService', () => {
   let service: CsvService;
 
   beforeEach(() => {
+    localStorage.clear();
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     service = TestBed.inject(CsvService);
+    TestBed.inject(CategoryService).replaceAll([]); // strip the 2 auto-seeded default categories
+  });
+
+  afterEach(() => {
+    localStorage.clear();
   });
 
   describe('parseTransactions', () => {
@@ -231,6 +241,69 @@ describe('CsvService', () => {
       const lines = await service.readCsvSections(file);
 
       expect(lines).toEqual(['a,b', 'c,d', '']);
+    });
+  });
+
+  describe('prepareImport', () => {
+    it('creates new categories and bills, and returns parsed transaction rows with duplicates flagged', async () => {
+      const categoryService = TestBed.inject(CategoryService);
+      const billService = TestBed.inject(BillService);
+      const transactionService = TestBed.inject(TransactionService);
+      const existing = await firstValueFrom(
+        transactionService.create({
+          categoryId: 'cat-1',
+          type: 'expense',
+          name: 'Ya existe',
+          description: '',
+          amount: 100,
+          date: new Date(2026, 2, 1)
+        })
+      );
+      const csv = [
+        'Name,Type,Color,Icon',
+        'Mascotas,expense,#fff,paw',
+        '',
+        'Name,Description,Category,ApproxAmount,Period,DueDate,Active',
+        'Internet,Fibra,Mascotas,1000,monthly,2026-01-05,true',
+        '',
+        'Date,Type,Category,Name,Amount,Description',
+        '2026-03-01,expense,Almacén,Ya existe,100,',
+        '2026-03-02,expense,Mascotas,Comida,200,'
+      ].join('\n');
+
+      const plan = await service.prepareImport(makeFile(csv), CATEGORIES, [], [existing]);
+
+      const categories = await firstValueFrom(categoryService.getAll());
+      expect(categories.some((c) => c.name === 'Mascotas')).toBeTrue();
+      const bills = await firstValueFrom(billService.getAll());
+      expect(bills.some((b) => b.name === 'Internet')).toBeTrue();
+
+      expect(plan.createdCategoriesCount).toBe(1);
+      expect(plan.createdBillsCount).toBe(1);
+      expect(plan.rows.length).toBe(2);
+      expect(plan.rows.find((r) => r.transaction.name === 'Ya existe')?.isDuplicate).toBeTrue();
+      expect(plan.rows.find((r) => r.transaction.name === 'Comida')?.isDuplicate).toBeFalse();
+    });
+
+    it('propagates a parse failure (e.g. missing transactions header) instead of swallowing it', async () => {
+      const csv = 'Name,Type,Color,Icon\nOcio,expense,#000,star';
+
+      await expectAsync(service.prepareImport(makeFile(csv), CATEGORIES, [], [])).toBeRejected();
+    });
+  });
+
+  describe('createTransactions', () => {
+    it('creates one transaction per row', async () => {
+      const transactionService = TestBed.inject(TransactionService);
+      const rows = [
+        { transaction: { categoryId: 'cat-1', type: 'expense' as const, name: 'A', description: '', amount: 10, date: new Date() }, isDuplicate: false },
+        { transaction: { categoryId: 'cat-1', type: 'expense' as const, name: 'B', description: '', amount: 20, date: new Date() }, isDuplicate: false }
+      ];
+
+      await service.createTransactions(rows);
+
+      const all = await firstValueFrom(transactionService.getAll());
+      expect(all.map((t) => t.name).sort()).toEqual(['A', 'B']);
     });
   });
 });

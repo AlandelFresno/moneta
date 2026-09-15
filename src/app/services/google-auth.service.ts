@@ -43,7 +43,7 @@ interface OAuthFlowConfig {
 })
 export class GoogleAuthService {
   private readonly TOKEN_KEY = 'google_drive_token';
-  private readonly SCOPE = 'https://www.googleapis.com/auth/drive.file';
+  private readonly SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 
   private readonly webClientId = environment.googleClientId;
   private readonly webClientSecret = environment.googleWebClientSecret;

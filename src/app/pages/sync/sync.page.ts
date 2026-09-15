@@ -6,6 +6,7 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 
 import { GoogleAuthService, GoogleAuthError } from '../../services/google-auth.service';
 import { DriveSyncService, SyncResult } from '../../services/drive-sync.service';
+import { downloadTextFile, readFileAsText } from '../../core/utils/file-download.util';
 
 @Component({
   selector: 'app-sync',
@@ -24,7 +25,9 @@ export class SyncPage implements OnInit, OnDestroy {
   lastError: string | null = null;
   requiresReauth = false;
   lastResult: SyncResult | null = null;
-  lastAction: 'pull' | 'push' | null = null;
+  lastAction: 'pull' | 'push' | 'import' | null = null;
+  exporting = false;
+  importing = false;
 
   constructor(
     private readonly googleAuth: GoogleAuthService,
@@ -91,6 +94,70 @@ export class SyncPage implements OnInit, OnDestroy {
 
   async push(): Promise<void> {
     await this.runSync('push', () => this.driveSync.push());
+  }
+
+  async exportJson(): Promise<void> {
+    this.exporting = true;
+    this.cdr.markForCheck();
+
+    try {
+      const json = await this.driveSync.exportToJson();
+      downloadTextFile(`moneta-backup-${this.formatDateForFilename(new Date())}.json`, json, 'application/json');
+      this.messageService.add({ severity: 'success', summary: 'Datos exportados' });
+    } catch (error) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'No se pudo exportar',
+        detail: error instanceof Error ? error.message : 'Error desconocido'
+      });
+    }
+
+    this.exporting = false;
+    this.cdr.markForCheck();
+  }
+
+  onImportFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    input.value = '';
+    if (!file) return;
+
+    this.confirmationService.confirm({
+      header: '¿Importar datos?',
+      message: 'El contenido del archivo se combinará con tus datos locales. Los cambios más recientes prevalecen.',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí',
+      rejectLabel: 'No',
+      accept: () => void this.importJson(file)
+    });
+  }
+
+  private async importJson(file: File): Promise<void> {
+    this.importing = true;
+    this.lastError = null;
+    this.cdr.markForCheck();
+
+    try {
+      const json = await readFileAsText(file);
+      const result = await this.driveSync.importFromJson(json);
+      this.lastResult = result;
+      this.lastAction = 'import';
+      this.messageService.add({ severity: 'success', summary: 'Datos importados', detail: this.formatSummary(result) });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error desconocido al importar';
+      this.lastError = message;
+      this.messageService.add({ severity: 'error', summary: 'Error al importar', detail: message });
+    }
+
+    this.importing = false;
+    this.cdr.markForCheck();
+  }
+
+  private formatDateForFilename(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private async runSync(action: 'pull' | 'push', run: () => Promise<SyncResult>): Promise<void> {

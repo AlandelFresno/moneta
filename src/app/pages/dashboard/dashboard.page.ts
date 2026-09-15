@@ -42,6 +42,14 @@ import { Transaction } from '../../core/types/transaction.types';
 import { Category } from '../../core/types/category.types';
 import { Bill } from '../../core/types/bill.types';
 import { TransactionWithCategory, withCategory } from '../../core/utils/transaction-display.util';
+import { formatDate as formatDateDisplay } from '../../core/utils/date-display.util';
+import {
+  renderTrendChart as buildTrendChart,
+  renderNetWorthChart as buildNetWorthChart,
+  renderCategoryBreakdownChart as buildCategoryBreakdownChart,
+  renderCategoryTrendChart as buildCategoryTrendChart,
+  renderWeekdayChart as buildWeekdayChart
+} from '../../core/utils/dashboard-charts.util';
 import { palette } from '../../theme.tokens';
 
 export interface UpcomingBillDisplay {
@@ -199,20 +207,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private recomputeBudgetProgress(): void {
-    if (this.activeBudget) {
-      const range = this.dashboardService.rangeForPreset(
-        'thisMonth',
-        new Date(),
-        this.budgetTransactions,
-        null,
-        this.periodSettingsService.getStartDay(),
-        this.periodSettingsService.getStartHour()
-      );
-      const thisMonth = this.dashboardService.transactionsInPeriod(this.budgetTransactions, range);
-      this.budgetProgress = this.budgetService.budgetProgress(this.activeBudget, thisMonth);
-    } else {
-      this.budgetProgress = null;
-    }
+    this.budgetProgress = this.budgetService.currentPeriodProgress(this.activeBudget, this.budgetTransactions);
   }
 
   /** Exact matching for boundaries that may carry real hour precision from a marker transaction; whole-day matching for calendar-picker ranges. */
@@ -291,7 +286,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    return new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+    return formatDateDisplay(date);
   }
 
   formatRange(range: DateRange | null): string {
@@ -470,76 +465,9 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     const trendRange: DateRange = { start: range.start, end: range.end > today ? today : range.end };
     const trend = this.dashboardService.trendInRange(this.scopedTransactions, trendRange);
     const colors = palette[this.themeService.theme()];
-    const pointRadius = trend.length > 15 ? 0 : 4;
 
     this.trendChart?.destroy();
-    this.trendChart = new Chart(this.trendCanvasRef.nativeElement, {
-      type: 'line',
-      data: {
-        labels: trend.map((m) => m.monthLabel),
-        datasets: [
-          {
-            label: 'Ingresos',
-            data: trend.map((m) => m.income),
-            borderColor: colors.income,
-            backgroundColor: `${colors.income}1a`,
-            borderWidth: 2,
-            pointRadius,
-            pointHoverRadius: 4,
-            pointBackgroundColor: colors.income,
-            pointBorderColor: colors.surfaceCard,
-            pointBorderWidth: 2,
-            fill: true,
-            tension: 0.3
-          },
-          {
-            label: 'Gastos',
-            data: trend.map((m) => m.expense),
-            borderColor: colors.expense,
-            backgroundColor: `${colors.expense}1a`,
-            borderWidth: 2,
-            pointRadius,
-            pointHoverRadius: 4,
-            pointBackgroundColor: colors.expense,
-            pointBorderColor: colors.surfaceCard,
-            pointBorderWidth: 2,
-            fill: true,
-            tension: 0.3
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: {
-            position: 'top',
-            align: 'end',
-            labels: { color: colors.textSecondary, usePointStyle: true, boxWidth: 8 }
-          },
-          tooltip: {
-            backgroundColor: colors.surfaceCard,
-            titleColor: colors.textPrimary,
-            bodyColor: colors.textPrimary,
-            borderColor: colors.borderSubtle,
-            borderWidth: 1,
-            padding: 10
-          }
-        },
-        scales: {
-          x: {
-            grid: { display: false },
-            ticks: { color: colors.textSecondary }
-          },
-          y: {
-            grid: { color: colors.borderSubtle },
-            ticks: { color: colors.textSecondary },
-            beginAtZero: true
-          }
-        }
-      }
-    });
+    this.trendChart = buildTrendChart(this.trendCanvasRef.nativeElement, trend, colors);
   }
 
   /** Always whole-portfolio, ignoring the account filter — net worth is a total, not a per-account figure. */
@@ -548,115 +476,23 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     const trendRange: DateRange = { start: range.start, end: range.end > today ? today : range.end };
     const trend = this.dashboardService.netWorthTrendInRange(this.allTransactions, this.accounts, trendRange);
     const colors = palette[this.themeService.theme()];
-    const pointRadius = trend.length > 15 ? 0 : 4;
 
     this.netWorthChart?.destroy();
-    this.netWorthChart = new Chart(this.netWorthCanvasRef.nativeElement, {
-      type: 'line',
-      data: {
-        labels: trend.map((p) => p.label),
-        datasets: [
-          {
-            label: 'Patrimonio neto',
-            data: trend.map((p) => p.netWorth),
-            borderColor: colors.accent,
-            backgroundColor: `${colors.accent}1a`,
-            borderWidth: 2,
-            pointRadius,
-            pointHoverRadius: 4,
-            pointBackgroundColor: colors.accent,
-            pointBorderColor: colors.surfaceCard,
-            pointBorderWidth: 2,
-            fill: true,
-            tension: 0.3
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: colors.surfaceCard,
-            titleColor: colors.textPrimary,
-            bodyColor: colors.textPrimary,
-            borderColor: colors.borderSubtle,
-            borderWidth: 1,
-            padding: 10
-          }
-        },
-        scales: {
-          x: {
-            grid: { display: false },
-            ticks: { color: colors.textSecondary }
-          },
-          y: {
-            grid: { color: colors.borderSubtle },
-            ticks: { color: colors.textSecondary }
-          }
-        }
-      }
-    });
+    this.netWorthChart = buildNetWorthChart(this.netWorthCanvasRef.nativeElement, trend, colors);
   }
 
   private renderBreakdownCharts(): void {
+    const colors = palette[this.themeService.theme()];
+
     this.expenseBreakdownChart?.destroy();
     this.expenseBreakdownChart = this.hasExpenseBreakdown
-      ? this.renderCategoryBreakdownChart(this.expenseBreakdownCanvasRef.nativeElement, this.expenseBreakdown)
+      ? buildCategoryBreakdownChart(this.expenseBreakdownCanvasRef.nativeElement, this.expenseBreakdown, colors)
       : null;
 
     this.incomeBreakdownChart?.destroy();
     this.incomeBreakdownChart = this.hasIncomeBreakdown
-      ? this.renderCategoryBreakdownChart(this.incomeBreakdownCanvasRef.nativeElement, this.incomeBreakdown)
+      ? buildCategoryBreakdownChart(this.incomeBreakdownCanvasRef.nativeElement, this.incomeBreakdown, colors)
       : null;
-  }
-
-  private renderCategoryBreakdownChart(canvas: HTMLCanvasElement, entries: CategoryBreakdownEntry[]): Chart {
-    const colors = palette[this.themeService.theme()];
-
-    return new Chart(canvas, {
-      type: 'bar',
-      data: {
-        labels: entries.map((b) => b.categoryName),
-        datasets: [
-          {
-            data: entries.map((b) => b.total),
-            backgroundColor: entries.map((b) => b.categoryColor),
-            borderRadius: 4,
-            barThickness: 20
-          }
-        ]
-      },
-      options: {
-        indexAxis: 'y',
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: colors.surfaceCard,
-            titleColor: colors.textPrimary,
-            bodyColor: colors.textPrimary,
-            borderColor: colors.borderSubtle,
-            borderWidth: 1,
-            padding: 10
-          }
-        },
-        scales: {
-          x: {
-            grid: { color: colors.borderSubtle },
-            ticks: { color: colors.textSecondary },
-            beginAtZero: true
-          },
-          y: {
-            grid: { display: false },
-            ticks: { color: colors.textPrimary }
-          }
-        }
-      }
-    });
   }
 
   private renderCategoryTrendChart(range: DateRange): void {
@@ -671,54 +507,7 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     const trend = this.dashboardService.categoryTrendInRange(this.scopedTransactions, this.categories, trendRange, 5);
     const colors = palette[this.themeService.theme()];
 
-    this.categoryTrendChart = new Chart(this.categoryTrendCanvasRef.nativeElement, {
-      type: 'line',
-      data: {
-        labels: trend.monthLabels,
-        datasets: trend.series.map((s) => ({
-          label: s.categoryName,
-          data: s.totals,
-          borderColor: s.categoryColor,
-          backgroundColor: `${s.categoryColor}1a`,
-          borderWidth: 2,
-          pointRadius: trend.monthLabels.length > 15 ? 0 : 3,
-          pointHoverRadius: 4,
-          pointBackgroundColor: s.categoryColor,
-          tension: 0.3
-        }))
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: {
-            position: 'top',
-            align: 'end',
-            labels: { color: colors.textSecondary, usePointStyle: true, boxWidth: 8 }
-          },
-          tooltip: {
-            backgroundColor: colors.surfaceCard,
-            titleColor: colors.textPrimary,
-            bodyColor: colors.textPrimary,
-            borderColor: colors.borderSubtle,
-            borderWidth: 1,
-            padding: 10
-          }
-        },
-        scales: {
-          x: {
-            grid: { display: false },
-            ticks: { color: colors.textSecondary }
-          },
-          y: {
-            grid: { color: colors.borderSubtle },
-            ticks: { color: colors.textSecondary },
-            beginAtZero: true
-          }
-        }
-      }
-    });
+    this.categoryTrendChart = buildCategoryTrendChart(this.categoryTrendCanvasRef.nativeElement, trend, colors);
   }
 
   private renderWeekdayChart(range: DateRange): void {
@@ -727,45 +516,6 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     const colors = palette[this.themeService.theme()];
 
     this.weekdayChart?.destroy();
-    this.weekdayChart = new Chart(this.weekdayCanvasRef.nativeElement, {
-      type: 'bar',
-      data: {
-        labels: weekdaySpend.map((w) => w.weekdayLabel),
-        datasets: [
-          {
-            data: weekdaySpend.map((w) => w.total),
-            backgroundColor: colors.expense,
-            borderRadius: 4,
-            barThickness: 28
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: colors.surfaceCard,
-            titleColor: colors.textPrimary,
-            bodyColor: colors.textPrimary,
-            borderColor: colors.borderSubtle,
-            borderWidth: 1,
-            padding: 10
-          }
-        },
-        scales: {
-          x: {
-            grid: { display: false },
-            ticks: { color: colors.textSecondary }
-          },
-          y: {
-            grid: { color: colors.borderSubtle },
-            ticks: { color: colors.textSecondary },
-            beginAtZero: true
-          }
-        }
-      }
-    });
+    this.weekdayChart = buildWeekdayChart(this.weekdayCanvasRef.nativeElement, weekdaySpend, colors);
   }
 }

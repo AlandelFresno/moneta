@@ -1,7 +1,11 @@
 import { Injectable } from '@angular/core';
+import { lastValueFrom } from 'rxjs';
 import { Transaction, TransactionType } from '../core/types/transaction.types';
 import { Category, CategoryType } from '../core/types/category.types';
 import { Bill, BillPeriod } from '../core/types/bill.types';
+import { CategoryService } from './category.service';
+import { BillService } from './bill.service';
+import { TransactionService } from './transaction.service';
 
 export interface ParsedCsvRow {
   transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>;
@@ -18,6 +22,15 @@ export interface BillImportResult {
   skippedUnknownCategory: number;
 }
 
+/** Everything a CSV file yielded once new categories/bills are already created — only the transaction rows still need a caller decision (duplicates). */
+export interface CsvImportPlan {
+  rows: ParsedCsvRow[];
+  skippedUnknownCategory: number;
+  createdCategoriesCount: number;
+  createdBillsCount: number;
+  skippedBillsUnknownCategory: number;
+}
+
 const CATEGORIES_HEADER = 'Name,Type,Color,Icon';
 const BILLS_HEADER = 'Name,Description,Category,ApproxAmount,Period,DueDate,Active';
 const TRANSACTIONS_HEADER = 'Date,Type,Category,Name,Amount,Description';
@@ -26,6 +39,48 @@ const TRANSACTIONS_HEADER = 'Date,Type,Category,Name,Amount,Description';
   providedIn: 'root'
 })
 export class CsvService {
+  constructor(
+    private readonly categoryService: CategoryService,
+    private readonly billService: BillService,
+    private readonly transactionService: TransactionService
+  ) {}
+
+  /** Reads a file, creates any new categories/bills it defines, and parses its transaction rows (flagged for duplicates) — everything up to the point where a caller must decide how to handle those duplicates. Propagates read/parse errors as-is for the caller to report. */
+  async prepareImport(file: File, categories: Category[], bills: Bill[], transactions: Transaction[]): Promise<CsvImportPlan> {
+    const lines = await this.readCsvSections(file);
+
+    const newCategories = this.parseNewCategories(lines, categories);
+    const createdCategories: Category[] = [];
+    for (const category of newCategories) {
+      createdCategories.push(await lastValueFrom(this.categoryService.create(category)));
+    }
+
+    const categoriesForMatching = [...categories, ...createdCategories];
+
+    const billResult = this.parseNewBills(lines, categoriesForMatching, bills);
+    let createdBillsCount = 0;
+    for (const bill of billResult.bills) {
+      await lastValueFrom(this.billService.create(bill));
+      createdBillsCount++;
+    }
+
+    const transactionResult = this.parseTransactions(lines, categoriesForMatching, transactions);
+
+    return {
+      rows: transactionResult.rows,
+      skippedUnknownCategory: transactionResult.skippedUnknownCategory,
+      createdCategoriesCount: createdCategories.length,
+      createdBillsCount,
+      skippedBillsUnknownCategory: billResult.skippedUnknownCategory
+    };
+  }
+
+  async createTransactions(rows: ParsedCsvRow[]): Promise<void> {
+    for (const row of rows) {
+      await lastValueFrom(this.transactionService.create(row.transaction));
+    }
+  }
+
   async readCsvSections(file: File): Promise<string[]> {
     const text = await this.readFileAsText(file);
     return text.split('\n').map((line) => line.replace(/\r$/, ''));
