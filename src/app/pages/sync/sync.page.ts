@@ -5,7 +5,7 @@ import { ButtonModule } from 'primeng/button';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
 import { GoogleAuthService, GoogleAuthError } from '../../services/google-auth.service';
-import { DriveSyncService, SyncResult } from '../../services/drive-sync.service';
+import { DriveSyncService, SyncResult, SyncSummaryItem, buildSyncSummary } from '../../services/drive-sync.service';
 import { downloadTextFile, readFileAsText } from '../../core/utils/file-download.util';
 
 @Component({
@@ -28,6 +28,8 @@ export class SyncPage implements OnInit, OnDestroy {
   lastAction: 'pull' | 'push' | 'import' | null = null;
   exporting = false;
   importing = false;
+  cloudPanelOpen = true;
+  filePanelOpen = true;
 
   constructor(
     private readonly googleAuth: GoogleAuthService,
@@ -49,6 +51,34 @@ export class SyncPage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  get summaryItems(): SyncSummaryItem[] {
+    return this.lastResult ? buildSyncSummary(this.lastResult) : [];
+  }
+
+  get summaryTotals(): { added: number; updated: number } {
+    return this.summaryItems.reduce(
+      (totals, item) => ({ added: totals.added + item.added, updated: totals.updated + item.updated }),
+      { added: 0, updated: 0 }
+    );
+  }
+
+  get hasChanges(): boolean {
+    return this.summaryTotals.added > 0 || this.summaryTotals.updated > 0;
+  }
+
+  get resultTitle(): string {
+    switch (this.lastAction) {
+      case 'pull':
+        return 'Datos traídos de Google Drive';
+      case 'push':
+        return 'Datos subidos a Google Drive';
+      case 'import':
+        return 'Datos importados del archivo';
+      default:
+        return 'Resultado de la sincronización';
+    }
   }
 
   private async refreshLastSyncedAt(): Promise<void> {
