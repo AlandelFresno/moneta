@@ -63,25 +63,18 @@ describe('DriveSyncService', () => {
     throw new Error('No matching HTTP request appeared in time');
   }
 
-  const isFolderList = (req: import('@angular/common/http').HttpRequest<unknown>) =>
-    req.url === FILES_URL && req.method === 'GET' && !!req.params.get('q')?.includes('folder');
   const isFileList = (req: import('@angular/common/http').HttpRequest<unknown>) =>
     req.url === FILES_URL && req.method === 'GET' && !!req.params.get('q')?.includes('moneta-sync.json');
   const isDownload = (req: import('@angular/common/http').HttpRequest<unknown>) =>
     req.url === `${FILES_URL}/file-1` && req.method === 'GET';
-  const isCreateFolder = (req: import('@angular/common/http').HttpRequest<unknown>) =>
-    req.url === `${FILES_URL}?fields=id` && req.method === 'POST';
   const isPatchUpload = (req: import('@angular/common/http').HttpRequest<unknown>) =>
     req.url === `${UPLOAD_URL}/file-1?uploadType=media` && req.method === 'PATCH';
 
   async function flushNoExistingSyncFile(): Promise<void> {
-    await expectAndFlush(isFolderList, { files: [] });
-    await expectAndFlush(isCreateFolder, { id: 'folder-1' });
     await expectAndFlush(isFileList, { files: [] });
   }
 
   async function flushExistingSyncFile(remotePayload: object): Promise<void> {
-    await expectAndFlush(isFolderList, { files: [{ id: 'folder-1' }] });
     await expectAndFlush(isFileList, { files: [{ id: 'file-1' }] });
     await expectAndFlush(isDownload, remotePayload);
   }
@@ -149,10 +142,43 @@ describe('DriveSyncService', () => {
     expect(result.categories).toEqual({ added: 0, updated: 0 });
   });
 
+  it('exportToJson() serializes the current local data, deduped, in the same shape as a Drive backup', async () => {
+    await lastValueFrom(categoryService.create({ name: 'Comida', type: 'expense', color: '#f00', icon: 'tag' }));
+
+    const json = await service.exportToJson();
+    const parsed = JSON.parse(json);
+
+    expect(parsed.categories.some((cat: { name: string }) => cat.name === 'Comida')).toBeTrue();
+    expect(parsed.transactions).toEqual([]);
+  });
+
+  it('importFromJson() merges the file into local storage without touching Google Drive', async () => {
+    const backup = JSON.stringify({
+      transactions: [],
+      categories: [],
+      bills: [],
+      budgets: [],
+      accounts: [],
+      transfers: [],
+      goals: [],
+      goalContributions: [],
+      transactionCalculations: []
+    });
+
+    const result = await service.importFromJson(backup);
+
+    expect(result.transactions).toEqual({ added: 0, updated: 0 });
+    httpMock.expectNone(() => true);
+  });
+
+  it('importFromJson() rejects invalid JSON with a friendly error', async () => {
+    await expectAsync(service.importFromJson('not json')).toBeRejectedWithError('El archivo no es un JSON válido.');
+  });
+
   it('invalidates the token and throws a re-auth GoogleAuthError on a 401', async () => {
     const resultPromise = service.pull().catch((err) => err);
 
-    await expectAndFlush(isFolderList, { message: 'unauthorized' }, { status: 401, statusText: 'Unauthorized' });
+    await expectAndFlush(isFileList, { message: 'unauthorized' }, { status: 401, statusText: 'Unauthorized' });
     const thrown = await resultPromise;
 
     expect(auth.invalidateToken).toHaveBeenCalled();
