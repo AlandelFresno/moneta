@@ -9,56 +9,22 @@ import { SelectModule } from 'primeng/select';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
-import {
-  Budget,
-  BudgetAllocation,
-  BudgetGoalAllocation,
-  BudgetProgress,
-  BudgetSuggestMethod,
-  GoalAllocationResolution,
-  PendingGoalRollover
-} from '../../core/types/budget.types';
+import { Budget, BudgetProgress, BudgetSuggestMethod, GoalAllocationResolution, PendingGoalRollover } from '../../core/types/budget.types';
 import { Category } from '../../core/types/category.types';
 import { Transaction } from '../../core/types/transaction.types';
 import { Goal } from '../../core/types/goal.types';
 import { Account } from '../../core/types/account.types';
-import { BudgetService } from '../../services/budget.service';
+import { BudgetService, BudgetFormRow, BudgetFormGoalRow, RolloverForm } from '../../services/budget.service';
 import { CategoryService } from '../../services/category.service';
 import { TransactionService } from '../../services/transaction.service';
 import { GoalService } from '../../services/goal.service';
 import { AccountService } from '../../services/account.service';
-import { DashboardService } from '../../services/dashboard.service';
 import { PeriodSettingsService } from '../../services/period-settings.service';
 import { periodLabelMonth, periodRange, addMonths } from '../../core/utils/period.util';
+import { formatDate as formatDateDisplay, formatMonthLabel as formatMonthLabelDisplay } from '../../core/utils/date-display.util';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { BudgetProgressComponent } from '../../shared/budget-progress/budget-progress.component';
 import { PeriodStartDayComponent } from '../../shared/period-start-day/period-start-day.component';
-
-interface BudgetFormRow {
-  categoryId: string;
-  name: string;
-  color: string;
-  icon: string;
-  historicalTotal: number;
-  included: boolean;
-  amount: number | null;
-}
-
-interface BudgetFormGoalRow {
-  goalId: string;
-  name: string;
-  color: string;
-  icon: string;
-  included: boolean;
-  amount: number | null;
-  accountId: string | null;
-}
-
-interface RolloverForm {
-  action: GoalAllocationResolution;
-  sourceAccountId: string | null;
-  destinationAccountId: string | null;
-}
 
 const EMPTY_ROLLOVER_FORM: RolloverForm = {
   action: 'saved',
@@ -137,7 +103,6 @@ export class BudgetsPage implements OnInit, OnDestroy {
     private readonly transactionService: TransactionService,
     private readonly goalService: GoalService,
     private readonly accountService: AccountService,
-    private readonly dashboardService: DashboardService,
     private readonly periodSettingsService: PeriodSettingsService,
     private readonly confirmationService: ConfirmationService,
     private readonly messageService: MessageService,
@@ -169,21 +134,7 @@ export class BudgetsPage implements OnInit, OnDestroy {
         this.history = this.budgetService.historyBudgets(budgets, reference);
         this.pendingRollovers = this.budgetService.pendingGoalRollovers(budgets, reference);
         this.currentPeriodRange = periodRange(reference, this.periodStartDay, this.periodStartHour, transactions);
-
-        if (this.current) {
-          const range = this.dashboardService.rangeForPreset(
-            'thisMonth',
-            reference,
-            transactions,
-            null,
-            this.periodStartDay,
-            this.periodStartHour
-          );
-          const thisMonth = this.dashboardService.transactionsInPeriod(transactions, range);
-          this.progress = this.budgetService.budgetProgress(this.current, thisMonth);
-        } else {
-          this.progress = null;
-        }
+        this.progress = this.budgetService.currentPeriodProgress(this.current, transactions);
 
         this.cdr.markForCheck();
       });
@@ -197,21 +148,7 @@ export class BudgetsPage implements OnInit, OnDestroy {
     this.upcoming = this.budgetService.upcomingBudget(this.budgets, reference);
     this.history = this.budgetService.historyBudgets(this.budgets, reference);
     this.currentPeriodRange = periodRange(reference, this.periodStartDay, this.periodStartHour, this.allTransactions);
-
-    if (this.current) {
-      const range = this.dashboardService.rangeForPreset(
-        'thisMonth',
-        reference,
-        this.allTransactions,
-        null,
-        this.periodStartDay,
-        this.periodStartHour
-      );
-      const thisMonth = this.dashboardService.transactionsInPeriod(this.allTransactions, range);
-      this.progress = this.budgetService.budgetProgress(this.current, thisMonth);
-    } else {
-      this.progress = null;
-    }
+    this.progress = this.budgetService.currentPeriodProgress(this.current, this.allTransactions);
   }
 
   ngOnDestroy(): void {
@@ -291,62 +228,23 @@ export class BudgetsPage implements OnInit, OnDestroy {
   }
 
   async saveBudget(): Promise<void> {
-    if (this.totalAmount === null || this.totalAmount <= 0) {
-      this.messageService.add({ severity: 'warn', summary: 'Ingresá un monto total válido' });
+    const outcome = await this.budgetService.saveFromRows(this.targetMonth, this.totalAmount, this.rows, this.goalRows);
+
+    if (outcome.status === 'invalid') {
+      this.messageService.add({ severity: 'warn', summary: outcome.summary, detail: outcome.detail });
       return;
     }
 
-    const included = this.rows.filter((row) => row.included);
-    if (included.some((row) => row.amount === null || row.amount < 0)) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Montos incompletos',
-        detail: 'Completá un monto válido para cada categoría seleccionada'
-      });
-      return;
-    }
-
-    const includedGoals = this.goalRows.filter((row) => row.included);
-    if (includedGoals.some((row) => row.amount === null || row.amount <= 0 || !row.accountId)) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Metas incompletas',
-        detail: 'Completá cuenta de origen y un monto válido para cada meta seleccionada'
-      });
-      return;
-    }
-
-    if (this.allocatedSum > this.totalAmount) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Presupuesto sobreasignado',
-        detail: 'La suma de las categorías y metas supera el monto total'
-      });
-      return;
-    }
-
-    const allocations: BudgetAllocation[] = included.map((row) => ({ categoryId: row.categoryId, amount: row.amount! }));
-    const goalAllocations: BudgetGoalAllocation[] = includedGoals.map((row) => ({
-      goalId: row.goalId,
-      accountId: row.accountId!,
-      amount: row.amount!
-    }));
-
-    await lastValueFrom(this.budgetService.save(this.targetMonth, this.totalAmount, allocations, goalAllocations));
     this.messageService.add({ severity: 'success', summary: 'Presupuesto guardado' });
-
     this.dialogVisible = false;
   }
 
   formatMonthLabel(date: Date): string {
-    const label = new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric' }).format(date);
-    return label.charAt(0).toUpperCase() + label.slice(1);
+    return formatMonthLabelDisplay(date);
   }
 
   formatDate(date: Date): string {
-    const base = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
-    if (date.getHours() === 0 && date.getMinutes() === 0) return base;
-    return `${base} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    return formatDateDisplay(date);
   }
 
   private openFormDialog(targetMonth: Date, source: Budget | null): void {
@@ -355,60 +253,13 @@ export class BudgetsPage implements OnInit, OnDestroy {
     this.totalAmount = source?.totalAmount ?? null;
     this.minSpendFilter = 0;
     this.suggestMethod = 'avg3';
-    this.rows = this.buildRows(source?.allocations ?? []);
-    this.goalRows = this.buildGoalRows(source?.goalAllocations ?? []);
+    this.rows = this.budgetService.buildAllocationRows(this.expenseCategories, this.allTransactions, source?.allocations ?? []);
+    this.goalRows = this.budgetService.buildGoalRows(this.goals, source?.goalAllocations ?? []);
     this.dialogVisible = true;
   }
 
   private buildTargetMonthOptions(preferred: Date): { label: string; value: Date }[] {
-    const current = this.currentMonthStart();
-    const next = this.nextMonthStart();
-    const options = [
-      { label: `${this.formatMonthLabel(current)} (este mes)`, value: current },
-      { label: `${this.formatMonthLabel(next)} (el mes que viene)`, value: next }
-    ];
-
-    if (!options.some((opt) => opt.value.getTime() === preferred.getTime())) {
-      options.push({ label: this.formatMonthLabel(preferred), value: preferred });
-    }
-
-    return options;
-  }
-
-  private buildRows(existing: BudgetAllocation[]): BudgetFormRow[] {
-    return this.expenseCategories
-      .map((cat) => {
-        const historicalTotal = this.allTransactions
-          .filter((t) => t.type === 'expense' && t.categoryId === cat.id)
-          .reduce((sum, t) => sum + t.amount, 0);
-        const existingAllocation = existing.find((allocation) => allocation.categoryId === cat.id);
-
-        return {
-          categoryId: cat.id,
-          name: cat.name,
-          color: cat.color,
-          icon: cat.icon,
-          historicalTotal,
-          included: !!existingAllocation,
-          amount: existingAllocation?.amount ?? null
-        };
-      })
-      .sort((a, b) => b.historicalTotal - a.historicalTotal);
-  }
-
-  private buildGoalRows(existing: BudgetGoalAllocation[]): BudgetFormGoalRow[] {
-    return this.goals.map((goal) => {
-      const existingAllocation = existing.find((allocation) => allocation.goalId === goal.id);
-      return {
-        goalId: goal.id,
-        name: goal.name,
-        color: goal.color,
-        icon: goal.icon,
-        included: !!existingAllocation,
-        amount: existingAllocation?.amount ?? null,
-        accountId: existingAllocation?.accountId ?? null
-      };
-    });
+    return this.budgetService.buildTargetMonthOptions(preferred);
   }
 
   private goalName(goalId: string): string {
@@ -443,38 +294,13 @@ export class BudgetsPage implements OnInit, OnDestroy {
 
   async saveRolloverResolution(): Promise<void> {
     if (!this.resolvingRollover) return;
-    const { action, sourceAccountId, destinationAccountId } = this.rolloverForm;
-    const { budget, allocation } = this.resolvingRollover;
 
-    if (action !== 'kept' && !sourceAccountId) {
-      this.messageService.add({ severity: 'warn', summary: 'Elegí de qué cuenta sale el dinero' });
+    const outcome = await this.budgetService.resolveRollover(this.resolvingRollover, this.rolloverForm);
+
+    if (outcome.status === 'invalid') {
+      this.messageService.add({ severity: 'warn', summary: outcome.summary });
       return;
     }
-    if (action === 'transferred' && (!destinationAccountId || destinationAccountId === sourceAccountId)) {
-      this.messageService.add({ severity: 'warn', summary: 'Elegí una cuenta de destino distinta' });
-      return;
-    }
-
-    const description = `Rollover presupuesto ${this.formatMonthLabel(budget.month)} — ${this.goalName(allocation.goalId)}`;
-
-    if (action === 'transferred') {
-      await lastValueFrom(
-        this.accountService.transfer(sourceAccountId!, destinationAccountId!, allocation.amount, new Date(), description)
-      );
-    } else if (action === 'saved') {
-      this.accountService.adjustBalance(sourceAccountId!, -allocation.amount);
-      await lastValueFrom(this.goalService.contribute(allocation.goalId, allocation.amount, new Date(), description));
-    }
-
-    await lastValueFrom(
-      this.budgetService.markGoalAllocationResolved(
-        budget.id,
-        allocation.goalId,
-        action,
-        action === 'kept' ? allocation.accountId : sourceAccountId!,
-        action === 'transferred' ? destinationAccountId! : undefined
-      )
-    );
 
     this.messageService.add({ severity: 'success', summary: 'Rollover resuelto' });
     this.rolloverDialogVisible = false;

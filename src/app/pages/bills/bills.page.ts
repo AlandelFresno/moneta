@@ -311,19 +311,7 @@ export class BillsPage implements OnInit, OnDestroy {
       return;
     }
 
-    const paidDate = new Date();
-    const transaction = await lastValueFrom(
-      this.transactionService.create({
-        categoryId: this.payingBill.categoryId,
-        type: 'expense',
-        name: this.payingBill.name,
-        description: this.payingBill.description || `Pago de servicio: ${this.payingBill.name}`,
-        amount: this.payAmount,
-        date: paidDate
-      })
-    );
-
-    await lastValueFrom(this.billService.recordPayment(this.payingBill.id, this.payAmount, transaction.id, paidDate));
+    await this.billService.payBill(this.payingBill, this.payAmount, new Date());
 
     this.messageService.add({ severity: 'success', summary: 'Pago registrado', detail: 'Se creó la transacción correspondiente' });
     this.payDialogVisible = false;

@@ -39,6 +39,24 @@
     </div>
   </div>
 
+  <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle mb-4">
+    <div class="flex items-center justify-between gap-3 mb-1">
+      <div>
+        <h2 class="text-sm font-semibold text-text-primary">Exportar datos</h2>
+        <p class="text-xs text-text-secondary mt-0.5">Descargá todos tus datos en un archivo .json.</p>
+      </div>
+      <p-button label="Exportar" icon="pi pi-download" [loading]="exporting" (onClick)="exportJson()" />
+    </div>
+    <div class="flex items-center justify-between gap-3 pt-4 mt-4 border-t border-border-subtle">
+      <div>
+        <h2 class="text-sm font-semibold text-text-primary">Importar datos</h2>
+        <p class="text-xs text-text-secondary mt-0.5">Combiná un archivo .json exportado previamente con tus datos locales.</p>
+      </div>
+      <p-button label="Importar" icon="pi pi-upload" [loading]="importing" (onClick)="fileInput.click()" />
+    </div>
+    <input #fileInput type="file" accept="application/json" class="hidden" (change)="onImportFileSelected($event)" />
+  </div>
+
   @if (signedIn) {
     <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle mb-4">
       <div class="flex items-center justify-between gap-3 mb-1">
@@ -55,45 +73,45 @@
         </div>
         <p-button label="Subir" icon="pi pi-upload" [loading]="pushing" [disabled]="pulling" (onClick)="push()" />
       </div>
+    </div>
+  }
 
-      @if (lastResult) {
-        <div class="mt-4 pt-4 border-t border-border-subtle flex flex-col gap-1.5 text-xs text-text-secondary">
-          <div class="flex items-center justify-between">
-            <span>Transacciones</span>
-            <span class="font-medium text-text-primary">+{{ lastResult.transactions.added }} / ±{{ lastResult.transactions.updated }}</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span>Categorías</span>
-            <span class="font-medium text-text-primary">+{{ lastResult.categories.added }} / ±{{ lastResult.categories.updated }}</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span>Servicios</span>
-            <span class="font-medium text-text-primary">+{{ lastResult.bills.added }} / ±{{ lastResult.bills.updated }}</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span>Presupuestos</span>
-            <span class="font-medium text-text-primary">+{{ lastResult.budgets.added }} / ±{{ lastResult.budgets.updated }}</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span>Cuentas</span>
-            <span class="font-medium text-text-primary">+{{ lastResult.accounts.added }} / ±{{ lastResult.accounts.updated }}</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span>Transferencias</span>
-            <span class="font-medium text-text-primary">+{{ lastResult.transfers.added }} / ±{{ lastResult.transfers.updated }}</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span>Metas</span>
-            <span class="font-medium text-text-primary">+{{ lastResult.goals.added }} / ±{{ lastResult.goals.updated }}</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span>Aportes</span>
-            <span class="font-medium text-text-primary">
-              +{{ lastResult.goalContributions.added }} / ±{{ lastResult.goalContributions.updated }}
-            </span>
-          </div>
-        </div>
-      }
+  @if (lastResult) {
+    <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle mb-4 flex flex-col gap-1.5 text-xs text-text-secondary">
+      <div class="flex items-center justify-between">
+        <span>Transacciones</span>
+        <span class="font-medium text-text-primary">+{{ lastResult.transactions.added }} / ±{{ lastResult.transactions.updated }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span>Categorías</span>
+        <span class="font-medium text-text-primary">+{{ lastResult.categories.added }} / ±{{ lastResult.categories.updated }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span>Servicios</span>
+        <span class="font-medium text-text-primary">+{{ lastResult.bills.added }} / ±{{ lastResult.bills.updated }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span>Presupuestos</span>
+        <span class="font-medium text-text-primary">+{{ lastResult.budgets.added }} / ±{{ lastResult.budgets.updated }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span>Cuentas</span>
+        <span class="font-medium text-text-primary">+{{ lastResult.accounts.added }} / ±{{ lastResult.accounts.updated }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span>Transferencias</span>
+        <span class="font-medium text-text-primary">+{{ lastResult.transfers.added }} / ±{{ lastResult.transfers.updated }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span>Metas</span>
+        <span class="font-medium text-text-primary">+{{ lastResult.goals.added }} / ±{{ lastResult.goals.updated }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span>Aportes</span>
+        <span class="font-medium text-text-primary">
+          +{{ lastResult.goalContributions.added }} / ±{{ lastResult.goalContributions.updated }}
+        </span>
+      </div>
     </div>
   }
 

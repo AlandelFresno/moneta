@@ -1,9 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { TransactionService } from './transaction.service';
+import { TransactionService, TransactionFormInput } from './transaction.service';
 import { AccountService } from './account.service';
+import { TransactionCalculationService } from './transaction-calculation.service';
 import { Transaction } from '../core/types/transaction.types';
+
+function freshTransactionService(): TransactionService {
+  return new TransactionService(new AccountService(), new TransactionCalculationService());
+}
 
 const CATEGORY_A = 'cat-groceries';
 const CATEGORY_B = 'cat-salary';
@@ -127,7 +132,7 @@ describe('TransactionService', () => {
   it('persists transactions across service instances via localStorage', async () => {
     await firstValueFrom(service.create(txnInput({ name: 'Persistente' })));
 
-    const fresh = new TransactionService(new AccountService());
+    const fresh = freshTransactionService();
     const all = await firstValueFrom(fresh.getAll());
     expect(all.some((t) => t.name === 'Persistente')).toBeTrue();
   });
@@ -135,7 +140,7 @@ describe('TransactionService', () => {
   it('restores Date objects for date/createdAt/updatedAt after reload from storage', async () => {
     await firstValueFrom(service.create(txnInput()));
 
-    const fresh = new TransactionService(new AccountService());
+    const fresh = freshTransactionService();
     const all = await firstValueFrom(fresh.getAll());
     expect(all[0].date).toEqual(jasmine.any(Date));
     expect(all[0].createdAt).toEqual(jasmine.any(Date));
@@ -295,6 +300,148 @@ describe('TransactionService', () => {
 
       const all = await firstValueFrom(accountService.getAll());
       expect(all.find((acc) => acc.id === account.id)?.balance).toBe(900);
+    });
+  });
+
+  describe('saveFromForm', () => {
+    function formInput(overrides: Partial<TransactionFormInput> = {}): TransactionFormInput {
+      return {
+        id: null,
+        categoryId: CATEGORY_A,
+        accountId: null,
+        type: 'expense',
+        name: 'Compra',
+        description: '',
+        amount: 100,
+        date: new Date(2026, 0, 15),
+        isSplit: false,
+        splitGroupId: null,
+        splitLines: [],
+        calculatorExpression: null,
+        isPeriodStart: false,
+        ...overrides
+      };
+    }
+
+    it('rejects a blank name before checking anything else', async () => {
+      const outcome = await service.saveFromForm(formInput({ name: '', categoryId: '' }), 1);
+      expect(outcome).toEqual({ status: 'invalid', detail: 'Ingresá un nombre' });
+    });
+
+    it('rejects a non-split save with no category or a non-positive amount', async () => {
+      expect(await service.saveFromForm(formInput({ categoryId: '' }), 1)).toEqual({
+        status: 'invalid',
+        detail: 'Completá categoría, nombre y un monto válido'
+      });
+      expect(await service.saveFromForm(formInput({ amount: 0 }), 1)).toEqual({
+        status: 'invalid',
+        detail: 'Completá categoría, nombre y un monto válido'
+      });
+    });
+
+    it('creates a new transaction and reports it as created', async () => {
+      const outcome = await service.saveFromForm(formInput({ name: 'Super' }), 1);
+      expect(outcome).toEqual({ status: 'saved', summary: 'Transacción creada' });
+
+      const all = await firstValueFrom(service.getAll());
+      expect(all.some((t) => t.name === 'Super' && t.amount === 100)).toBeTrue();
+    });
+
+    it('updates an existing transaction in place and reports it as updated', async () => {
+      const created = await firstValueFrom(service.create(txnInput({ name: 'Original' })));
+
+      const outcome = await service.saveFromForm(formInput({ id: created.id, name: 'Editado' }), 1);
+
+      expect(outcome).toEqual({ status: 'saved', summary: 'Transacción actualizada' });
+      const all = await firstValueFrom(service.getAll());
+      expect(all.length).toBe(1);
+      expect(all[0].name).toBe('Editado');
+    });
+
+    it('replaces the old split-group lines when a split transaction is edited back down to a single line', async () => {
+      const groupId = 'g1';
+      const lineA = await firstValueFrom(service.create(txnInput({ name: 'Línea A', splitGroupId: groupId })));
+      await firstValueFrom(service.create(txnInput({ name: 'Línea B', splitGroupId: groupId })));
+
+      await service.saveFromForm(formInput({ id: lineA.id, splitGroupId: groupId, name: 'Unificada', amount: 300 }), 1);
+
+      const all = await firstValueFrom(service.getAll());
+      expect(all.length).toBe(1);
+      expect(all[0].name).toBe('Unificada');
+      expect(all[0].amount).toBe(300);
+    });
+
+    it('persists the calculator expression alongside a new transaction', async () => {
+      const transactionCalculationService = TestBed.inject(TransactionCalculationService);
+
+      const outcome = await service.saveFromForm(formInput({ calculatorExpression: '50 + 50' }), 1);
+      expect(outcome.status).toBe('saved');
+
+      const all = await firstValueFrom(service.getAll());
+      const created = all[0];
+      const calculations = await firstValueFrom(transactionCalculationService.getAll());
+      expect(calculations.some((c) => c.transactionId === created.id && c.expression === '50 + 50')).toBeTrue();
+    });
+
+    it('clears a conflicting period-start marker in the same nominal period when a new one is saved', async () => {
+      const oldMarker = await firstValueFrom(
+        service.create(txnInput({ type: 'income', isPeriodStart: true, date: new Date(2026, 0, 6, 9, 0) }))
+      );
+
+      await service.saveFromForm(
+        formInput({ type: 'income', isPeriodStart: true, date: new Date(2026, 0, 20), name: 'Nuevo cobro' }),
+        1
+      );
+
+      const all = await firstValueFrom(service.getAll());
+      expect(all.find((t) => t.id === oldMarker.id)?.isPeriodStart).toBeFalse();
+      expect(all.find((t) => t.name === 'Nuevo cobro')?.isPeriodStart).toBeTrue();
+    });
+
+    describe('split transactions', () => {
+      function splitFormInput(overrides: Partial<TransactionFormInput> = {}): TransactionFormInput {
+        return formInput({
+          isSplit: true,
+          categoryId: '',
+          amount: null,
+          splitLines: [
+            { categoryId: CATEGORY_A, amount: 60 },
+            { categoryId: CATEGORY_B, amount: 40 }
+          ],
+          ...overrides
+        });
+      }
+
+      it('rejects a split with fewer than 2 valid lines', async () => {
+        const outcome = await service.saveFromForm(
+          splitFormInput({ splitLines: [{ categoryId: CATEGORY_A, amount: 100 }] }),
+          1
+        );
+        expect(outcome).toEqual({ status: 'invalid', detail: 'Agregá al menos 2 líneas con categoría y monto' });
+      });
+
+      it('creates one transaction per valid line, sharing a new split group id', async () => {
+        const outcome = await service.saveFromForm(splitFormInput(), 1);
+        expect(outcome).toEqual({ status: 'saved', summary: 'Transacción dividida creada' });
+
+        const all = await firstValueFrom(service.getAll());
+        expect(all.length).toBe(2);
+        expect(all[0].splitGroupId).toBeTruthy();
+        expect(all[0].splitGroupId).toBe(all[1].splitGroupId);
+      });
+
+      it('replaces every existing line of the group when an existing split is edited', async () => {
+        const groupId = 'existing-group';
+        await firstValueFrom(service.create(txnInput({ name: 'Vieja A', splitGroupId: groupId })));
+        await firstValueFrom(service.create(txnInput({ name: 'Vieja B', splitGroupId: groupId })));
+
+        const outcome = await service.saveFromForm(splitFormInput({ splitGroupId: groupId }), 1);
+
+        expect(outcome).toEqual({ status: 'saved', summary: 'Transacción actualizada' });
+        const all = await firstValueFrom(service.getAll());
+        expect(all.length).toBe(2);
+        expect(all.some((t) => t.name === 'Vieja A')).toBeFalse();
+      });
     });
   });
 });

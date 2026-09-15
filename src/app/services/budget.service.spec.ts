@@ -1,10 +1,50 @@
 import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { BudgetService } from './budget.service';
+import { BudgetService, BudgetFormRow, BudgetFormGoalRow } from './budget.service';
 import { PeriodSettingsService } from './period-settings.service';
-import { Budget } from '../core/types/budget.types';
+import { DashboardService } from './dashboard.service';
+import { AccountService } from './account.service';
+import { GoalService } from './goal.service';
+import { Budget, PendingGoalRollover } from '../core/types/budget.types';
 import { Transaction } from '../core/types/transaction.types';
+import { Category } from '../core/types/category.types';
+import { Goal } from '../core/types/goal.types';
+
+function makeCategory(overrides: Partial<Category> = {}): Category {
+  return {
+    id: `cat-${Math.random()}`,
+    name: 'Almacén',
+    type: 'expense',
+    color: '#f00',
+    icon: 'tag',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides
+  };
+}
+
+function makeGoal(overrides: Partial<Goal> = {}): Goal {
+  return {
+    id: `goal-${Math.random()}`,
+    name: 'Viaje',
+    targetAmount: 1000,
+    currentAmount: 0,
+    color: '#0f0',
+    icon: 'plane',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides
+  };
+}
+
+function makeRow(overrides: Partial<BudgetFormRow> = {}): BudgetFormRow {
+  return { categoryId: 'cat-1', name: 'Almacén', color: '#f00', icon: 'tag', historicalTotal: 0, included: true, amount: 100, ...overrides };
+}
+
+function makeGoalRow(overrides: Partial<BudgetFormGoalRow> = {}): BudgetFormGoalRow {
+  return { goalId: 'goal-1', name: 'Viaje', color: '#0f0', icon: 'plane', included: true, amount: 100, accountId: 'acc-1', ...overrides };
+}
 
 function makeTransaction(overrides: Partial<Transaction> = {}): Transaction {
   return {
@@ -119,7 +159,7 @@ describe('BudgetService', () => {
     it('persists across service instances via localStorage', async () => {
       await firstValueFrom(service.save(new Date(2026, 2, 15), 12345, []));
 
-      const fresh = new BudgetService(new PeriodSettingsService());
+      const fresh = new BudgetService(new PeriodSettingsService(), new DashboardService(), new AccountService(), new GoalService());
       const all = await firstValueFrom(fresh.getAll());
       expect(all.some((b) => b.totalAmount === 12345)).toBeTrue();
     });
@@ -365,6 +405,222 @@ describe('BudgetService', () => {
       const all = await firstValueFrom(service.getAll());
       const months = all.map((b) => b.month.getTime()).sort();
       expect(months).toEqual([new Date(2026, 5, 1).getTime(), new Date(2026, 6, 1).getTime(), new Date(2026, 7, 1).getTime()]);
+    });
+  });
+
+  describe('buildAllocationRows', () => {
+    it('builds a row per expense category, sorted by historical spend descending', () => {
+      const cheap = makeCategory({ id: 'cat-1', name: 'Poco gasto' });
+      const pricey = makeCategory({ id: 'cat-2', name: 'Mucho gasto' });
+      const transactions = [
+        makeTransaction({ categoryId: 'cat-1', type: 'expense', amount: 50 }),
+        makeTransaction({ categoryId: 'cat-2', type: 'expense', amount: 900 })
+      ];
+
+      const rows = service.buildAllocationRows([cheap, pricey], transactions, []);
+
+      expect(rows.length).toBe(2);
+      expect(rows[0].categoryId).toBe('cat-2');
+      expect(rows[0].historicalTotal).toBe(900);
+      expect(rows[1].categoryId).toBe('cat-1');
+    });
+
+    it('ignores income transactions when totaling historical spend', () => {
+      const cat = makeCategory({ id: 'cat-1' });
+      const transactions = [makeTransaction({ categoryId: 'cat-1', type: 'income', amount: 5000 })];
+
+      const rows = service.buildAllocationRows([cat], transactions, []);
+      expect(rows[0].historicalTotal).toBe(0);
+    });
+
+    it('pre-checks and pre-fills a row from an existing allocation', () => {
+      const cat = makeCategory({ id: 'cat-1' });
+
+      const rows = service.buildAllocationRows([cat], [], [{ categoryId: 'cat-1', amount: 300 }]);
+
+      expect(rows[0].included).toBeTrue();
+      expect(rows[0].amount).toBe(300);
+    });
+  });
+
+  describe('buildGoalRows', () => {
+    it('builds one row per goal, pre-checked and pre-filled from an existing goal allocation', () => {
+      const goal = makeGoal({ id: 'goal-1' });
+
+      const rows = service.buildGoalRows([goal], [{ goalId: 'goal-1', accountId: 'acc-1', amount: 150 }]);
+
+      expect(rows.length).toBe(1);
+      expect(rows[0].included).toBeTrue();
+      expect(rows[0].amount).toBe(150);
+      expect(rows[0].accountId).toBe('acc-1');
+    });
+
+    it('leaves a goal with no existing allocation unchecked', () => {
+      const goal = makeGoal({ id: 'goal-1' });
+      const rows = service.buildGoalRows([goal], []);
+      expect(rows[0].included).toBeFalse();
+      expect(rows[0].amount).toBeNull();
+    });
+  });
+
+  describe('buildTargetMonthOptions', () => {
+    it('offers this month and next month by default', () => {
+      const reference = new Date(2026, 5, 15);
+      const options = service.buildTargetMonthOptions(new Date(2026, 5, 1), reference);
+
+      expect(options.length).toBe(2);
+      expect(options[0].value).toEqual(new Date(2026, 5, 1));
+      expect(options[1].value).toEqual(new Date(2026, 6, 1));
+    });
+
+    it('adds a third option when preferred is neither this month nor next (e.g. period start day changed since saving)', () => {
+      const reference = new Date(2026, 5, 15);
+      const preferred = new Date(2026, 8, 1);
+
+      const options = service.buildTargetMonthOptions(preferred, reference);
+
+      expect(options.length).toBe(3);
+      expect(options[2].value).toEqual(preferred);
+    });
+  });
+
+  describe('saveFromRows', () => {
+    it('rejects a missing or non-positive total amount', async () => {
+      expect(await service.saveFromRows(new Date(2026, 0, 1), null, [], [])).toEqual({
+        status: 'invalid',
+        summary: 'Ingresá un monto total válido'
+      });
+      expect(await service.saveFromRows(new Date(2026, 0, 1), 0, [], [])).toEqual({
+        status: 'invalid',
+        summary: 'Ingresá un monto total válido'
+      });
+    });
+
+    it('rejects an included row with no amount or a negative amount', async () => {
+      const outcome = await service.saveFromRows(new Date(2026, 0, 1), 500, [makeRow({ amount: null })], []);
+      expect(outcome).toEqual({
+        status: 'invalid',
+        summary: 'Montos incompletos',
+        detail: 'Completá un monto válido para cada categoría seleccionada'
+      });
+    });
+
+    it('rejects an included goal row missing an account or a valid amount', async () => {
+      const outcome = await service.saveFromRows(new Date(2026, 0, 1), 500, [], [makeGoalRow({ accountId: null })]);
+      expect(outcome).toEqual({
+        status: 'invalid',
+        summary: 'Metas incompletas',
+        detail: 'Completá cuenta de origen y un monto válido para cada meta seleccionada'
+      });
+    });
+
+    it('rejects when allocated categories + goals exceed the total amount', async () => {
+      const outcome = await service.saveFromRows(new Date(2026, 0, 1), 100, [makeRow({ amount: 80 })], [makeGoalRow({ amount: 50 })]);
+      expect(outcome).toEqual({
+        status: 'invalid',
+        summary: 'Presupuesto sobreasignado',
+        detail: 'La suma de las categorías y metas supera el monto total'
+      });
+    });
+
+    it('saves only the included rows as allocations/goal allocations', async () => {
+      const rows = [makeRow({ categoryId: 'cat-1', amount: 200, included: true }), makeRow({ categoryId: 'cat-2', included: false })];
+      const goalRows = [makeGoalRow({ goalId: 'goal-1', amount: 100, included: true })];
+
+      const outcome = await service.saveFromRows(new Date(2026, 0, 1), 500, rows, goalRows);
+      expect(outcome).toEqual({ status: 'saved' });
+
+      const all = await firstValueFrom(service.getAll());
+      expect(all[0].allocations).toEqual([{ categoryId: 'cat-1', amount: 200 }]);
+      expect(all[0].goalAllocations).toEqual([{ goalId: 'goal-1', accountId: 'acc-1', amount: 100 }]);
+    });
+  });
+
+  describe('resolveRollover', () => {
+    function pendingRollover(overrides: Partial<PendingGoalRollover['allocation']> = {}): PendingGoalRollover {
+      return {
+        budget: {
+          id: 'b1',
+          month: new Date(2026, 0, 1),
+          totalAmount: 500,
+          allocations: [],
+          goalAllocations: [],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        allocation: { goalId: 'goal-1', accountId: 'acc-1', amount: 200, ...overrides }
+      };
+    }
+
+    it('rejects a non-kept action with no source account', async () => {
+      const outcome = await service.resolveRollover(pendingRollover(), { action: 'saved', sourceAccountId: null, destinationAccountId: null });
+      expect(outcome).toEqual({ status: 'invalid', summary: 'Elegí de qué cuenta sale el dinero' });
+    });
+
+    it('rejects a transfer with no destination, or the same account as source and destination', async () => {
+      const outcome = await service.resolveRollover(pendingRollover(), {
+        action: 'transferred',
+        sourceAccountId: 'acc-1',
+        destinationAccountId: 'acc-1'
+      });
+      expect(outcome).toEqual({ status: 'invalid', summary: 'Elegí una cuenta de destino distinta' });
+    });
+
+    it('transfers the amount between accounts and marks the allocation resolved', async () => {
+      const accountService = TestBed.inject(AccountService);
+      const from = await firstValueFrom(accountService.create({ name: 'Efectivo', type: 'cash', balance: 1000, color: '#10b981', icon: 'wallet' }));
+      const to = await firstValueFrom(accountService.create({ name: 'Banco', type: 'bank', balance: 200, color: '#3b82f6', icon: 'building' }));
+      const created = await firstValueFrom(
+        service.save(new Date(2026, 0, 1), 500, [], [{ goalId: 'goal-1', accountId: from.id, amount: 200 }])
+      );
+      const pending: PendingGoalRollover = { budget: created, allocation: created.goalAllocations[0] };
+
+      const outcome = await service.resolveRollover(pending, { action: 'transferred', sourceAccountId: from.id, destinationAccountId: to.id });
+      expect(outcome).toEqual({ status: 'resolved' });
+
+      const accounts = await firstValueFrom(accountService.getAll());
+      expect(accounts.find((a) => a.id === from.id)?.balance).toBe(800);
+      expect(accounts.find((a) => a.id === to.id)?.balance).toBe(400);
+
+      const all = await firstValueFrom(service.getAll());
+      const allocation = all[0].goalAllocations[0];
+      expect(allocation.resolution).toBe('transferred');
+      expect(allocation.destinationAccountId).toBe(to.id);
+    });
+
+    it('debits the source account and contributes to the goal when saved', async () => {
+      const accountService = TestBed.inject(AccountService);
+      const goalService = TestBed.inject(GoalService);
+      const account = await firstValueFrom(accountService.create({ name: 'Efectivo', type: 'cash', balance: 1000, color: '#10b981', icon: 'wallet' }));
+      const goal = await firstValueFrom(goalService.create({ name: 'Viaje', targetAmount: 1000, currentAmount: 0, color: '#0f0', icon: 'plane' }));
+      const created = await firstValueFrom(
+        service.save(new Date(2026, 0, 1), 500, [], [{ goalId: goal.id, accountId: account.id, amount: 300 }])
+      );
+      const pending: PendingGoalRollover = { budget: created, allocation: created.goalAllocations[0] };
+
+      const outcome = await service.resolveRollover(pending, { action: 'saved', sourceAccountId: account.id, destinationAccountId: null });
+      expect(outcome).toEqual({ status: 'resolved' });
+
+      const accounts = await firstValueFrom(accountService.getAll());
+      expect(accounts.find((a) => a.id === account.id)?.balance).toBe(700);
+
+      const goals = await firstValueFrom(goalService.getAll());
+      expect(goals.find((g) => g.id === goal.id)?.currentAmount).toBe(300);
+    });
+
+    it('leaves account/goal balances untouched when kept, only marking the allocation resolved', async () => {
+      const created = await firstValueFrom(
+        service.save(new Date(2026, 0, 1), 500, [], [{ goalId: 'goal-1', accountId: 'acc-1', amount: 200 }])
+      );
+      const pending: PendingGoalRollover = { budget: created, allocation: created.goalAllocations[0] };
+
+      const outcome = await service.resolveRollover(pending, { action: 'kept', sourceAccountId: null, destinationAccountId: null });
+      expect(outcome).toEqual({ status: 'resolved' });
+
+      const all = await firstValueFrom(service.getAll());
+      const allocation = all[0].goalAllocations[0];
+      expect(allocation.resolution).toBe('kept');
+      expect(allocation.resolvedAccountId).toBe('acc-1');
     });
   });
 });

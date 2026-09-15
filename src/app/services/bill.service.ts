@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, map } from 'rxjs';
+import { BehaviorSubject, Observable, map, lastValueFrom } from 'rxjs';
 import { Bill, BillPayment, BillPeriod } from '../core/types/bill.types';
+import { Transaction } from '../core/types/transaction.types';
+import { TransactionService } from './transaction.service';
 
 interface StoredBillPayment extends Omit<BillPayment, 'paidDate'> {
   paidDate: string;
@@ -52,6 +54,8 @@ export class BillService {
   private readonly storageKey = 'bills';
   private readonly allSubject = new BehaviorSubject<Bill[]>(this.loadAll());
   readonly bills$: Observable<Bill[]> = this.allSubject.pipe(map((bills) => bills.filter((bill) => !bill.deletedAt)));
+
+  constructor(private readonly transactionService: TransactionService) {}
 
   private loadAll(): Bill[] {
     const raw = localStorage.getItem(this.storageKey);
@@ -143,6 +147,23 @@ export class BillService {
       subscriber.next();
       subscriber.complete();
     });
+  }
+
+  /** Records a bill payment as an expense transaction, then links that transaction to the bill. The one payment workflow, used from both the Bills and Transactions pages. */
+  async payBill(bill: Bill, amount: number, paidDate: Date): Promise<Transaction> {
+    const transaction = await lastValueFrom(
+      this.transactionService.create({
+        categoryId: bill.categoryId,
+        type: 'expense',
+        name: bill.name,
+        description: bill.description || `Pago de servicio: ${bill.name}`,
+        amount,
+        date: paidDate
+      })
+    );
+
+    await lastValueFrom(this.recordPayment(bill.id, amount, transaction.id, paidDate));
+    return transaction;
   }
 
   /**

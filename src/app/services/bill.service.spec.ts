@@ -2,6 +2,9 @@ import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { BillService } from './bill.service';
+import { TransactionService } from './transaction.service';
+import { AccountService } from './account.service';
+import { TransactionCalculationService } from './transaction-calculation.service';
 import { Bill } from '../core/types/bill.types';
 
 function makeBill(overrides: Partial<Bill> = {}): Bill {
@@ -291,7 +294,7 @@ describe('BillService', () => {
         })
       );
 
-      const fresh = new BillService();
+      const fresh = new BillService(new TransactionService(new AccountService(), new TransactionCalculationService()));
       const all = await firstValueFrom(fresh.getAll());
       expect(all.some((b) => b.name === 'Persistente')).toBeTrue();
     });
@@ -396,6 +399,55 @@ describe('BillService', () => {
       const raw = JSON.parse(localStorage.getItem('bills')!);
       expect(raw.length).toBe(1);
       expect(raw[0].name).toBe('Reemplazado');
+    });
+  });
+
+  describe('payBill', () => {
+    it('creates an expense transaction for the bill and links it via recordPayment', async () => {
+      const transactionService = TestBed.inject(TransactionService);
+      const created = await firstValueFrom(
+        service.create({
+          name: 'Internet',
+          description: '',
+          categoryId: 'cat-1',
+          approxAmount: 5000,
+          period: 'monthly',
+          dueDate: new Date(2026, 0, 10),
+          active: true
+        })
+      );
+
+      const paidDate = new Date(2026, 0, 9);
+      const transaction = await service.payBill(created, 4800, paidDate);
+
+      expect(transaction.type).toBe('expense');
+      expect(transaction.categoryId).toBe('cat-1');
+      expect(transaction.amount).toBe(4800);
+
+      const allTransactions = await firstValueFrom(transactionService.getAll());
+      expect(allTransactions.some((t) => t.id === transaction.id)).toBeTrue();
+
+      const bill = (await firstValueFrom(service.getAll())).find((b) => b.id === created.id)!;
+      expect(bill.payments.length).toBe(1);
+      expect(bill.payments[0].transactionId).toBe(transaction.id);
+      expect(bill.payments[0].amount).toBe(4800);
+    });
+
+    it('falls back to a generic description when the bill has none', async () => {
+      const created = await firstValueFrom(
+        service.create({
+          name: 'Netflix',
+          description: '',
+          categoryId: 'cat-1',
+          approxAmount: 3000,
+          period: 'monthly',
+          dueDate: new Date(2026, 0, 10),
+          active: true
+        })
+      );
+
+      const transaction = await service.payBill(created, 3000, new Date());
+      expect(transaction.description).toBe('Pago de servicio: Netflix');
     });
   });
 });

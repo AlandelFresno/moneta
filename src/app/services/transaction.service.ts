@@ -1,7 +1,10 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, map } from 'rxjs';
+import { BehaviorSubject, Observable, map, lastValueFrom } from 'rxjs';
 import { Transaction, TransactionType } from '../core/types/transaction.types';
 import { AccountService } from './account.service';
+import { TransactionCalculationService } from './transaction-calculation.service';
+import { periodStart } from '../core/utils/period.util';
+import { SplitLine, validSplitLines } from '../core/utils/split-lines.util';
 
 export interface StoredTransaction extends Omit<Transaction, 'date' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
   date: string;
@@ -30,6 +33,24 @@ export function fromTransaction(txn: Transaction): StoredTransaction {
   };
 }
 
+export interface TransactionFormInput {
+  id: string | null;
+  categoryId: string;
+  accountId: string | null;
+  type: TransactionType;
+  name: string;
+  description: string;
+  amount: number | null;
+  date: Date;
+  isSplit: boolean;
+  splitGroupId: string | null;
+  splitLines: SplitLine[];
+  calculatorExpression: string | null;
+  isPeriodStart: boolean;
+}
+
+export type TransactionSaveOutcome = { status: 'invalid'; detail: string } | { status: 'saved'; summary: string };
+
 @Injectable({
   providedIn: 'root'
 })
@@ -40,7 +61,10 @@ export class TransactionService {
     map((transactions) => transactions.filter((txn) => !txn.deletedAt))
   );
 
-  constructor(private readonly accountService: AccountService) {}
+  constructor(
+    private readonly accountService: AccountService,
+    private readonly transactionCalculationService: TransactionCalculationService
+  ) {}
 
   private loadAll(): Transaction[] {
     const raw = localStorage.getItem(this.storageKey);
@@ -192,6 +216,126 @@ export class TransactionService {
       subscriber.next();
       subscriber.complete();
     });
+  }
+
+  /** Validates and saves a transaction form (single or split), including calculator-expression persistence and period-marker conflict resolution. Returns why it was rejected, or the toast summary to show on success. */
+  async saveFromForm(form: TransactionFormInput, periodStartDay: number): Promise<TransactionSaveOutcome> {
+    if (!form.name) {
+      return { status: 'invalid', detail: 'Ingresá un nombre' };
+    }
+
+    if (form.isSplit) {
+      return this.saveSplitFromForm(form);
+    }
+
+    if (!form.categoryId || form.amount === null || form.amount <= 0) {
+      return { status: 'invalid', detail: 'Completá categoría, nombre y un monto válido' };
+    }
+
+    let formId = form.id;
+    // Editing a transaction that used to be split, now saved as a single line: drop the old group first.
+    if (form.splitGroupId) {
+      const oldIds = this.activeTransactions()
+        .filter((t) => t.splitGroupId === form.splitGroupId)
+        .map((t) => t.id);
+      await lastValueFrom(this.deleteMany(oldIds));
+      formId = null;
+    }
+
+    const payload = {
+      categoryId: form.categoryId,
+      accountId: form.accountId ?? undefined,
+      type: form.type,
+      name: form.name,
+      description: form.description,
+      amount: form.amount,
+      date: form.date,
+      isPeriodStart: form.isPeriodStart
+    };
+
+    let transactionId: string;
+    let summary: string;
+    if (formId) {
+      await lastValueFrom(this.update(formId, payload));
+      transactionId = formId;
+      summary = 'Transacción actualizada';
+    } else {
+      const created = await lastValueFrom(this.create(payload));
+      transactionId = created.id;
+      summary = 'Transacción creada';
+    }
+
+    if (form.calculatorExpression) {
+      await lastValueFrom(
+        this.transactionCalculationService.create({
+          transactionId,
+          expression: form.calculatorExpression,
+          result: form.amount
+        })
+      );
+    }
+
+    if (form.isPeriodStart) {
+      await this.clearConflictingPeriodMarkers(form.date, transactionId, periodStartDay);
+    }
+
+    return { status: 'saved', summary };
+  }
+
+  private async saveSplitFromForm(form: TransactionFormInput): Promise<TransactionSaveOutcome> {
+    const validLines = validSplitLines(form.splitLines);
+    if (validLines.length < 2) {
+      return { status: 'invalid', detail: 'Agregá al menos 2 líneas con categoría y monto' };
+    }
+
+    const isUpdate = form.splitGroupId !== null || form.id !== null;
+
+    if (form.splitGroupId) {
+      const oldIds = this.activeTransactions()
+        .filter((t) => t.splitGroupId === form.splitGroupId)
+        .map((t) => t.id);
+      await lastValueFrom(this.deleteMany(oldIds));
+    } else if (form.id) {
+      await lastValueFrom(this.delete(form.id));
+      await lastValueFrom(this.transactionCalculationService.deleteForTransaction(form.id));
+    }
+
+    const groupId = form.splitGroupId ?? this.generateSplitGroupId();
+    for (const line of validLines) {
+      await lastValueFrom(
+        this.create({
+          categoryId: line.categoryId,
+          accountId: form.accountId ?? undefined,
+          type: form.type,
+          name: form.name,
+          description: form.description,
+          amount: line.amount!,
+          date: form.date,
+          splitGroupId: groupId
+        })
+      );
+    }
+
+    return { status: 'saved', summary: isUpdate ? 'Transacción actualizada' : 'Transacción dividida creada' };
+  }
+
+  private activeTransactions(): Transaction[] {
+    return this.allSubject.value.filter((txn) => !txn.deletedAt);
+  }
+
+  /** At most one active period-start marker per nominal period bucket — re-marking a transaction clears any other one already marked for the same period. */
+  private async clearConflictingPeriodMarkers(date: Date, keepId: string, startDay: number): Promise<void> {
+    const bucket = periodStart(date, startDay).getTime();
+    const conflicts = this.activeTransactions().filter(
+      (t) => t.isPeriodStart && t.id !== keepId && periodStart(t.date, startDay).getTime() === bucket
+    );
+    for (const conflict of conflicts) {
+      await lastValueFrom(this.update(conflict.id, { isPeriodStart: false }));
+    }
+  }
+
+  private generateSplitGroupId(): string {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
   }
 
   private signedDelta(txn: Pick<Transaction, 'type' | 'amount'>): number {
