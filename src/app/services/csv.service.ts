@@ -6,6 +6,7 @@ import { Bill, BillPeriod } from '../core/types/bill.types';
 import { CategoryService } from './category.service';
 import { BillService } from './bill.service';
 import { TransactionService } from './transaction.service';
+import { isDuplicateTransaction } from '../core/utils/duplicate-transaction.util';
 
 export interface ParsedCsvRow {
   transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>;
@@ -197,24 +198,11 @@ export class CsvService {
 
       rows.push({
         transaction,
-        isDuplicate: this.isDuplicate(transaction, existing)
+        isDuplicate: isDuplicateTransaction(transaction, existing)
       });
     }
 
     return { rows, skippedUnknownCategory };
-  }
-
-  private isDuplicate(candidate: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>, existing: Transaction[]): boolean {
-    return existing.some(
-      (txn) =>
-        txn.name === candidate.name &&
-        txn.amount === candidate.amount &&
-        this.isSameDay(txn.date, candidate.date)
-    );
-  }
-
-  private isSameDay(a: Date, b: Date): boolean {
-    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
   }
 
   private parseLocalDate(dateStr: string): Date {
