@@ -48,6 +48,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/goals/goals.page').then((m) => m.GoalsPage)
       },
       {
+        path: 'import-statements',
+        loadComponent: () => import('./pages/import-statements/import-statements.page').then((m) => m.ImportStatementsPage)
+      },
+      {
         path: 'sync',
         loadComponent: () => import('./pages/sync/sync.page').then((m) => m.SyncPage)
       }
