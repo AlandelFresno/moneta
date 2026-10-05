@@ -103,6 +103,36 @@ describe('BillService', () => {
     });
   });
 
+  describe('overduePeriodsCount', () => {
+    it('counts each consecutive unpaid monthly period back to the bill anchor', () => {
+      const bill = makeBill({ period: 'monthly', dueDate: new Date(2026, 0, 10), payments: [] });
+      expect(service.overduePeriodsCount(bill, new Date(2026, 2, 15))).toBe(3); // Jan, Feb, Mar all unpaid
+    });
+
+    it('is 0 once the current period is paid', () => {
+      const bill = makeBill({
+        period: 'monthly',
+        dueDate: new Date(2026, 0, 10),
+        payments: [{ id: 'p1', paidDate: new Date(2026, 2, 12), amount: 5000, transactionId: 't1' }]
+      });
+      expect(service.overduePeriodsCount(bill, new Date(2026, 2, 15))).toBe(0);
+    });
+
+    it('stops counting at the most recent paid period, ignoring older unpaid ones before it', () => {
+      const bill = makeBill({
+        period: 'monthly',
+        dueDate: new Date(2026, 0, 10),
+        payments: [{ id: 'p1', paidDate: new Date(2026, 1, 20), amount: 5000, transactionId: 't1' }] // Feb paid
+      });
+      expect(service.overduePeriodsCount(bill, new Date(2026, 2, 15))).toBe(1); // only Mar counts
+    });
+
+    it('is 0 before the bill\'s anchor date has even arrived', () => {
+      const bill = makeBill({ period: 'monthly', dueDate: new Date(2026, 5, 10), payments: [] });
+      expect(service.overduePeriodsCount(bill, new Date(2026, 2, 15))).toBe(0);
+    });
+  });
+
   describe('isFinished', () => {
     it('is false when there is no end date or installment cap', () => {
       const bill = makeBill({ period: 'monthly' });

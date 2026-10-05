@@ -24,6 +24,8 @@ interface BillWithCategory extends Bill {
   categoryName: string;
   categoryColor: string;
   categoryIcon: string;
+  nextDueDate: Date;
+  overdueCount: number;
 }
 
 interface RecurringSuggestion extends RecurringCandidate {
@@ -172,11 +174,14 @@ export class BillsPage implements OnInit, OnDestroy {
 
   private withCategory(bill: Bill, categories: Category[]): BillWithCategory {
     const category = categories.find((cat) => cat.id === bill.categoryId);
+    const now = new Date();
     return {
       ...bill,
       categoryName: category?.name ?? 'Sin categoría',
       categoryColor: category?.color ?? '#6b7280',
-      categoryIcon: category?.icon ?? 'tag'
+      categoryIcon: category?.icon ?? 'tag',
+      nextDueDate: this.billService.nextDueDate(bill, now),
+      overdueCount: this.billService.overduePeriodsCount(bill, now)
     };
   }
 
@@ -347,5 +352,13 @@ export class BillsPage implements OnInit, OnDestroy {
 
   formatDate(date: Date): string {
     return new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+  }
+
+  /** "1 mes atrasado" / "3 meses atrasado" (or "semanas"/"años" for those periods) — null when caught up. */
+  overdueLabel(bill: BillWithCategory): string | null {
+    if (bill.overdueCount === 0) return null;
+    const unit = bill.period === 'weekly' ? 'semana' : bill.period === 'yearly' ? 'año' : 'mes';
+    const plural = bill.overdueCount === 1 ? unit : `${unit}${unit === 'mes' ? 'es' : 's'}`;
+    return `${bill.overdueCount} ${plural} atrasado`;
   }
 }
