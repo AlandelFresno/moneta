@@ -50,7 +50,7 @@
     </div>
   </div>
 
-  <app-period-start-day class="block mb-6" (settingsChange)="onPeriodSettingsChange()" />
+  <app-period-start-day class="block mb-6" [overrideNote]="currentPeriodOverrideNote" (settingsChange)="onPeriodSettingsChange()" />
 
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
     <div class="flex items-center gap-3.5 p-4 rounded-2xl bg-surface-card border border-border-subtle">
@@ -132,6 +132,7 @@
 
     <p-inputnumber
       class="w-[8rem]"
+      inputStyleClass="w-full"
       [(ngModel)]="filters.minAmount"
       (onInput)="applyFilters()"
       mode="decimal"
@@ -142,6 +143,7 @@
 
     <p-inputnumber
       class="w-[8rem]"
+      inputStyleClass="w-full"
       [(ngModel)]="filters.maxAmount"
       (onInput)="applyFilters()"
       mode="decimal"
@@ -395,6 +397,7 @@
             />
             <p-inputnumber
               class="w-28 flex-shrink-0"
+              inputStyleClass="w-full"
               mode="decimal"
               [minFractionDigits]="2"
               [maxFractionDigits]="2"
@@ -439,6 +442,7 @@
       </div>
       <p-inputnumber
         class="w-full"
+        inputStyleClass="w-full"
         inputId="txn-amount"
         [(ngModel)]="form.amount"
         (ngModelChange)="onAmountManuallyChanged()"
@@ -571,6 +575,7 @@
       <p-inputnumber
         inputId="bill-pay-amount"
         class="w-full"
+        inputStyleClass="w-full"
         [(ngModel)]="payAmount"
         mode="decimal"
         [minFractionDigits]="2"

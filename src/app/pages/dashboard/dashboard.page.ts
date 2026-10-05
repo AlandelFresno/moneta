@@ -43,7 +43,7 @@ import { Category } from '../../core/types/category.types';
 import { Bill } from '../../core/types/bill.types';
 import { TransactionWithCategory, withCategory } from '../../core/utils/transaction-display.util';
 import { formatDate as formatDateDisplay } from '../../core/utils/date-display.util';
-import { periodHistory, PeriodOccurrence } from '../../core/utils/period.util';
+import { periodHistory, periodOverrideNote, PeriodOccurrence } from '../../core/utils/period.util';
 import {
   renderTrendChart as buildTrendChart,
   renderNetWorthChart as buildNetWorthChart,
@@ -251,6 +251,14 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
 
   private selectedPeriodOccurrence(): PeriodOccurrence | undefined {
     return this.periodOccurrences.find((occurrence) => occurrence.start.getTime() === this.selectedPeriodKey) ?? this.periodOccurrences[0];
+  }
+
+  /** Explains it when today's period was pushed off the configured day/hour by a marked transaction — null otherwise.
+   * `periodOccurrences[0]` is the most recent one (the array is reversed, newest first), i.e. today's. */
+  get currentPeriodOverrideNote(): string | null {
+    const occurrence = this.periodOccurrences[0];
+    if (!occurrence) return null;
+    return periodOverrideNote(occurrence, this.periodSettingsService.getStartDay(), this.periodSettingsService.getStartHour());
   }
 
   private periodDaysAt(reference: Date): number {
