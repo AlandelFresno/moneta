@@ -100,7 +100,7 @@ export class ImportStatementsPage implements OnInit, OnDestroy {
         this.parseErrors = [...this.parseErrors, ...result.errors];
         this.rows = [
           ...this.rows,
-          ...this.statementImportService.annotate(result, this.transactions, defaultAccountId)
+          ...this.statementImportService.annotate(result, this.transactions, defaultAccountId, this.bills)
         ];
       } catch (error) {
         this.messageService.add({

@@ -3,5 +3,9 @@
   <p-inputnumber [(ngModel)]="day" [min]="1" [max]="28" [showButtons]="false" [inputStyle]="{ width: '4rem' }" (onBlur)="onBlur()" />
   <span class="text-sm font-medium text-text-primary">a las</span>
   <p-inputnumber [(ngModel)]="hour" [min]="0" [max]="23" [showButtons]="false" [inputStyle]="{ width: '4rem' }" (onBlur)="onBlur()" />
-  <span class="text-xs text-text-secondary">hs de cada mes por defecto — marcar una transacción como inicio de período pisa esto ese mes. Se aplica en Dashboard, Transacciones y Presupuesto</span>
+  @if (overrideNote) {
+    <span class="text-xs text-accent">hs de cada mes por defecto. {{ overrideNote }}</span>
+  } @else {
+    <span class="text-xs text-text-secondary">hs de cada mes por defecto — marcar una transacción como inicio de período pisa esto ese mes. Se aplica en Dashboard, Transacciones y Presupuesto</span>
+  }
 </div>

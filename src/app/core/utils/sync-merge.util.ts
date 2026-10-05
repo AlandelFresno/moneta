@@ -25,9 +25,12 @@ export function mergeEntities<T extends SyncableEntity>(local: T[], remote: T[])
     const remoteItem = remoteMap.get(id);
 
     if (localItem && remoteItem) {
-      const winner = localItem.updatedAt.getTime() >= remoteItem.updatedAt.getTime() ? localItem : remoteItem;
-      merged.push(winner);
-      updated++;
+      const localTime = localItem.updatedAt.getTime();
+      const remoteTime = remoteItem.updatedAt.getTime();
+      merged.push(localTime >= remoteTime ? localItem : remoteItem);
+      // Only a real divergence counts as "updated" — an id present on both sides with the same
+      // updatedAt (the normal case once two devices are in sync) isn't a change, just a match.
+      if (localTime !== remoteTime) updated++;
     } else if (localItem) {
       merged.push(localItem);
     } else if (remoteItem) {

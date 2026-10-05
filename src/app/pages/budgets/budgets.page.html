@@ -144,6 +144,7 @@
     <p-inputnumber
       inputId="budget-total"
       class="w-full"
+      inputStyleClass="w-full"
       [(ngModel)]="totalAmount"
       mode="decimal"
       [minFractionDigits]="2"
@@ -171,6 +172,7 @@
     <p-inputnumber
       inputId="min-spend"
       class="w-full"
+      inputStyleClass="w-full"
       [(ngModel)]="minSpendFilter"
       mode="decimal"
       [minFractionDigits]="0"
@@ -192,6 +194,7 @@
           <span class="text-sm flex-1 min-w-0 truncate text-text-primary">{{ row.name }}</span>
           <p-inputnumber
             class="w-32"
+            inputStyleClass="w-full"
             [(ngModel)]="row.amount"
             mode="decimal"
             [minFractionDigits]="2"
@@ -224,6 +227,7 @@
               <span class="text-sm flex-1 min-w-0 truncate text-text-primary">{{ row.name }}</span>
               <p-inputnumber
                 class="w-32"
+                inputStyleClass="w-full"
                 [(ngModel)]="row.amount"
                 mode="decimal"
                 [minFractionDigits]="2"

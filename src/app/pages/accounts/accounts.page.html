@@ -128,6 +128,7 @@
     <p-inputnumber
       inputId="account-balance"
       class="w-full"
+      inputStyleClass="w-full"
       [(ngModel)]="form.balance"
       mode="decimal"
       [minFractionDigits]="2"
@@ -189,6 +190,7 @@
     <p-inputnumber
       inputId="transfer-amount"
       class="w-full"
+      inputStyleClass="w-full"
       [(ngModel)]="transferForm.amount"
       mode="decimal"
       [minFractionDigits]="2"
@@ -197,7 +199,7 @@
     />
 
     <label for="transfer-date" class="text-sm font-medium mt-2 text-text-primary">Fecha</label>
-    <p-datepicker inputId="transfer-date" class="w-full" [(ngModel)]="transferForm.date" dateFormat="dd/mm/yy" appendTo="body" />
+    <p-datepicker inputId="transfer-date" class="w-full" inputStyleClass="w-full" [(ngModel)]="transferForm.date" dateFormat="dd/mm/yy" appendTo="body" />
 
     <label for="transfer-description" class="text-sm font-medium mt-2 text-text-primary">Descripción</label>
     <input id="transfer-description" type="text" pInputText [(ngModel)]="transferForm.description" placeholder="Opcional" />
@@ -225,6 +227,7 @@
       <p-inputnumber
         inputId="reconcile-balance"
         class="w-full"
+        inputStyleClass="w-full"
         [(ngModel)]="reconcileForm.statementBalance"
         mode="decimal"
         [minFractionDigits]="2"
