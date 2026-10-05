@@ -480,4 +480,67 @@ describe('BillService', () => {
       expect(transaction.description).toBe('Pago de servicio: Netflix');
     });
   });
+
+  describe('recordPayment / unrecordPayment / findLinkedBillId', () => {
+    it('findLinkedBillId finds the bill a transaction is recorded against', async () => {
+      const bill = await firstValueFrom(
+        service.create({
+          name: 'Internet',
+          description: '',
+          categoryId: 'cat-1',
+          approxAmount: 5000,
+          period: 'monthly',
+          dueDate: new Date(2026, 0, 10),
+          active: true
+        })
+      );
+
+      expect(service.findLinkedBillId('txn-1')).toBeUndefined();
+
+      await firstValueFrom(service.recordPayment(bill.id, 5000, 'txn-1', new Date(2026, 0, 9)));
+      expect(service.findLinkedBillId('txn-1')).toBe(bill.id);
+    });
+
+    it('unrecordPayment removes the link so the transaction is no longer found', async () => {
+      const bill = await firstValueFrom(
+        service.create({
+          name: 'Internet',
+          description: '',
+          categoryId: 'cat-1',
+          approxAmount: 5000,
+          period: 'monthly',
+          dueDate: new Date(2026, 0, 10),
+          active: true
+        })
+      );
+      await firstValueFrom(service.recordPayment(bill.id, 5000, 'txn-1', new Date(2026, 0, 9)));
+
+      await firstValueFrom(service.unrecordPayment(bill.id, 'txn-1'));
+
+      expect(service.findLinkedBillId('txn-1')).toBeUndefined();
+      const updated = (await firstValueFrom(service.getAll())).find((b) => b.id === bill.id)!;
+      expect(updated.payments.length).toBe(0);
+    });
+
+    it('unrecordPayment only removes the matching transaction, keeping other payments intact', async () => {
+      const bill = await firstValueFrom(
+        service.create({
+          name: 'Internet',
+          description: '',
+          categoryId: 'cat-1',
+          approxAmount: 5000,
+          period: 'monthly',
+          dueDate: new Date(2026, 0, 10),
+          active: true
+        })
+      );
+      await firstValueFrom(service.recordPayment(bill.id, 5000, 'txn-1', new Date(2026, 0, 9)));
+      await firstValueFrom(service.recordPayment(bill.id, 5000, 'txn-2', new Date(2026, 1, 9)));
+
+      await firstValueFrom(service.unrecordPayment(bill.id, 'txn-1'));
+
+      const updated = (await firstValueFrom(service.getAll())).find((b) => b.id === bill.id)!;
+      expect(updated.payments.map((p) => p.transactionId)).toEqual(['txn-2']);
+    });
+  });
 });

@@ -515,6 +515,20 @@
         [(ngModel)]="form.accountId"
       />
     }
+
+    @if (!form.isSplit && billsForType(form.type).length > 0) {
+      <label for="txn-bill" class="text-sm font-medium mt-2 text-text-primary">Vincular a servicio</label>
+      <p-select
+        class="w-full"
+        inputId="txn-bill"
+        [options]="billsForType(form.type)"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="No vinculada a ningún servicio"
+        [showClear]="true"
+        [(ngModel)]="formBillId"
+      />
+    }
   </div>
 
   <ng-template #footer>
