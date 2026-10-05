@@ -48,6 +48,7 @@
     "@primeuix/utils": "0.6.2",
     "chart.js": "4.5.1",
     "jspdf": "^4.2.1",
+    "pdfjs-dist": "^6.3.289",
     "primeicons": "7.0.0",
     "primeng": "20.4.0",
     "rxjs": "7.8.1",

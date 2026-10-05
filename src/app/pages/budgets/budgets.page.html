@@ -102,6 +102,30 @@
       }
     </div>
   }
+
+  @if (periodStartDay !== 1 && periodHistoryList.length > 0) {
+    <div class="mt-8">
+      <button
+        type="button"
+        class="flex items-center gap-2 text-sm font-medium text-text-secondary cursor-pointer border-none bg-transparent p-0"
+        (click)="periodHistoryPanelOpen = !periodHistoryPanelOpen"
+      >
+        <i class="pi" [ngClass]="periodHistoryPanelOpen ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
+        Historial de períodos ({{ periodHistoryList.length }})
+      </button>
+
+      @if (periodHistoryPanelOpen) {
+        <div class="flex flex-col gap-2 mt-3">
+          @for (occurrence of periodHistoryList; track occurrence.start.getTime()) {
+            <div class="flex items-center justify-between px-4 py-3 rounded-xl bg-surface-card border border-border-subtle text-sm">
+              <span class="text-text-primary">{{ formatDate(occurrence.start) }} – {{ formatDate(occurrence.end) }}</span>
+              <span class="text-text-secondary [font-variant-numeric:tabular-nums]"> {{ occurrence.days }} días </span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
 </div>
 
 <p-dialog [(visible)]="dialogVisible" [modal]="true" [style]="{ width: '34rem', maxWidth: '92vw' }" [header]="formatMonthLabel(targetMonth)">
