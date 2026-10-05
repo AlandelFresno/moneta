@@ -341,7 +341,7 @@ describe('TransactionService', () => {
 
     it('creates a new transaction and reports it as created', async () => {
       const outcome = await service.saveFromForm(formInput({ name: 'Super' }), 1);
-      expect(outcome).toEqual({ status: 'saved', summary: 'Transacción creada' });
+      expect(outcome).toEqual({ status: 'saved', summary: 'Transacción creada', transactionId: jasmine.any(String) });
 
       const all = await firstValueFrom(service.getAll());
       expect(all.some((t) => t.name === 'Super' && t.amount === 100)).toBeTrue();
@@ -352,7 +352,7 @@ describe('TransactionService', () => {
 
       const outcome = await service.saveFromForm(formInput({ id: created.id, name: 'Editado' }), 1);
 
-      expect(outcome).toEqual({ status: 'saved', summary: 'Transacción actualizada' });
+      expect(outcome).toEqual({ status: 'saved', summary: 'Transacción actualizada', transactionId: created.id });
       const all = await firstValueFrom(service.getAll());
       expect(all.length).toBe(1);
       expect(all[0].name).toBe('Editado');
@@ -422,7 +422,7 @@ describe('TransactionService', () => {
 
       it('creates one transaction per valid line, sharing a new split group id', async () => {
         const outcome = await service.saveFromForm(splitFormInput(), 1);
-        expect(outcome).toEqual({ status: 'saved', summary: 'Transacción dividida creada' });
+        expect(outcome).toEqual({ status: 'saved', summary: 'Transacción dividida creada', transactionId: jasmine.any(String) });
 
         const all = await firstValueFrom(service.getAll());
         expect(all.length).toBe(2);
@@ -437,7 +437,7 @@ describe('TransactionService', () => {
 
         const outcome = await service.saveFromForm(splitFormInput({ splitGroupId: groupId }), 1);
 
-        expect(outcome).toEqual({ status: 'saved', summary: 'Transacción actualizada' });
+        expect(outcome).toEqual({ status: 'saved', summary: 'Transacción actualizada', transactionId: groupId });
         const all = await firstValueFrom(service.getAll());
         expect(all.length).toBe(2);
         expect(all.some((t) => t.name === 'Vieja A')).toBeFalse();

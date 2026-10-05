@@ -149,6 +149,28 @@ export class BillService {
     });
   }
 
+  /** Removes the payment entry linking `transactionId` to `id`, if one exists. Used when
+   * re-linking an existing transaction to a different bill, or unlinking it entirely. */
+  unrecordPayment(id: string, transactionId: string): Observable<void> {
+    const bills = this.allSubject.value.map((bill) =>
+      bill.id === id
+        ? { ...bill, payments: bill.payments.filter((p) => p.transactionId !== transactionId), updatedAt: new Date() }
+        : bill
+    );
+    this.persist(bills);
+    this.allSubject.next(bills);
+
+    return new Observable((subscriber) => {
+      subscriber.next();
+      subscriber.complete();
+    });
+  }
+
+  /** The id of the bill `transactionId` is currently recorded as a payment for, if any. */
+  findLinkedBillId(transactionId: string): string | undefined {
+    return this.allSubject.value.find((bill) => bill.payments.some((p) => p.transactionId === transactionId))?.id;
+  }
+
   /** Records a bill payment as an expense transaction, then links that transaction to the bill. The one payment workflow, used from both the Bills and Transactions pages. */
   async payBill(bill: Bill, amount: number, paidDate: Date): Promise<Transaction> {
     const transaction = await lastValueFrom(

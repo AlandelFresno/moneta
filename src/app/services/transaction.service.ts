@@ -49,7 +49,9 @@ export interface TransactionFormInput {
   isPeriodStart: boolean;
 }
 
-export type TransactionSaveOutcome = { status: 'invalid'; detail: string } | { status: 'saved'; summary: string };
+export type TransactionSaveOutcome =
+  | { status: 'invalid'; detail: string }
+  | { status: 'saved'; summary: string; transactionId: string };
 
 @Injectable({
   providedIn: 'root'
@@ -279,7 +281,7 @@ export class TransactionService {
       await this.clearConflictingPeriodMarkers(form.date, transactionId, periodStartDay);
     }
 
-    return { status: 'saved', summary };
+    return { status: 'saved', summary, transactionId };
   }
 
   private async saveSplitFromForm(form: TransactionFormInput): Promise<TransactionSaveOutcome> {
@@ -316,7 +318,7 @@ export class TransactionService {
       );
     }
 
-    return { status: 'saved', summary: isUpdate ? 'Transacción actualizada' : 'Transacción dividida creada' };
+    return { status: 'saved', summary: isUpdate ? 'Transacción actualizada' : 'Transacción dividida creada', transactionId: groupId };
   }
 
   private activeTransactions(): Transaction[] {
