@@ -1,0 +1,168 @@
+<div class="p-6 md:p-8 max-w-5xl mx-auto">
+  <div class="flex items-start justify-between gap-4 flex-wrap mb-7">
+    <div>
+      <h1 class="text-[1.75rem] font-semibold tracking-tight text-text-primary">Importar extractos</h1>
+      <p class="text-sm text-text-secondary mt-0.5">Santander, Lemon Card o MercadoPago — revisá antes de crear las transacciones</p>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-4 p-5 rounded-xl bg-surface-card border border-border-subtle mb-6">
+    <div class="flex items-center gap-3">
+      <input #fileInput type="file" accept=".csv,.pdf" multiple hidden (change)="onFilesSelected($event)" />
+      <p-button
+        label="Elegir archivos"
+        icon="pi pi-upload"
+        [disabled]="isParsing"
+        (onClick)="fileInput.click()"
+      />
+      @if (isParsing) {
+        <span class="text-sm text-text-secondary">Leyendo archivos…</span>
+      }
+      @if (lastSources.length > 0) {
+        <span class="text-sm text-text-secondary">Formatos detectados: {{ lastSources.join(', ') }}</span>
+      }
+    </div>
+    <p class="text-xs text-text-secondary">
+      Cada fila trae la cuenta sugerida precargada — cambiala si el movimiento pertenece a otra cuenta.
+    </p>
+
+    @if (parseErrors.length > 0) {
+      <div class="flex flex-col gap-1 p-3 rounded-lg bg-expense/10 border border-expense/30 text-sm text-text-primary">
+        <span class="font-medium">{{ parseErrors.length }} líneas no se pudieron interpretar:</span>
+        @for (error of parseErrors; track error) {
+          <span class="text-text-secondary">{{ error }}</span>
+        }
+      </div>
+    }
+  </div>
+
+  @if (rows.length > 0) {
+    <div class="flex items-center justify-between gap-3 flex-wrap mb-4">
+      <p class="text-sm text-text-secondary">
+        {{ rows.length }} filas · {{ includedCount }} seleccionadas · {{ readyCount }} listas para importar
+      </p>
+      <div class="flex items-center gap-2">
+        <p-button label="Solo nuevas" size="small" severity="secondary" [text]="true" (onClick)="selectAllNew()" />
+        <p-button label="Ninguna" size="small" severity="secondary" [text]="true" (onClick)="selectNone()" />
+        <p-button label="Descartar todo" size="small" severity="danger" [text]="true" (onClick)="clearAll()" />
+        <p-button
+          label="Importar {{ readyCount }} transacciones"
+          icon="pi pi-check"
+          size="small"
+          [disabled]="readyCount === 0"
+          (onClick)="importSelected()"
+        />
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-3 mb-6">
+      @for (row of rows; track row.rowId) {
+        <div
+          class="p-4 rounded-xl border shadow-sm transition-colors duration-150"
+          [class]="row.isDuplicate ? 'bg-expense/5 border-expense/30' : 'bg-surface-card border-border-strong'"
+        >
+          <div class="flex flex-wrap items-center gap-3">
+            <p-checkbox [binary]="true" [(ngModel)]="row.include" />
+
+            <button
+              type="button"
+              class="w-8 h-8 flex-shrink-0 flex items-center justify-center border-none bg-transparent cursor-pointer text-lg font-bold"
+              [class]="row.type === 'income' ? 'text-income' : 'text-expense'"
+              title="Cambiar tipo (ingreso/gasto)"
+              (click)="toggleType(row)"
+            >
+              {{ row.type === 'income' ? '+' : '−' }}
+            </button>
+
+            <input
+              type="text"
+              class="flex-1 min-w-[8rem] px-3 py-2 rounded-lg border border-border-subtle bg-surface-input text-text-primary text-sm"
+              [(ngModel)]="row.name"
+            />
+
+            @if (row.isDuplicate) {
+              <span class="text-xs px-2 py-0.5 rounded-full bg-expense/15 text-expense whitespace-nowrap flex-shrink-0">Duplicado</span>
+            }
+
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <button
+                type="button"
+                class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-input hover:text-income"
+                title="Aceptar esta transacción"
+                (click)="acceptRow(row)"
+              >
+                <i class="pi pi-check"></i>
+              </button>
+
+              <button
+                type="button"
+                class="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-input hover:text-expense"
+                title="Quitar fila"
+                (click)="removeRow(row)"
+              >
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3 mt-3">
+            <p-datepicker
+              class="w-32 flex-shrink-0"
+              inputStyleClass="w-full"
+              [(ngModel)]="row.date"
+              dateFormat="d M yy"
+              appendTo="body"
+            />
+
+            <p-inputnumber
+              class="w-28 flex-shrink-0"
+              inputStyleClass="w-full"
+              [(ngModel)]="row.amount"
+              mode="decimal"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+              [min]="0"
+            />
+
+            <p-select
+              class="w-40 flex-shrink-0"
+              [options]="categoriesForType(row)"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Categoría"
+              [(ngModel)]="row.categoryId"
+            />
+
+            <p-select
+              class="w-36 flex-shrink-0"
+              [options]="accounts"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Cuenta"
+              [(ngModel)]="row.accountId"
+            />
+
+            @if (billsForRow(row).length > 0) {
+              <p-select
+                class="w-40 flex-shrink-0"
+                [options]="billsForRow(row)"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Vincular servicio"
+                [showClear]="true"
+                [(ngModel)]="row.billId"
+              />
+            }
+          </div>
+
+          <input
+            type="text"
+            class="w-full mt-3 px-3 py-1.5 rounded-lg border border-border-subtle bg-surface-input text-text-secondary text-xs"
+            placeholder="Descripción"
+            [(ngModel)]="row.description"
+          />
+        </div>
+      }
+    </div>
+  }
+</div>

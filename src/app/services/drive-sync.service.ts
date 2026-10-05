@@ -56,6 +56,31 @@ export interface SyncResult {
   transactionCalculations: EntitySyncStats;
 }
 
+export interface SyncSummaryItem {
+  label: string;
+  added: number;
+  updated: number;
+}
+
+const SYNC_SUMMARY_LABELS: { key: keyof SyncStats; label: string }[] = [
+  { key: 'transactions', label: 'Transacciones' },
+  { key: 'categories', label: 'Categorías' },
+  { key: 'bills', label: 'Servicios' },
+  { key: 'budgets', label: 'Presupuestos' },
+  { key: 'accounts', label: 'Cuentas' },
+  { key: 'transfers', label: 'Transferencias' },
+  { key: 'goals', label: 'Metas' },
+  { key: 'goalContributions', label: 'Aportes' }
+];
+
+export function buildSyncSummary(result: SyncResult): SyncSummaryItem[] {
+  return SYNC_SUMMARY_LABELS.map(({ key, label }) => ({
+    label,
+    added: result[key].added,
+    updated: result[key].updated
+  }));
+}
+
 type SyncStats = Omit<SyncResult, 'syncedAt'>;
 
 interface DriveFile {
