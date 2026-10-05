@@ -119,7 +119,7 @@
       </div>
 
       @if (hasChanges) {
-        <div class="flex items-center gap-4 mb-4 text-xs">
+        <div class="flex items-center gap-4 mb-3 text-xs">
           <span class="flex items-center gap-1.5 font-medium text-income">
             <span class="w-1.5 h-1.5 rounded-full bg-income"></span>
             {{ summaryTotals.added }} {{ summaryTotals.added === 1 ? 'nuevo' : 'nuevos' }}
@@ -129,21 +129,36 @@
             {{ summaryTotals.updated }} {{ summaryTotals.updated === 1 ? 'actualizado' : 'actualizados' }}
           </span>
         </div>
-      } @else {
-        <p class="text-xs text-text-secondary mb-4">No hubo cambios, ya estabas al día.</p>
-      }
 
-      <div class="flex flex-col gap-1.5">
-        @for (item of summaryItems; track item.label) {
-          <div class="flex items-center justify-between text-xs" [class.opacity-40]="item.added === 0 && item.updated === 0">
-            <span class="text-text-secondary">{{ item.label }}</span>
-            <span class="flex items-center gap-3 font-medium [font-variant-numeric:tabular-nums]">
-              <span [class]="item.added > 0 ? 'text-income' : 'text-text-secondary'">+{{ item.added }}</span>
-              <span [class]="item.updated > 0 ? 'text-accent' : 'text-text-secondary'">±{{ item.updated }}</span>
-            </span>
-          </div>
+        <div class="flex items-center justify-end gap-3 text-[11px] text-text-secondary mb-1.5">
+          <span class="flex items-center gap-1"><i class="pi pi-plus-circle text-[10px]"></i>Nuevos</span>
+          <span class="flex items-center gap-1"><i class="pi pi-pencil text-[10px]"></i>Actualizados</span>
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+          @for (item of changedSummaryItems; track item.label) {
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-text-secondary">{{ item.label }}</span>
+              <span class="flex items-center gap-3 font-medium [font-variant-numeric:tabular-nums]">
+                <span class="flex items-center gap-1" [class]="item.added > 0 ? 'text-income' : 'text-text-secondary'">
+                  <i class="pi pi-plus-circle text-[10px]"></i>{{ item.added }}
+                </span>
+                <span class="flex items-center gap-1" [class]="item.updated > 0 ? 'text-accent' : 'text-text-secondary'">
+                  <i class="pi pi-pencil text-[10px]"></i>{{ item.updated }}
+                </span>
+              </span>
+            </div>
+          }
+        </div>
+
+        @if (unchangedSummaryLabels) {
+          <p class="text-xs text-text-secondary mt-3 pt-3 border-t border-border-subtle">
+            Sin cambios: {{ unchangedSummaryLabels }}
+          </p>
         }
-      </div>
+      } @else {
+        <p class="text-xs text-text-secondary">No hubo cambios, ya estabas al día.</p>
+      }
     </div>
   }
 

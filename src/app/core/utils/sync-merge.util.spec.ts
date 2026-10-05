@@ -58,6 +58,16 @@ describe('mergeEntities', () => {
     expect(result.merged).toEqual([local[0]]);
   });
 
+  it('does not count an id present on both sides with identical updatedAt as updated — nothing actually changed', () => {
+    const sameTime = new Date(2026, 0, 1);
+    const local = [entity({ id: 'a', updatedAt: sameTime }), entity({ id: 'b', updatedAt: sameTime })];
+    const remote = [entity({ id: 'a', updatedAt: sameTime }), entity({ id: 'b', updatedAt: sameTime })];
+
+    const result = mergeEntities(local, remote);
+    expect(result.added).toBe(0);
+    expect(result.updated).toBe(0);
+  });
+
   it('propagates a newer local tombstone over an older active remote item', () => {
     const local = [entity({ id: 'a', value: 'local', updatedAt: new Date(2026, 0, 10), deletedAt: new Date(2026, 0, 10) })];
     const remote = [entity({ id: 'a', value: 'remote', updatedAt: new Date(2026, 0, 5) })];
