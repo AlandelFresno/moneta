@@ -3,10 +3,12 @@ import { lastValueFrom } from 'rxjs';
 
 import { ParsedStatementRow, StatementParseResult } from '../core/types/statement-import.types';
 import { Transaction } from '../core/types/transaction.types';
+import { Bill } from '../core/types/bill.types';
 import { extractLayoutLines } from '../core/utils/pdf-text-extraction.util';
 import { readFileAsText } from '../core/utils/file-download.util';
 import { isDuplicateTransaction } from '../core/utils/duplicate-transaction.util';
 import { suggestCategoryId } from '../core/utils/category-suggestion.util';
+import { suggestBillId } from '../core/utils/bill-match.util';
 import { SantanderPdfParserService } from './santander-pdf-parser.service';
 import { LemonPdfParserService } from './lemon-pdf-parser.service';
 import { MercadoPagoCsvParserService } from './mercadopago-csv-parser.service';
@@ -55,18 +57,21 @@ export class StatementImportService {
   }
 
   /** Pre-fills a default account (still editable per row — statements can span several
-   * accounts), flags duplicates against existing transactions, and suggests a category
-   * from past transaction history. */
-  annotate(result: StatementParseResult, existingTransactions: Transaction[], defaultAccountId: string): ParsedStatementRow[] {
+   * accounts), flags duplicates against existing transactions, suggests a category from past
+   * transaction history, and — for expense rows with exactly one matching active bill (same
+   * category, amount within 25%) — pre-links the row to that bill. */
+  annotate(result: StatementParseResult, existingTransactions: Transaction[], defaultAccountId: string, bills: Bill[] = []): ParsedStatementRow[] {
     return result.rows.map((row) => {
       const suggestedCategoryId = suggestCategoryId(row.name, existingTransactions);
+      const categoryId = suggestedCategoryId ?? '';
       const isDuplicate = isDuplicateTransaction(row, existingTransactions);
 
       return {
         ...row,
         accountId: defaultAccountId,
-        categoryId: suggestedCategoryId ?? '',
+        categoryId,
         suggestedCategoryId,
+        billId: suggestBillId({ categoryId, amount: row.amount, type: row.type }, bills),
         isDuplicate,
         include: !isDuplicate
       };

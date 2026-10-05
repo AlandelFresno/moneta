@@ -1,4 +1,4 @@
-import { periodStart, actualPeriodStart, periodRange, periodLabelMonth, addMonths, periodHistory } from './period.util';
+import { periodStart, actualPeriodStart, periodRange, periodLabelMonth, addMonths, periodHistory, periodOverrideNote } from './period.util';
 import { Transaction } from '../types/transaction.types';
 
 function makeTxn(overrides: Partial<Transaction>): Transaction {
@@ -111,6 +111,25 @@ describe('periodLabelMonth', () => {
 
   it('a day-on-or-after-startDay expense is labeled under the current month', () => {
     expect(periodLabelMonth(new Date(2026, 7, 6), 6)).toEqual(new Date(2026, 7, 1));
+  });
+});
+
+describe('periodOverrideNote', () => {
+  it('returns null when the occurrence starts exactly on the configured day/hour', () => {
+    const occurrence = { start: new Date(2026, 7, 6), end: new Date(2026, 8, 5, 23, 59, 59, 999), days: 31 };
+    expect(periodOverrideNote(occurrence, 6, 0)).toBeNull();
+  });
+
+  it('returns a note when a marker pushed the start off the configured day', () => {
+    const occurrence = { start: new Date(2026, 7, 9, 14, 32), end: new Date(2026, 8, 6, 23, 59, 59, 999), days: 29 };
+    const note = periodOverrideNote(occurrence, 6, 0);
+    expect(note).not.toBeNull();
+    expect(note).toContain('día 6');
+  });
+
+  it('returns a note when the start matches the day but not the configured hour', () => {
+    const occurrence = { start: new Date(2026, 7, 6, 9), end: new Date(2026, 8, 6, 8, 59, 59, 999), days: 31 };
+    expect(periodOverrideNote(occurrence, 6, 14)).not.toBeNull();
   });
 });
 

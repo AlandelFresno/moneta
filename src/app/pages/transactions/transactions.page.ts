@@ -35,7 +35,7 @@ import { CATEGORY_ICON_OPTIONS } from '../../core/utils/category-icons.util';
 import { evaluateCalculatorInput } from '../../core/utils/math-expression.util';
 import { splitLinesTotal, seedSplitLines, withoutSplitLine } from '../../core/utils/split-lines.util';
 import { formatDate as formatDateDisplay, formatMonthLabel } from '../../core/utils/date-display.util';
-import { periodHistory, PeriodOccurrence } from '../../core/utils/period.util';
+import { periodHistory, periodOverrideNote, PeriodOccurrence } from '../../core/utils/period.util';
 import { Budget, BudgetProgress } from '../../core/types/budget.types';
 
 interface TransactionListItem {
@@ -259,6 +259,12 @@ export class TransactionsPage implements OnInit, OnDestroy {
   /** The real period `date` falls into, if any of the loaded transactions' periods cover it. */
   occurrenceFor(date: Date): PeriodOccurrence | undefined {
     return this.periodOccurrences.find((occurrence) => date >= occurrence.start && date <= occurrence.end);
+  }
+
+  /** Explains it when today's period was pushed off the configured day/hour by a marked transaction — null otherwise. */
+  get currentPeriodOverrideNote(): string | null {
+    const occurrence = this.occurrenceFor(new Date());
+    return occurrence ? periodOverrideNote(occurrence, this.periodStartDay, this.periodStartHour) : null;
   }
 
   /** How marking (or not) this exact transaction as a period start would change that period's real length — null when it makes no difference. */

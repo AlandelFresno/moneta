@@ -68,6 +68,18 @@ export class SyncPage implements OnInit, OnDestroy {
     return this.summaryTotals.added > 0 || this.summaryTotals.updated > 0;
   }
 
+  /** Only the entity types this sync actually touched — the unchanged ones are summarized as one line instead of cluttering the list. */
+  get changedSummaryItems(): SyncSummaryItem[] {
+    return this.summaryItems.filter((item) => item.added > 0 || item.updated > 0);
+  }
+
+  get unchangedSummaryLabels(): string {
+    return this.summaryItems
+      .filter((item) => item.added === 0 && item.updated === 0)
+      .map((item) => item.label)
+      .join(', ');
+  }
+
   get resultTitle(): string {
     switch (this.lastAction) {
       case 'pull':
@@ -220,10 +232,14 @@ export class SyncPage implements OnInit, OnDestroy {
   }
 
   private formatSummary(result: SyncResult): string {
-    return [
-      `Transacciones: +${result.transactions.added}/±${result.transactions.updated}`,
-      `Categorías: +${result.categories.added}/±${result.categories.updated}`,
-      `Servicios: +${result.bills.added}/±${result.bills.updated}`
-    ].join(' · ');
+    const parts = [
+      { label: 'Transacciones', stats: result.transactions },
+      { label: 'Categorías', stats: result.categories },
+      { label: 'Servicios', stats: result.bills }
+    ].filter(({ stats }) => stats.added > 0 || stats.updated > 0);
+
+    if (parts.length === 0) return 'No hubo cambios, ya estabas al día.';
+
+    return parts.map(({ label, stats }) => `${label}: ${stats.added} nuevas, ${stats.updated} actualizadas`).join(' · ');
   }
 }

@@ -169,6 +169,7 @@
     <p-inputnumber
       inputId="bill-amount"
       class="w-full"
+      inputStyleClass="w-full"
       [(ngModel)]="form.approxAmount"
       mode="decimal"
       [minFractionDigits]="2"
@@ -193,7 +194,7 @@
         @default { Día de vencimiento del mes }
       }
     </label>
-    <p-datepicker inputId="bill-date" class="w-full" [(ngModel)]="form.dueDate" dateFormat="dd/mm/yy" appendTo="body" />
+    <p-datepicker inputId="bill-date" class="w-full" inputStyleClass="w-full" [(ngModel)]="form.dueDate" dateFormat="dd/mm/yy" appendTo="body" />
 
     <label for="bill-termination" class="text-sm font-medium mt-2 text-text-primary">¿Hasta cuándo?</label>
     <p-select
@@ -207,7 +208,7 @@
 
     @if (form.terminationMode === 'endDate') {
       <label for="bill-end-date" class="text-sm font-medium mt-2 text-text-primary">Fecha de fin</label>
-      <p-datepicker inputId="bill-end-date" class="w-full" [(ngModel)]="form.endDate" dateFormat="dd/mm/yy" appendTo="body" />
+      <p-datepicker inputId="bill-end-date" class="w-full" inputStyleClass="w-full" [(ngModel)]="form.endDate" dateFormat="dd/mm/yy" appendTo="body" />
     }
 
     @if (form.terminationMode === 'installments') {
@@ -215,6 +216,7 @@
       <p-inputnumber
         inputId="bill-installments"
         class="w-full"
+        inputStyleClass="w-full"
         [(ngModel)]="form.totalInstallments"
         [min]="1"
         [maxFractionDigits]="0"
@@ -251,6 +253,7 @@
       <p-inputnumber
         inputId="pay-amount"
         class="w-full"
+        inputStyleClass="w-full"
         [(ngModel)]="payAmount"
         mode="decimal"
         [minFractionDigits]="2"

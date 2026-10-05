@@ -38,6 +38,18 @@ export function periodLabelMonth(date: Date, startDay: number): Date {
   return new Date(start.getFullYear(), start.getMonth(), 1);
 }
 
+/** Null when `occurrence` starts exactly on the configured day/hour (nothing to call out). Otherwise a short
+ * note explaining that a marked transaction pushed this period's real start off the configured default —
+ * so the UI can stop implying the default applies to a period it doesn't. */
+export function periodOverrideNote(occurrence: PeriodOccurrence, startDay: number, startHour: number): string | null {
+  const { start } = occurrence;
+  const isNominal = start.getDate() === startDay && start.getHours() === startHour && start.getMinutes() === 0;
+  if (isNominal) return null;
+
+  const formatted = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(start);
+  return `Este período arrancó el ${formatted} por una transacción marcada, no el día ${startDay} configurado.`;
+}
+
 export function addMonths(date: Date, months: number): Date {
   return new Date(date.getFullYear(), date.getMonth() + months, date.getDate());
 }
