@@ -133,6 +133,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   dialogVisible = false;
   form: TransactionForm = { ...EMPTY_FORM };
+  /** The bill this transaction is linked to as a payment (expense-only, not for splits) — editable in the dialog. */
+  formBillId: string | null = null;
+  /** `formBillId` as it was when the dialog opened, to diff against on save and only touch bill links that actually changed. */
+  private originalFormBillId: string | null = null;
   private periodStartBeforeSplit = false;
 
   categoryDialogVisible = false;
@@ -512,6 +516,8 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   openCreateDialog(type: TransactionType = 'expense'): void {
     this.form = { ...EMPTY_FORM, type, date: new Date() };
+    this.formBillId = null;
+    this.originalFormBillId = null;
     this.resetCalculator();
     this.dialogVisible = true;
   }
@@ -532,8 +538,17 @@ export class TransactionsPage implements OnInit, OnDestroy {
       calculatorExpression: null,
       isPeriodStart: txn.isPeriodStart ?? false
     };
+    this.formBillId = this.billService.findLinkedBillId(txn.id) ?? null;
+    this.originalFormBillId = this.formBillId;
     this.resetCalculator();
     this.dialogVisible = true;
+  }
+
+  /** Active, non-finished bills a non-split expense transaction can be linked to as a payment. */
+  billsForType(type: TransactionType): Bill[] {
+    if (type !== 'expense') return [];
+    const now = new Date();
+    return this.bills.filter((bill) => bill.active && !this.billService.isFinished(bill, now));
   }
 
   /** Dispatches to the split or single edit flow depending on what the clicked list item represents. */
@@ -555,6 +570,8 @@ export class TransactionsPage implements OnInit, OnDestroy {
       isSplit: true,
       splitLines: item.lines.map((line) => ({ categoryId: line.categoryId, amount: line.amount }))
     };
+    this.formBillId = null;
+    this.originalFormBillId = null;
     this.resetCalculator();
     this.dialogVisible = true;
   }
@@ -685,8 +702,25 @@ export class TransactionsPage implements OnInit, OnDestroy {
       return;
     }
 
+    if (!this.form.isSplit) {
+      await this.syncBillLink(outcome.transactionId);
+    }
+
     this.messageService.add({ severity: 'success', summary: outcome.summary });
     this.dialogVisible = false;
+  }
+
+  /** Applies any change to which bill (if any) this transaction is linked to as a payment,
+   * touching only what actually changed since the dialog opened. */
+  private async syncBillLink(transactionId: string): Promise<void> {
+    if (this.originalFormBillId === this.formBillId) return;
+
+    if (this.originalFormBillId) {
+      await lastValueFrom(this.billService.unrecordPayment(this.originalFormBillId, transactionId));
+    }
+    if (this.formBillId) {
+      await lastValueFrom(this.billService.recordPayment(this.formBillId, this.form.amount ?? 0, transactionId, this.form.date));
+    }
   }
 
   deleteTransaction(txn: Transaction): void {
