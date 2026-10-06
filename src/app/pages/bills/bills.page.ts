@@ -9,11 +9,12 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { TabsModule } from 'primeng/tabs';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
 import { Bill, BillPeriod } from '../../core/types/bill.types';
 import { Category } from '../../core/types/category.types';
-import { BillService, BillDueStatus } from '../../services/bill.service';
+import { BillService, BillDueStatus, BillHistoryEntry } from '../../services/bill.service';
 import { BillNotificationService } from '../../services/bill-notification.service';
 import { CategoryService } from '../../services/category.service';
 import { TransactionService } from '../../services/transaction.service';
@@ -26,6 +27,13 @@ interface BillWithCategory extends Bill {
   categoryIcon: string;
   nextDueDate: Date;
   overdueCount: number;
+}
+
+type BillsTab = 'services' | 'history';
+
+interface BillHistoryRow extends BillHistoryEntry {
+  categoryColor: string;
+  categoryIcon: string;
 }
 
 interface RecurringSuggestion extends RecurringCandidate {
@@ -80,6 +88,7 @@ const EMPTY_FORM: BillForm = {
     SelectModule,
     DatePickerModule,
     ToggleSwitchModule,
+    TabsModule,
     IconComponent
   ],
   templateUrl: './bills.page.html',
@@ -91,6 +100,8 @@ export class BillsPage implements OnInit, OnDestroy {
   bills: BillWithCategory[] = [];
   categories: Category[] = [];
   dueStatuses: BillDueStatus[] = [];
+  history: BillHistoryRow[] = [];
+  activeTab: BillsTab = 'services';
   suggestions: RecurringSuggestion[] = [];
   private dismissedSuggestions: Set<string> = this.loadDismissedSuggestions();
 
@@ -144,6 +155,7 @@ export class BillsPage implements OnInit, OnDestroy {
           .map((bill) => this.withCategory(bill, categories))
           .sort((a, b) => a.name.localeCompare(b.name));
         this.dueStatuses = this.billService.dueStatuses(bills, new Date());
+        this.history = this.buildHistory(bills, categories);
 
         this.suggestions = detectRecurringCandidates(transactions, bills, new Date())
           .map((candidate) => this.withSuggestionDisplay(candidate, categories))
@@ -183,6 +195,20 @@ export class BillsPage implements OnInit, OnDestroy {
       nextDueDate: this.billService.nextDueDate(bill, now),
       overdueCount: this.billService.overduePeriodsCount(bill, now)
     };
+  }
+
+  private buildHistory(bills: Bill[], categories: Category[]): BillHistoryRow[] {
+    const now = new Date();
+    return bills
+      .flatMap((bill) => {
+        const category = categories.find((cat) => cat.id === bill.categoryId);
+        return this.billService.periodHistory(bill, now).map((entry) => ({
+          ...entry,
+          categoryColor: category?.color ?? '#6b7280',
+          categoryIcon: category?.icon ?? 'tag'
+        }));
+      })
+      .sort((a, b) => b.periodDueDate.getTime() - a.periodDueDate.getTime());
   }
 
   private withSuggestionDisplay(candidate: RecurringCandidate, categories: Category[]): RecurringSuggestion {

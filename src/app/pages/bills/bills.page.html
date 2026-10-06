@@ -12,6 +12,60 @@
     <p-button label="Nuevo servicio" icon="pi pi-plus" (onClick)="openCreateDialog()" />
   </div>
 
+  <p-tabs [(value)]="activeTab" class="mb-5">
+    <p-tablist>
+      <p-tab value="services">Servicios</p-tab>
+      <p-tab value="history">Historial</p-tab>
+    </p-tablist>
+  </p-tabs>
+
+  @if (activeTab === 'history') {
+    <div class="flex flex-col gap-2">
+      @if (history.length === 0) {
+        <div class="flex flex-col items-center justify-center gap-2 py-16 text-sm text-text-secondary">
+          <i class="pi pi-history text-3xl opacity-50"></i>
+          <span>Todavía no hay historial.</span>
+        </div>
+      }
+
+      @for (entry of history; track entry.bill.id + entry.periodDueDate.getTime()) {
+        <div
+          class="flex items-center gap-4 px-4 py-3.5 rounded-xl bg-surface-card border"
+          [ngClass]="entry.paid ? 'border-border-subtle' : 'border-expense'"
+        >
+          <div
+            class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base"
+            [style.background-color]="entry.categoryColor + '22'"
+            [style.color]="entry.categoryColor"
+          >
+            <app-icon [name]="entry.categoryIcon" />
+          </div>
+
+          <div class="flex flex-col flex-1 min-w-0 gap-0.5">
+            <span class="font-medium truncate text-text-primary">{{ entry.bill.name }}</span>
+            <span class="text-xs text-text-secondary">
+              Vencía el {{ formatDate(entry.periodDueDate) }}
+              @if (entry.paidDate) {
+                · Pagado el {{ formatDate(entry.paidDate) }}
+              }
+            </span>
+          </div>
+
+          <span class="text-sm flex-shrink-0 text-text-secondary [font-variant-numeric:tabular-nums]">
+            {{ entry.paid ? '' : '~' }}{{ entry.amount | number: '1.2-2' }}
+          </span>
+
+          <span
+            class="text-xs px-2 py-0.5 rounded-full flex-shrink-0"
+            [ngClass]="entry.paid ? 'bg-income/15 text-income' : 'bg-expense/15 text-expense'"
+          >
+            {{ entry.paid ? 'Pagado' : 'No pagado' }}
+          </span>
+        </div>
+      }
+    </div>
+  } @else {
+
   @if (billNotificationService.isSupported()) {
     <div class="flex items-center gap-3 flex-wrap mb-6 p-3.5 rounded-2xl bg-surface-card border border-border-subtle">
       <div class="flex items-center gap-2.5">
@@ -145,6 +199,7 @@
       </div>
     }
   </div>
+  }
 </div>
 
 <p-dialog
