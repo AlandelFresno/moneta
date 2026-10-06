@@ -149,6 +149,28 @@ export class BillService {
     });
   }
 
+  /** Removes the payment entry linking `transactionId` to `id`, if one exists. Used when
+   * re-linking an existing transaction to a different bill, or unlinking it entirely. */
+  unrecordPayment(id: string, transactionId: string): Observable<void> {
+    const bills = this.allSubject.value.map((bill) =>
+      bill.id === id
+        ? { ...bill, payments: bill.payments.filter((p) => p.transactionId !== transactionId), updatedAt: new Date() }
+        : bill
+    );
+    this.persist(bills);
+    this.allSubject.next(bills);
+
+    return new Observable((subscriber) => {
+      subscriber.next();
+      subscriber.complete();
+    });
+  }
+
+  /** The id of the bill `transactionId` is currently recorded as a payment for, if any. */
+  findLinkedBillId(transactionId: string): string | undefined {
+    return this.allSubject.value.find((bill) => bill.payments.some((p) => p.transactionId === transactionId))?.id;
+  }
+
   /** Records a bill payment as an expense transaction, then links that transaction to the bill. The one payment workflow, used from both the Bills and Transactions pages. */
   async payBill(bill: Bill, amount: number, paidDate: Date): Promise<Transaction> {
     const transaction = await lastValueFrom(
@@ -220,6 +242,37 @@ export class BillService {
       return new Date(from.getFullYear(), from.getMonth() + 1, day);
     }
     return new Date(from.getFullYear() + 1, from.getMonth(), from.getDate());
+  }
+
+  private previousPeriod(bill: Bill, from: Date): Date {
+    if (bill.period === 'weekly') {
+      return new Date(from.getFullYear(), from.getMonth(), from.getDate() - 7);
+    }
+    if (bill.period === 'monthly') {
+      const daysInPrevMonth = new Date(from.getFullYear(), from.getMonth(), 0).getDate();
+      const day = Math.min(bill.dueDate.getDate(), daysInPrevMonth);
+      return new Date(from.getFullYear(), from.getMonth() - 1, day);
+    }
+    return new Date(from.getFullYear() - 1, from.getMonth(), from.getDate());
+  }
+
+  /** How many consecutive periods — counting back from the current one — are due today and still
+   * unpaid. Stops at the first paid period found, or at the bill's own anchor date (never counts
+   * periods before the bill existed). 0 means fully caught up. */
+  overduePeriodsCount(bill: Bill, now: Date): number {
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const anchor = new Date(bill.dueDate.getFullYear(), bill.dueDate.getMonth(), bill.dueDate.getDate());
+
+    let date = this.currentPeriodDueDate(bill, now);
+    let count = 0;
+
+    while (date.getTime() <= today.getTime() && date.getTime() >= anchor.getTime()) {
+      if (this.isPaidForPeriod(bill, date)) break;
+      count++;
+      date = this.previousPeriod(bill, date);
+    }
+
+    return count;
   }
 
   isPaidForPeriod(bill: Bill, periodDueDate: Date): boolean {

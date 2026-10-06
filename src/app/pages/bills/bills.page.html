@@ -95,10 +95,16 @@
             @if (isDue(bill)) {
               <span class="text-xs px-2 py-0.5 rounded-full bg-expense/15 text-expense flex-shrink-0">Pendiente</span>
             }
+            @if (overdueLabel(bill); as overdue) {
+              <span class="text-xs px-2 py-0.5 rounded-full bg-expense text-white flex-shrink-0">{{ overdue }}</span>
+            }
           </span>
           @if (bill.description) {
             <span class="text-sm truncate text-text-secondary">{{ bill.description }}</span>
           }
+          <span class="text-xs flex-shrink-0" [class]="bill.overdueCount > 0 ? 'text-expense' : 'text-text-secondary'">
+            {{ bill.overdueCount > 0 ? 'Venció el' : 'Vence el' }} {{ formatDate(bill.nextDueDate) }}
+          </span>
         </div>
 
         @if (terminationLabel(bill); as termination) {
