@@ -153,6 +153,9 @@
               <span class="text-xs px-2 py-0.5 rounded-full bg-expense text-white flex-shrink-0">{{ overdue }}</span>
             }
           </span>
+          @if (bill.items?.length) {
+            <span class="text-xs truncate text-text-secondary">{{ itemNames(bill) }}</span>
+          }
           @if (bill.description) {
             <span class="text-sm truncate text-text-secondary">{{ bill.description }}</span>
           }
@@ -237,6 +240,34 @@
       [maxFractionDigits]="2"
       placeholder="0.00"
     />
+
+    <div class="flex items-center justify-between mt-2">
+      <span class="text-sm font-medium text-text-primary">Ítems</span>
+      <p-button label="Agregar" icon="pi pi-plus" size="small" severity="secondary" [text]="true" (click)="addItem()" />
+    </div>
+
+      @for (item of form.items; track $index; let i = $index) {
+        <div class="flex gap-2 items-center">
+          <input type="text" pInputText class="flex-1 min-w-0" [(ngModel)]="item.name" placeholder="Ej: Seguro de salud" />
+          <p-inputnumber
+            class="w-32 flex-shrink-0"
+            inputStyleClass="w-full"
+            mode="decimal"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            placeholder="0.00"
+            [(ngModel)]="item.amount"
+          />
+          <button
+            type="button"
+            class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-md border-none bg-transparent text-text-secondary cursor-pointer transition-colors duration-150 hover:bg-surface-input hover:text-expense"
+            title="Quitar ítem"
+            (click)="removeItem(i)"
+          >
+            <i class="pi pi-trash"></i>
+          </button>
+        </div>
+      }
 
     <label for="bill-period" class="text-sm font-medium mt-2 text-text-primary">Frecuencia</label>
     <p-select

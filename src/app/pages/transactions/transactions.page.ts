@@ -15,11 +15,11 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
-import { Transaction, TransactionType } from '../../core/types/transaction.types';
+import { NestedCounting, NestedEffect, Transaction, TransactionType } from '../../core/types/transaction.types';
 import { Category, CategoryType } from '../../core/types/category.types';
 import { Bill } from '../../core/types/bill.types';
 import { Account } from '../../core/types/account.types';
-import { TransactionService, TransactionFormInput as TransactionForm } from '../../services/transaction.service';
+import { TransactionService, TransactionFormInput as TransactionForm, NestedChildInput } from '../../services/transaction.service';
 import { TransactionCalculationService } from '../../services/transaction-calculation.service';
 import { CategoryService } from '../../services/category.service';
 import { CsvService, ParsedCsvRow, CsvImportPlan } from '../../services/csv.service';
@@ -33,6 +33,9 @@ import { PeriodStartDayComponent } from '../../shared/period-start-day/period-st
 import { TransactionWithCategory, withCategory } from '../../core/utils/transaction-display.util';
 import { CATEGORY_ICON_OPTIONS } from '../../core/utils/category-icons.util';
 import { evaluateCalculatorInput } from '../../core/utils/math-expression.util';
+import { LineItem } from '../../core/types/line-item.types';
+import { LineItemInput, emptyLineItemInput, toLineItemInputs, lineItemsTotal, lineItemNames } from '../../core/utils/line-items.util';
+import { netAmount } from '../../core/utils/transaction-nesting.util';
 import { splitLinesTotal, seedSplitLines, withoutSplitLine } from '../../core/utils/split-lines.util';
 import { formatDate as formatDateDisplay, formatMonthLabel } from '../../core/utils/date-display.util';
 import { periodHistory, periodOverrideNote, PeriodOccurrence } from '../../core/utils/period.util';
@@ -43,6 +46,7 @@ interface TransactionListItem {
   isSplit: boolean;
   primary: TransactionWithCategory;
   lines: TransactionWithCategory[];
+  children: TransactionWithCategory[];
   totalAmount: number;
 }
 
@@ -65,7 +69,10 @@ const EMPTY_FORM: TransactionForm = {
   splitGroupId: null,
   splitLines: [],
   calculatorExpression: null,
-  isPeriodStart: false
+  isPeriodStart: false,
+  items: [],
+  nestedCounting: 'parent',
+  children: []
 };
 
 interface CategoryQuickForm {
@@ -107,6 +114,8 @@ export class TransactionsPage implements OnInit, OnDestroy {
   private readonly searchInput$ = new Subject<string>();
 
   transactions: TransactionWithCategory[] = [];
+  private nestedChildren: TransactionWithCategory[] = [];
+  private netById = new Map<string, number>();
   filteredTransactions: TransactionWithCategory[] = [];
   categories: Category[] = [];
 
@@ -189,10 +198,13 @@ export class TransactionsPage implements OnInit, OnDestroy {
     this.periodStartDay = this.periodSettingsService.getStartDay();
     this.periodStartHour = this.periodSettingsService.getStartHour();
 
-    combineLatest([this.transactionService.getAll(), this.categoryService.getAll()])
+    combineLatest([this.transactionService.getAllNested(), this.categoryService.getAll()])
       .pipe(takeUntil(this.destroy$))
-      .subscribe(([transactions, categories]) => {
+      .subscribe(([nested, categories]) => {
         this.categories = categories;
+        const transactions = nested.filter((txn) => !txn.parentId);
+        this.nestedChildren = nested.filter((txn) => txn.parentId).map((txn) => withCategory(txn, categories));
+        this.netById = new Map(transactions.map((txn) => [txn.id, netAmount(txn, nested)]));
         this.transactions = transactions
           .map((txn) => withCategory(txn, categories))
           .sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -327,11 +339,11 @@ export class TransactionsPage implements OnInit, OnDestroy {
     }
 
     if (this.filters.minAmount !== null) {
-      filtered = filtered.filter((txn) => txn.amount >= this.filters.minAmount!);
+      filtered = filtered.filter((txn) => this.netOf(txn) >= this.filters.minAmount!);
     }
 
     if (this.filters.maxAmount !== null) {
-      filtered = filtered.filter((txn) => txn.amount <= this.filters.maxAmount!);
+      filtered = filtered.filter((txn) => this.netOf(txn) <= this.filters.maxAmount!);
     }
 
     this.filteredTransactions = filtered;
@@ -346,10 +358,10 @@ export class TransactionsPage implements OnInit, OnDestroy {
   private calculateStats(): void {
     this.stats.totalIncome = this.filteredTransactions
       .filter((txn) => txn.type === 'income')
-      .reduce((sum, txn) => sum + txn.amount, 0);
+      .reduce((sum, txn) => sum + this.netOf(txn), 0);
     this.stats.totalExpense = this.filteredTransactions
       .filter((txn) => txn.type === 'expense')
-      .reduce((sum, txn) => sum + txn.amount, 0);
+      .reduce((sum, txn) => sum + this.netOf(txn), 0);
     this.stats.balance = this.stats.totalIncome - this.stats.totalExpense;
     this.stats.count = this.filteredTransactions.length;
   }
@@ -383,14 +395,26 @@ export class TransactionsPage implements OnInit, OnDestroy {
           isSplit: true,
           primary: txn,
           lines,
+          children: [],
           totalAmount: lines.reduce((sum, line) => sum + line.amount, 0)
         });
       } else {
-        group.items.push({ key: txn.id, isSplit: false, primary: txn, lines: [txn], totalAmount: txn.amount });
+        group.items.push({
+          key: txn.id,
+          isSplit: false,
+          primary: txn,
+          lines: [txn],
+          children: this.nestedChildren.filter((child) => child.parentId === txn.id),
+          totalAmount: this.netOf(txn)
+        });
       }
     }
 
     return Array.from(groups.values());
+  }
+
+  private netOf(txn: Transaction): number {
+    return this.netById.get(txn.id) ?? txn.amount;
   }
 
   isExpanded(key: string): boolean {
@@ -515,7 +539,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   openCreateDialog(type: TransactionType = 'expense'): void {
-    this.form = { ...EMPTY_FORM, type, date: new Date() };
+    this.form = { ...EMPTY_FORM, type, date: new Date(), children: [] };
     this.formBillId = null;
     this.originalFormBillId = null;
     this.resetCalculator();
@@ -536,7 +560,20 @@ export class TransactionsPage implements OnInit, OnDestroy {
       splitGroupId: null,
       splitLines: [],
       calculatorExpression: null,
-      isPeriodStart: txn.isPeriodStart ?? false
+      isPeriodStart: txn.isPeriodStart ?? false,
+      items: toLineItemInputs(txn.items),
+      nestedCounting: txn.nestedCounting ?? 'parent',
+      children: this.nestedChildren
+        .filter((child) => child.parentId === txn.id)
+        .map((child) => ({
+          id: child.id,
+          categoryId: child.categoryId,
+          name: child.name,
+          description: child.description,
+          amount: child.amount,
+          effect: child.parentEffect ?? 'add',
+          date: child.date
+        }))
     };
     this.formBillId = this.billService.findLinkedBillId(txn.id) ?? null;
     this.originalFormBillId = this.formBillId;
@@ -568,6 +605,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
       description: item.primary.description,
       date: item.primary.date,
       isSplit: true,
+      children: [],
       splitLines: item.lines.map((line) => ({ categoryId: line.categoryId, amount: line.amount }))
     };
     this.formBillId = null;
@@ -601,6 +639,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     this.form.categoryId = '';
     this.form.splitLines = this.form.splitLines.map((line) => ({ ...line, categoryId: '' }));
     if (type !== 'income') this.form.isPeriodStart = false;
+    this.form.children = this.form.children.map((child) => ({ ...child, categoryId: '' }));
   }
 
   onSplitToggle(): void {
@@ -622,6 +661,56 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   removeSplitLine(index: number): void {
     this.form.splitLines = withoutSplitLine(this.form.splitLines, index);
+  }
+
+  readonly nestedEffectOptions: { label: string; value: NestedEffect }[] = [
+    { label: 'Sumar al total', value: 'add' },
+    { label: 'Restar del total', value: 'subtract' }
+  ];
+
+  readonly nestedCountingOptions: { label: string; value: NestedCounting }[] = [
+    { label: 'Solo el total del padre cuenta', value: 'parent' },
+    { label: 'Cada sub-transacción cuenta por separado', value: 'separate' }
+  ];
+
+  itemNames(holder: { items?: LineItem[] }): string {
+    return lineItemNames(holder);
+  }
+
+  addItem(): void {
+    this.form.items.push(emptyLineItemInput());
+  }
+
+  removeItem(index: number): void {
+    this.form.items = this.form.items.filter((_, i) => i !== index);
+  }
+
+  get formItemsTotal(): number {
+    return lineItemsTotal(this.form.items);
+  }
+
+  addChild(): void {
+    const child: NestedChildInput = {
+      id: null,
+      categoryId: '',
+      name: '',
+      description: '',
+      amount: null,
+      effect: 'add',
+      date: this.form.date
+    };
+    this.form.children.push(child);
+  }
+
+  removeChild(index: number): void {
+    this.form.children = this.form.children.filter((_, i) => i !== index);
+  }
+
+  get formNetTotal(): number {
+    return this.form.children.reduce(
+      (sum, child) => sum + (child.effect === 'subtract' ? -(child.amount ?? 0) : (child.amount ?? 0)),
+      this.form.amount ?? 0
+    );
   }
 
   get splitTotal(): number {
