@@ -188,7 +188,8 @@ export class BillService {
         name: bill.name,
         description: bill.description || `Pago de servicio: ${bill.name}`,
         amount,
-        date: paidDate
+        date: paidDate,
+        items: bill.items
       })
     );
 

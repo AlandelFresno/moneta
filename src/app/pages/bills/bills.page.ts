@@ -12,6 +12,8 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { TabsModule } from 'primeng/tabs';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
+import { LineItem } from '../../core/types/line-item.types';
+import { LineItemInput, toLineItemInputs, validLineItems, hasIncompleteLineItem, lineItemNames } from '../../core/utils/line-items.util';
 import { Bill, BillPeriod } from '../../core/types/bill.types';
 import { Category } from '../../core/types/category.types';
 import { BillService, BillDueStatus, BillHistoryEntry } from '../../services/bill.service';
@@ -53,6 +55,7 @@ interface BillForm {
   description: string;
   categoryId: string;
   approxAmount: number | null;
+  items: LineItemInput[];
   period: BillPeriod;
   dueDate: Date;
   terminationMode: TerminationMode;
@@ -67,6 +70,7 @@ const EMPTY_FORM: BillForm = {
   description: '',
   categoryId: '',
   approxAmount: null,
+  items: [],
   period: 'monthly',
   dueDate: new Date(),
   terminationMode: 'ongoing',
@@ -264,6 +268,7 @@ export class BillsPage implements OnInit, OnDestroy {
       description: bill.description,
       categoryId: bill.categoryId,
       approxAmount: bill.approxAmount,
+      items: toLineItemInputs(bill.items),
       period: bill.period,
       dueDate: bill.dueDate,
       terminationMode,
@@ -272,6 +277,18 @@ export class BillsPage implements OnInit, OnDestroy {
       active: bill.active
     };
     this.dialogVisible = true;
+  }
+
+  itemNames(holder: { items?: LineItem[] }): string {
+    return lineItemNames(holder);
+  }
+
+  addItem(): void {
+    this.form.items.push({ id: null, name: '', amount: null });
+  }
+
+  removeItem(index: number): void {
+    this.form.items = this.form.items.filter((_, i) => i !== index);
   }
 
   async saveBill(): Promise<void> {
@@ -293,11 +310,18 @@ export class BillsPage implements OnInit, OnDestroy {
       return;
     }
 
+    if (hasIncompleteLineItem(this.form.items)) {
+      this.messageService.add({ severity: 'warn', summary: 'Completá nombre y un monto válido en cada ítem' });
+      return;
+    }
+
+    const items = validLineItems(this.form.items);
     const payload = {
       name: this.form.name.trim(),
       description: this.form.description,
       categoryId: this.form.categoryId,
       approxAmount: this.form.approxAmount,
+      items: items.length > 0 ? items : undefined,
       period: this.form.period,
       dueDate: this.form.dueDate,
       endDate: this.form.terminationMode === 'endDate' ? this.form.endDate! : undefined,

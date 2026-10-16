@@ -219,6 +219,9 @@
               } @else {
                 <app-icon [name]="item.primary.categoryIcon" />
               }
+              @if (!item.isSplit && item.primary.items?.length) {
+                <span class="text-xs text-text-secondary truncate">{{ itemNames(item.primary) }}</span>
+              }
             </div>
 
             <div class="flex flex-col flex-1 gap-0.5">
@@ -248,6 +251,16 @@
                 <i class="pi" [class.pi-chevron-down]="!isExpanded(item.key)" [class.pi-chevron-up]="isExpanded(item.key)"></i>
               </button>
             } @else {
+              @if (item.children.length > 0) {
+                <button
+                  type="button"
+                  class="text-xs font-medium px-2.5 py-1 rounded-full inline-flex items-center gap-1 flex-shrink-0 border-none cursor-pointer bg-accent/15 text-accent"
+                  (click)="toggleExpand(item.key)"
+                >
+                  {{ item.children.length }} sub
+                  <i class="pi" [class.pi-chevron-down]="!isExpanded(item.key)" [class.pi-chevron-up]="isExpanded(item.key)"></i>
+                </button>
+              }
               <span
                 class="text-xs font-medium px-2.5 py-1 rounded-full inline-block flex-shrink-0"
                 [style.background-color]="item.primary.categoryColor + '1a'"
@@ -288,6 +301,29 @@
               </button>
             </div>
           </div>
+
+          @if (!item.isSplit && item.children.length > 0 && isExpanded(item.key)) {
+            <div class="flex flex-col gap-1 ml-8 pl-4 border-l-2 border-border-subtle">
+              @for (child of item.children; track child.id) {
+                <div class="flex items-center gap-3 px-3 py-2 rounded-lg bg-surface-input/50">
+                  <div
+                    class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs"
+                    [style.background-color]="child.categoryColor + '22'"
+                    [style.color]="child.categoryColor"
+                  >
+                    <app-icon [name]="child.categoryIcon" />
+                  </div>
+                  <div class="flex flex-col flex-1 min-w-0">
+                    <span class="text-sm text-text-primary truncate">{{ child.name }}</span>
+                    <span class="text-xs text-text-secondary truncate">{{ child.categoryName }} · {{ formatDate(child.date) }}</span>
+                  </div>
+                  <span class="text-sm font-medium text-text-secondary [font-variant-numeric:tabular-nums]">
+                    {{ child.parentEffect === 'subtract' ? '−' : '+' }}{{ child.amount | number: '1.2-2' }}
+                  </span>
+                </div>
+              }
+            </div>
+          }
 
           @if (item.isSplit && isExpanded(item.key)) {
             <div class="flex flex-col gap-1 ml-8 pl-4 border-l-2 border-border-subtle">
@@ -489,6 +525,105 @@
       hourFormat="24"
       appendTo="body"
     />
+
+    @if (!form.isSplit) {
+      <div class="flex items-center justify-between mt-3">
+        <span class="text-sm font-medium text-text-primary">Ítems</span>
+        <p-button label="Agregar" icon="pi pi-plus" size="small" severity="secondary" [text]="true" (onClick)="addItem()" />
+      </div>
+
+      @for (item of form.items; track $index; let i = $index) {
+        <div class="flex gap-2 items-center">
+          <input type="text" pInputText class="flex-1 min-w-0" [(ngModel)]="item.name" placeholder="Ej: Seguro de salud" />
+          <p-inputnumber
+            class="w-32 flex-shrink-0"
+            inputStyleClass="w-full"
+            mode="decimal"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            placeholder="0.00"
+            [(ngModel)]="item.amount"
+          />
+          <button
+            type="button"
+            class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-md border-none bg-transparent text-text-secondary cursor-pointer transition-colors duration-150 hover:bg-surface-input hover:text-expense"
+            title="Quitar ítem"
+            (click)="removeItem(i)"
+          >
+            <i class="pi pi-trash"></i>
+          </button>
+        </div>
+      }
+      @if (form.items.length > 0) {
+        <span class="text-xs text-text-secondary">Suma de ítems: {{ formItemsTotal | number: '1.2-2' }}</span>
+      }
+    }
+
+    @if (!form.isSplit) {
+      <div class="flex items-center justify-between mt-3">
+        <span class="text-sm font-medium text-text-primary">Sub-transacciones</span>
+        <p-button label="Agregar" icon="pi pi-plus" size="small" severity="secondary" [text]="true" (onClick)="addChild()" />
+      </div>
+
+      @for (child of form.children; track $index; let i = $index) {
+        <div class="flex flex-col gap-1.5 p-3 rounded-xl border border-border-subtle bg-surface-input/40">
+          <div class="flex gap-2 items-center">
+            <input type="text" pInputText class="flex-1 min-w-0" [(ngModel)]="child.name" placeholder="Nombre" />
+            <button
+              type="button"
+              class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-md border-none bg-transparent text-text-secondary cursor-pointer transition-colors duration-150 hover:bg-surface-input hover:text-expense"
+              title="Quitar sub-transacción"
+              (click)="removeChild(i)"
+            >
+              <i class="pi pi-trash"></i>
+            </button>
+          </div>
+          <input type="text" pInputText [(ngModel)]="child.description" placeholder="Descripción (opcional)" />
+          <p-select
+            class="w-full"
+            [options]="categoriesForType(form.type)"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Categoría"
+            appendTo="body"
+            [(ngModel)]="child.categoryId"
+          />
+          <div class="flex gap-2">
+            <p-select
+              class="flex-1"
+              [options]="nestedEffectOptions"
+              optionLabel="label"
+              optionValue="value"
+              appendTo="body"
+              [(ngModel)]="child.effect"
+            />
+            <p-inputnumber
+              class="w-32 flex-shrink-0"
+              inputStyleClass="w-full"
+              mode="decimal"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+              placeholder="0.00"
+              [(ngModel)]="child.amount"
+            />
+          </div>
+          <p-datepicker class="w-full" [(ngModel)]="child.date" dateFormat="dd/mm/yy" [showTime]="true" hourFormat="24" appendTo="body" />
+        </div>
+      }
+
+      @if (form.children.length > 0) {
+        <label class="text-sm font-medium mt-1 text-text-primary">Cómo contar</label>
+        <p-select
+          class="w-full"
+          [options]="nestedCountingOptions"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          [(ngModel)]="form.nestedCounting"
+        />
+        <span class="text-sm text-text-secondary">Total: {{ formNetTotal | number: '1.2-2' }}</span>
+      }
+    }
 
     @if (form.type === 'income' && !form.isSplit) {
       <div class="flex items-center gap-2.5 mt-2">
