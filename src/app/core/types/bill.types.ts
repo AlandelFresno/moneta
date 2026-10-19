@@ -1,3 +1,5 @@
+import { LineItem } from './line-item.types';
+
 export type BillPeriod = 'weekly' | 'monthly' | 'yearly';
 
 export interface BillPayment {
@@ -13,6 +15,8 @@ export interface Bill {
   description: string;
   categoryId: string;
   approxAmount: number;
+  /** What the bill covers; copied onto each payment transaction. */
+  items?: LineItem[];
   period: BillPeriod;
   // Anchor date the recurrence is read from: day-of-week for weekly,
   // day-of-month for monthly, month+day for yearly. Changing it only

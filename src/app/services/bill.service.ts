@@ -47,6 +47,14 @@ export interface BillDueStatus {
   isOverdue: boolean;
 }
 
+export interface BillHistoryEntry {
+  bill: Bill;
+  periodDueDate: Date;
+  paid: boolean;
+  paidDate?: Date;
+  amount: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -180,7 +188,8 @@ export class BillService {
         name: bill.name,
         description: bill.description || `Pago de servicio: ${bill.name}`,
         amount,
-        date: paidDate
+        date: paidDate,
+        items: bill.items
       })
     );
 
@@ -295,6 +304,31 @@ export class BillService {
     if (bill.endDate !== undefined && now.getTime() > bill.endDate.getTime()) return true;
     if (bill.totalInstallments !== undefined && bill.payments.length >= bill.totalInstallments) return true;
     return false;
+  }
+
+  /** Every period from the bill's anchor up to the current one (never past `endDate`), paid or not, newest first. */
+  periodHistory(bill: Bill, now: Date): BillHistoryEntry[] {
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const anchor = new Date(bill.dueDate.getFullYear(), bill.dueDate.getMonth(), bill.dueDate.getDate());
+    const entries: BillHistoryEntry[] = [];
+
+    let date = this.currentPeriodDueDate(bill, now);
+    while (date.getTime() >= anchor.getTime()) {
+      const withinRange = date.getTime() <= today.getTime() && (bill.endDate === undefined || date.getTime() <= bill.endDate.getTime());
+      if (withinRange) {
+        const payment = bill.payments.find((p) => this.isSamePeriod(bill.period, p.paidDate, date));
+        entries.push({
+          bill,
+          periodDueDate: date,
+          paid: payment !== undefined,
+          paidDate: payment?.paidDate,
+          amount: payment?.amount ?? bill.approxAmount
+        });
+      }
+      date = this.previousPeriod(bill, date);
+    }
+
+    return entries;
   }
 
   /** Active, not-finished bills whose current period is due (today or earlier) and not yet paid this period. */
