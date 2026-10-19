@@ -9,11 +9,14 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { TabsModule } from 'primeng/tabs';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
+import { LineItem } from '../../core/types/line-item.types';
+import { LineItemInput, toLineItemInputs, validLineItems, hasIncompleteLineItem, lineItemNames } from '../../core/utils/line-items.util';
 import { Bill, BillPeriod } from '../../core/types/bill.types';
 import { Category } from '../../core/types/category.types';
-import { BillService, BillDueStatus } from '../../services/bill.service';
+import { BillService, BillDueStatus, BillHistoryEntry } from '../../services/bill.service';
 import { BillNotificationService } from '../../services/bill-notification.service';
 import { CategoryService } from '../../services/category.service';
 import { TransactionService } from '../../services/transaction.service';
@@ -26,6 +29,13 @@ interface BillWithCategory extends Bill {
   categoryIcon: string;
   nextDueDate: Date;
   overdueCount: number;
+}
+
+type BillsTab = 'services' | 'history';
+
+interface BillHistoryRow extends BillHistoryEntry {
+  categoryColor: string;
+  categoryIcon: string;
 }
 
 interface RecurringSuggestion extends RecurringCandidate {
@@ -45,6 +55,7 @@ interface BillForm {
   description: string;
   categoryId: string;
   approxAmount: number | null;
+  items: LineItemInput[];
   period: BillPeriod;
   dueDate: Date;
   terminationMode: TerminationMode;
@@ -59,6 +70,7 @@ const EMPTY_FORM: BillForm = {
   description: '',
   categoryId: '',
   approxAmount: null,
+  items: [],
   period: 'monthly',
   dueDate: new Date(),
   terminationMode: 'ongoing',
@@ -80,6 +92,7 @@ const EMPTY_FORM: BillForm = {
     SelectModule,
     DatePickerModule,
     ToggleSwitchModule,
+    TabsModule,
     IconComponent
   ],
   templateUrl: './bills.page.html',
@@ -91,6 +104,8 @@ export class BillsPage implements OnInit, OnDestroy {
   bills: BillWithCategory[] = [];
   categories: Category[] = [];
   dueStatuses: BillDueStatus[] = [];
+  history: BillHistoryRow[] = [];
+  activeTab: BillsTab = 'services';
   suggestions: RecurringSuggestion[] = [];
   private dismissedSuggestions: Set<string> = this.loadDismissedSuggestions();
 
@@ -144,6 +159,7 @@ export class BillsPage implements OnInit, OnDestroy {
           .map((bill) => this.withCategory(bill, categories))
           .sort((a, b) => a.name.localeCompare(b.name));
         this.dueStatuses = this.billService.dueStatuses(bills, new Date());
+        this.history = this.buildHistory(bills, categories);
 
         this.suggestions = detectRecurringCandidates(transactions, bills, new Date())
           .map((candidate) => this.withSuggestionDisplay(candidate, categories))
@@ -183,6 +199,20 @@ export class BillsPage implements OnInit, OnDestroy {
       nextDueDate: this.billService.nextDueDate(bill, now),
       overdueCount: this.billService.overduePeriodsCount(bill, now)
     };
+  }
+
+  private buildHistory(bills: Bill[], categories: Category[]): BillHistoryRow[] {
+    const now = new Date();
+    return bills
+      .flatMap((bill) => {
+        const category = categories.find((cat) => cat.id === bill.categoryId);
+        return this.billService.periodHistory(bill, now).map((entry) => ({
+          ...entry,
+          categoryColor: category?.color ?? '#6b7280',
+          categoryIcon: category?.icon ?? 'tag'
+        }));
+      })
+      .sort((a, b) => b.periodDueDate.getTime() - a.periodDueDate.getTime());
   }
 
   private withSuggestionDisplay(candidate: RecurringCandidate, categories: Category[]): RecurringSuggestion {
@@ -238,6 +268,7 @@ export class BillsPage implements OnInit, OnDestroy {
       description: bill.description,
       categoryId: bill.categoryId,
       approxAmount: bill.approxAmount,
+      items: toLineItemInputs(bill.items),
       period: bill.period,
       dueDate: bill.dueDate,
       terminationMode,
@@ -246,6 +277,18 @@ export class BillsPage implements OnInit, OnDestroy {
       active: bill.active
     };
     this.dialogVisible = true;
+  }
+
+  itemNames(holder: { items?: LineItem[] }): string {
+    return lineItemNames(holder);
+  }
+
+  addItem(): void {
+    this.form.items.push({ id: null, name: '', amount: null });
+  }
+
+  removeItem(index: number): void {
+    this.form.items = this.form.items.filter((_, i) => i !== index);
   }
 
   async saveBill(): Promise<void> {
@@ -267,11 +310,18 @@ export class BillsPage implements OnInit, OnDestroy {
       return;
     }
 
+    if (hasIncompleteLineItem(this.form.items)) {
+      this.messageService.add({ severity: 'warn', summary: 'Completá nombre y un monto válido en cada ítem' });
+      return;
+    }
+
+    const items = validLineItems(this.form.items);
     const payload = {
       name: this.form.name.trim(),
       description: this.form.description,
       categoryId: this.form.categoryId,
       approxAmount: this.form.approxAmount,
+      items: items.length > 0 ? items : undefined,
       period: this.form.period,
       dueDate: this.form.dueDate,
       endDate: this.form.terminationMode === 'endDate' ? this.form.endDate! : undefined,

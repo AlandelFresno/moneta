@@ -304,6 +304,21 @@ describe('TransactionService', () => {
   });
 
   describe('saveFromForm', () => {
+    it('saves valid items and drops blank rows', async () => {
+      const outcome = await service.saveFromForm(
+        formInput({ items: [{ id: null, name: ' Seguro ', amount: 20 }, { id: null, name: '', amount: null }] }),
+        1
+      );
+      expect(outcome.status).toBe('saved');
+      const saved = service.getAllIncludingDeleted()[0];
+      expect(saved.items?.map((i) => [i.name, i.amount])).toEqual([['Seguro', 20]]);
+    });
+
+    it('rejects a half-filled item', async () => {
+      const outcome = await service.saveFromForm(formInput({ items: [{ id: null, name: 'Seguro', amount: null }] }), 1);
+      expect(outcome.status).toBe('invalid');
+    });
+
     function formInput(overrides: Partial<TransactionFormInput> = {}): TransactionFormInput {
       return {
         id: null,
@@ -319,6 +334,9 @@ describe('TransactionService', () => {
         splitLines: [],
         calculatorExpression: null,
         isPeriodStart: false,
+        items: [],
+        nestedCounting: 'parent',
+        children: [],
         ...overrides
       };
     }
@@ -442,6 +460,116 @@ describe('TransactionService', () => {
         expect(all.length).toBe(2);
         expect(all.some((t) => t.name === 'Vieja A')).toBeFalse();
       });
+    });
+  });
+  describe('nested transactions', () => {
+    async function accountWithBalance(balance: number) {
+      const accountService = TestBed.inject(AccountService);
+      const account = await firstValueFrom(accountService.create({ name: 'Efectivo', type: 'cash', balance, color: '#10b981', icon: 'wallet' }));
+      return { accountService, account };
+    }
+
+    async function balanceOf(accountService: AccountService, id: string): Promise<number | undefined> {
+      return (await firstValueFrom(accountService.getAll())).find((acc) => acc.id === id)?.balance;
+    }
+
+    const child = (overrides = {}) => ({
+      id: null,
+      categoryId: CATEGORY_B,
+      name: 'Extra',
+      description: 'detalle',
+      amount: 30,
+      effect: 'add' as const,
+      date: new Date(2026, 0, 16),
+      ...overrides
+    });
+
+    function form(overrides: Partial<TransactionFormInput> = {}): TransactionFormInput {
+      return {
+        id: null,
+        categoryId: CATEGORY_A,
+        accountId: null,
+        type: 'expense',
+        name: 'Compra',
+        description: '',
+        amount: 100,
+        date: new Date(2026, 0, 15),
+        isSplit: false,
+        splitGroupId: null,
+        splitLines: [],
+        calculatorExpression: null,
+        isPeriodStart: false,
+        items: [],
+        nestedCounting: 'parent',
+        children: [],
+        ...overrides
+      };
+    }
+
+    it('keeps every child field and collapses the family into the parent at its net total when counting by parent', async () => {
+      await service.saveFromForm(form({ children: [child({ amount: 30 }), child({ name: 'Descuento', amount: 10, effect: 'subtract' })] }), 1);
+
+      const nested = await firstValueFrom(service.getAllNested());
+      const saved = nested.find((t) => t.name === 'Extra');
+      expect(nested.length).toBe(3);
+      expect(saved?.description).toBe('detalle');
+      expect(saved?.categoryId).toBe(CATEGORY_B);
+      expect(saved?.parentEffect).toBe('add');
+
+      const effective = await firstValueFrom(service.getAll());
+      expect(effective.length).toBe(1);
+      expect(effective[0].amount).toBe(120);
+    });
+
+    it('counts each child on its own, subtracting as a negative amount, when counting separately', async () => {
+      await service.saveFromForm(
+        form({ nestedCounting: 'separate', children: [child({ amount: 30 }), child({ name: 'Descuento', amount: 10, effect: 'subtract' })] }),
+        1
+      );
+
+      const effective = await firstValueFrom(service.getAll());
+      expect(effective.map((t) => t.amount).sort((a, b) => a - b)).toEqual([-10, 30, 100]);
+    });
+
+    it('adjusts the account balance by the net total and reverts it when the family is deleted', async () => {
+      const { accountService, account } = await accountWithBalance(1000);
+
+      const outcome = await service.saveFromForm(form({ accountId: account.id, children: [child({ amount: 50 })] }), 1);
+      expect(await balanceOf(accountService, account.id)).toBe(850);
+
+      if (outcome.status !== 'saved') throw new Error('expected saved');
+      await firstValueFrom(service.delete(outcome.transactionId));
+
+      expect(await balanceOf(accountService, account.id)).toBe(1000);
+      expect((await firstValueFrom(service.getAllNested())).length).toBe(0);
+    });
+
+    it('rewrites the balance when the counting mode changes', async () => {
+      const { accountService, account } = await accountWithBalance(1000);
+      const first = await service.saveFromForm(form({ accountId: account.id, children: [child({ amount: 50, effect: 'subtract' })] }), 1);
+      if (first.status !== 'saved') throw new Error('expected saved');
+      expect(await balanceOf(accountService, account.id)).toBe(950);
+
+      const children = (await firstValueFrom(service.getAllNested())).filter((t) => t.parentId).map((t) => child({ id: t.id, amount: t.amount, effect: 'subtract' as const }));
+      await service.saveFromForm(form({ id: first.transactionId, accountId: account.id, nestedCounting: 'separate', children }), 1);
+
+      expect(await balanceOf(accountService, account.id)).toBe(950);
+    });
+
+    it('removes children left out of the form on edit', async () => {
+      const first = await service.saveFromForm(form({ children: [child()] }), 1);
+      if (first.status !== 'saved') throw new Error('expected saved');
+
+      await service.saveFromForm(form({ id: first.transactionId, children: [] }), 1);
+
+      const nested = await firstValueFrom(service.getAllNested());
+      expect(nested.length).toBe(1);
+      expect(nested[0].nestedCounting).toBeUndefined();
+    });
+
+    it('rejects an incomplete child and a non-positive net total', async () => {
+      expect((await service.saveFromForm(form({ children: [child({ categoryId: '' })] }), 1)).status).toBe('invalid');
+      expect((await service.saveFromForm(form({ children: [child({ amount: 100, effect: 'subtract' })] }), 1)).status).toBe('invalid');
     });
   });
 });
