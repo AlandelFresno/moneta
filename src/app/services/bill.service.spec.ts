@@ -481,6 +481,57 @@ describe('BillService', () => {
     });
   });
 
+  describe('payPeriods / payablePeriods', () => {
+    const create = () =>
+      firstValueFrom(
+        service.create({
+          name: 'Internet',
+          description: '',
+          categoryId: 'cat-1',
+          approxAmount: 5000,
+          period: 'monthly',
+          dueDate: new Date(2026, 0, 10),
+          active: true
+        })
+      );
+
+    it('lists unpaid due periods oldest first', async () => {
+      const bill = await create();
+      const dates = service.payablePeriods(bill, new Date(2026, 3, 15));
+      expect(dates.map((d) => d.getMonth())).toEqual([0, 1, 2, 3]);
+    });
+
+    it('marks several periods paid with one transaction, splitting the amount', async () => {
+      const bill = await create();
+      const now = new Date(2026, 3, 15);
+      const periods = service.payablePeriods(bill, now).slice(0, 3);
+
+      const transaction = await service.payPeriods(bill, periods, 15000, now, true);
+
+      const saved = (await firstValueFrom(service.getAll())).find((b) => b.id === bill.id)!;
+      expect(saved.payments.length).toBe(3);
+      expect(saved.payments.every((p) => p.transactionId === transaction!.id && p.amount === 5000)).toBeTrue();
+      expect(service.overduePeriodsCount(saved, now)).toBe(1);
+      expect(service.isPaidForPeriod(saved, new Date(2026, 1, 10))).toBeTrue();
+    });
+
+    it('marks a period paid without creating a transaction when someone else paid', async () => {
+      const bill = await create();
+      const now = new Date(2026, 0, 20);
+
+      const transaction = await service.payPeriods(bill, service.payablePeriods(bill, now), 5000, now, false);
+
+      expect(transaction).toBeNull();
+      const saved = (await firstValueFrom(service.getAll())).find((b) => b.id === bill.id)!;
+      expect(saved.payments[0].transactionId).toBeUndefined();
+      expect(service.isPaidForPeriod(saved, new Date(2026, 0, 10))).toBeTrue();
+
+      await firstValueFrom(service.removePayment(bill.id, saved.payments[0].id));
+      const undone = (await firstValueFrom(service.getAll())).find((b) => b.id === bill.id)!;
+      expect(undone.payments.length).toBe(0);
+    });
+  });
+
   describe('recordPayment / unrecordPayment / findLinkedBillId', () => {
     it('findLinkedBillId finds the bill a transaction is recorded against', async () => {
       const bill = await firstValueFrom(

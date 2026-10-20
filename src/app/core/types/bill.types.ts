@@ -6,7 +6,10 @@ export interface BillPayment {
   id: string;
   paidDate: Date;
   amount: number;
-  transactionId: string;
+  /** Absent when someone else paid and no transaction was created on this account. */
+  transactionId?: string;
+  /** Due date of the period this payment covers. Absent on older payments, which cover the period `paidDate` falls in. */
+  periodDueDate?: Date;
 }
 
 export interface Bill {

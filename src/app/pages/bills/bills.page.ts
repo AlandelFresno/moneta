@@ -11,6 +11,7 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { TabsModule } from 'primeng/tabs';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { formatDate as formatDateDisplay } from '../../core/utils/date-display.util';
 
 import { LineItem } from '../../core/types/line-item.types';
 import { LineItemInput, toLineItemInputs, validLineItems, hasIncompleteLineItem, lineItemNames } from '../../core/utils/line-items.util';
@@ -127,6 +128,8 @@ export class BillsPage implements OnInit, OnDestroy {
   payDialogVisible = false;
   payingBill: BillWithCategory | null = null;
   payAmount: number | null = null;
+  payPeriodsCount = 1;
+  payCreateTransaction = true;
 
   reminderEnabled = false;
   reminderDaysBefore = 1;
@@ -357,7 +360,32 @@ export class BillsPage implements OnInit, OnDestroy {
   openPayDialog(bill: BillWithCategory): void {
     this.payingBill = bill;
     this.payAmount = bill.approxAmount;
+    this.payPeriodsCount = 1;
+    this.payCreateTransaction = true;
     this.payDialogVisible = true;
+  }
+
+  /** How many periods one payment can cover: every unpaid due period, capped by the installments left. */
+  get maxPayPeriods(): number {
+    if (!this.payingBill) return 1;
+    const periods = this.billService.payablePeriods(this.payingBill, new Date()).length;
+    const remaining = this.payingBill.totalInstallments !== undefined ? this.payingBill.totalInstallments - this.payingBill.payments.length : periods;
+    return Math.max(1, Math.min(periods, remaining));
+  }
+
+  onPayPeriodsChange(): void {
+    if (!this.payingBill) return;
+    this.payAmount = this.payingBill.approxAmount * this.payPeriodsCount;
+  }
+
+  get payPeriodsOptions(): { label: string; value: number }[] {
+    return Array.from({ length: this.maxPayPeriods }, (_, i) => ({ label: i === 0 ? '1 período' : `${i + 1} períodos`, value: i + 1 }));
+  }
+
+  async undoExternalPayment(entry: BillHistoryEntry): Promise<void> {
+    if (!entry.paymentId) return;
+    await lastValueFrom(this.billService.removePayment(entry.bill.id, entry.paymentId));
+    this.messageService.add({ severity: 'success', summary: 'Pago deshecho' });
   }
 
   async confirmPayment(): Promise<void> {
@@ -366,9 +394,15 @@ export class BillsPage implements OnInit, OnDestroy {
       return;
     }
 
-    await this.billService.payBill(this.payingBill, this.payAmount, new Date());
+    const now = new Date();
+    const periods = this.billService.payablePeriods(this.payingBill, now).slice(0, this.payPeriodsCount);
+    await this.billService.payPeriods(this.payingBill, periods, this.payAmount, now, this.payCreateTransaction);
 
-    this.messageService.add({ severity: 'success', summary: 'Pago registrado', detail: 'Se creó la transacción correspondiente' });
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Pago registrado',
+      detail: this.payCreateTransaction ? 'Se creó la transacción correspondiente' : 'Marcado como pagado, sin crear transacción'
+    });
     this.payDialogVisible = false;
     this.payingBill = null;
   }
@@ -401,7 +435,7 @@ export class BillsPage implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    return new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+    return formatDateDisplay(date);
   }
 
   /** "1 mes atrasado" / "3 meses atrasado" (or "semanas"/"años" for those periods) — null when caught up. */

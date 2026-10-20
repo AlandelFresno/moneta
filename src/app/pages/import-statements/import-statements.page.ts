@@ -9,6 +9,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { DatePickerModule } from 'primeng/datepicker';
 import { MessageService } from 'primeng/api';
+import { formatDate as formatDateDisplay } from '../../core/utils/date-display.util';
 
 import { Account } from '../../core/types/account.types';
 import { Category } from '../../core/types/category.types';
@@ -211,6 +212,6 @@ export class ImportStatementsPage implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    return new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+    return formatDateDisplay(date);
   }
 }

@@ -59,8 +59,18 @@
             class="text-xs px-2 py-0.5 rounded-full flex-shrink-0"
             [ngClass]="entry.paid ? 'bg-income/15 text-income' : 'bg-expense/15 text-expense'"
           >
-            {{ entry.paid ? 'Pagado' : 'No pagado' }}
+            {{ entry.paid ? (entry.external ? 'Pagado (externo)' : 'Pagado') : 'No pagado' }}
           </span>
+
+          @if (entry.external) {
+            <button
+              type="button"
+              class="text-xs cursor-pointer border-none bg-transparent text-text-secondary hover:text-accent transition-colors duration-150"
+              (click)="undoExternalPayment(entry)"
+            >
+              Deshacer
+            </button>
+          }
         </div>
       }
     </div>
@@ -332,8 +342,31 @@
   @if (payingBill) {
     <div class="flex flex-col gap-1.5">
       <p class="text-sm text-text-secondary mb-2">
-        Esto va a crear una transacción de gasto para <strong class="text-text-primary">{{ payingBill.name }}</strong>.
+        @if (payCreateTransaction) {
+          Esto va a crear una transacción de gasto para <strong class="text-text-primary">{{ payingBill.name }}</strong>.
+        } @else {
+          Se marca <strong class="text-text-primary">{{ payingBill.name }}</strong> como pagado sin crear ninguna transacción.
+        }
       </p>
+
+      <div class="flex items-center gap-2 mb-2">
+        <p-toggleswitch inputId="pay-create-tx" [(ngModel)]="payCreateTransaction" />
+        <label for="pay-create-tx" class="text-sm text-text-primary">Crear transacción (desactivá si pagó otra persona)</label>
+      </div>
+
+      @if (maxPayPeriods > 1) {
+        <label for="pay-periods" class="text-sm font-medium text-text-primary">Períodos que cubre este pago</label>
+        <p-select
+          inputId="pay-periods"
+          class="w-full mb-2"
+          [options]="payPeriodsOptions"
+          optionLabel="label"
+          optionValue="value"
+          [(ngModel)]="payPeriodsCount"
+          (onChange)="onPayPeriodsChange()"
+          appendTo="body"
+        />
+      }
 
       @if (payingBill.totalInstallments !== undefined) {
         <p class="text-sm text-text-secondary mb-2">
@@ -341,7 +374,9 @@
         </p>
       }
 
-      <label for="pay-amount" class="text-sm font-medium text-text-primary">Monto pagado (ARS)</label>
+      <label for="pay-amount" class="text-sm font-medium text-text-primary">
+        {{ payCreateTransaction ? 'Monto pagado (ARS)' : 'Monto (ARS)' }}{{ payPeriodsCount > 1 ? ' — total' : '' }}
+      </label>
       <p-inputnumber
         inputId="pay-amount"
         class="w-full"

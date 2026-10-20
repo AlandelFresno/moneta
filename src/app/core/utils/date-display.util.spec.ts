@@ -4,7 +4,7 @@ describe('formatDate', () => {
   it('formats a midnight date without a time component', () => {
     const formatted = formatDate(new Date(2026, 0, 15));
     expect(formatted).not.toMatch(/\d{2}:\d{2}/);
-    expect(formatted).toContain('2026');
+    expect(formatted).toBe('15 enero (15/01)');
   });
 
   it('appends the time when the date carries hour/minute precision (e.g. a period marker)', () => {
