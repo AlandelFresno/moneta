@@ -963,11 +963,14 @@ describe('TransactionsPage', () => {
   });
 
   describe('formatDate', () => {
-    it('formats a date in es-AR day/short-month/year style', async () => {
+    it('formats a date as "DD month (DD/MM)"', async () => {
       const { component } = await setup();
-      const formatted = component.formatDate(new Date(2026, 2, 15));
-      expect(formatted).toContain('2026');
-      expect(formatted).toMatch(/15/);
+      expect(component.formatDate(new Date(2026, 2, 5))).toBe('05 marzo (05/03)');
+    });
+
+    it('appends the time when the date is not at midnight', async () => {
+      const { component } = await setup();
+      expect(component.formatDate(new Date(2026, 9, 5, 16, 3))).toBe('05 octubre (05/10) 16:03');
     });
   });
 

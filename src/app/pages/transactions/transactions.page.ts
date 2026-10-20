@@ -442,9 +442,12 @@ export class TransactionsPage implements OnInit, OnDestroy {
     return formatMonthLabel(date);
   }
 
-  /** Plain "Month Year" when the period's real start is still the untouched calendar-month boundary; the actual date range + day count once a marker has shifted it. */
+  /** Plain "Month Year" when both the period's real start and end are still the untouched calendar-month boundaries; the actual date range + day count once a marker has shifted either one (a later marker pulls the end into the next month). */
   private periodGroupLabel(occurrence: PeriodOccurrence): string {
-    const isPlainCalendarMonth = occurrence.start.getDate() === 1 && occurrence.start.getHours() === 0 && occurrence.start.getMinutes() === 0;
+    const nextStart = new Date(occurrence.end.getTime() + 1);
+    const startsOnMonthBoundary = occurrence.start.getDate() === 1 && occurrence.start.getHours() === 0 && occurrence.start.getMinutes() === 0;
+    const endsOnMonthBoundary = nextStart.getDate() === 1 && nextStart.getHours() === 0 && nextStart.getMinutes() === 0;
+    const isPlainCalendarMonth = startsOnMonthBoundary && endsOnMonthBoundary;
     if (isPlainCalendarMonth) return formatMonthLabel(occurrence.start);
     return `${this.formatDate(occurrence.start)} – ${this.formatDate(occurrence.end)} · ${occurrence.days} días`;
   }

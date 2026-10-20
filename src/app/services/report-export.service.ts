@@ -3,6 +3,7 @@ import type jsPDF from 'jspdf';
 
 import { Transaction } from '../core/types/transaction.types';
 import { Category } from '../core/types/category.types';
+import { formatDayMonth } from '../core/utils/date-display.util';
 import { CategoryBreakdownEntry, DateRange, PeriodComparison, PeriodStats } from './dashboard.service';
 
 export interface MonthlyReportData {
@@ -25,7 +26,6 @@ const PAGE_WIDTH = 210;
 })
 export class ReportExportService {
   private readonly currencyFormatter = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  private readonly dateFormatter = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
 
   async exportMonthlyReport(data: MonthlyReportData): Promise<void> {
     const { default: JsPDF } = await import('jspdf');
@@ -185,7 +185,7 @@ export class ReportExportService {
   }
 
   private formatDate(date: Date): string {
-    return this.dateFormatter.format(date);
+    return formatDayMonth(date);
   }
 
   private formatShortDate(date: Date): string {

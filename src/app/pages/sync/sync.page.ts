@@ -6,6 +6,7 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 
 import { GoogleAuthService, GoogleAuthError } from '../../services/google-auth.service';
 import { DriveSyncService, SyncResult, SyncSummaryItem, buildSyncSummary } from '../../services/drive-sync.service';
+import { formatDateTime } from '../../core/utils/date-display.util';
 import { downloadTextFile, readFileAsText } from '../../core/utils/file-download.util';
 
 @Component({
@@ -21,6 +22,7 @@ export class SyncPage implements OnInit, OnDestroy {
   signedIn = false;
   pulling = false;
   pushing = false;
+  readonly formatDateTime = formatDateTime;
   lastSyncedAt: Date | null = null;
   lastError: string | null = null;
   requiresReauth = false;

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { debounceTime } from 'rxjs';
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications, LocalNotificationSchema } from '@capacitor/local-notifications';
+import { formatDayMonth } from '../core/utils/date-display.util';
 import { BillService, BillDueStatus } from './bill.service';
 
 export interface BillNotificationSettings {
@@ -34,7 +35,7 @@ export function buildScheduledNotifications(
       return {
         id: numericIdFromString(bill.id),
         title: 'Vencimiento próximo',
-        body: `${bill.name} vence el ${periodDueDate.toLocaleDateString('es-AR')}`,
+        body: `${bill.name} vence el ${formatDayMonth(periodDueDate)}`,
         schedule: { at: notifyAt }
       };
     })

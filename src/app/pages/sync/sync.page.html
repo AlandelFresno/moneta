@@ -18,7 +18,7 @@
         </span>
         <span class="text-xs text-text-secondary">
           @if (lastSyncedAt) {
-            Última sincronización: {{ lastSyncedAt | date: 'dd/MM/yyyy HH:mm' }}
+            Última sincronización: {{ formatDateTime(lastSyncedAt) }}
           } @else {
             Todavía no sincronizaste
           }
@@ -115,7 +115,7 @@
           <i class="pi pi-check-circle text-income"></i>
           <h2 class="text-sm font-semibold text-text-primary">{{ resultTitle }}</h2>
         </div>
-        <span class="text-xs text-text-secondary">{{ lastResult.syncedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+        <span class="text-xs text-text-secondary">{{ formatDateTime(lastResult.syncedAt) }}</span>
       </div>
 
       @if (hasChanges) {
