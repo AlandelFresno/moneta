@@ -152,6 +152,10 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   upcomingBills: UpcomingBillDisplay[] = [];
   hasCategoryTrend = false;
 
+  breakdownChartHeight(count: number): number {
+    return Math.max(256, count * 30 + 50);
+  }
+
   activeBudget: Budget | null = null;
   budgetProgress: BudgetProgress | null = null;
   private budgetTransactions: Transaction[] = [];

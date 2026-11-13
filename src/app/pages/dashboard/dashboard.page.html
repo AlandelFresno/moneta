@@ -231,7 +231,7 @@
     <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle min-w-0">
       <h2 class="text-sm font-semibold text-text-primary mb-4">Gastos por categoría</h2>
       @if (hasExpenseBreakdown) {
-        <div class="h-64 min-w-0">
+        <div class="min-w-0" [style.height.px]="breakdownChartHeight(expenseBreakdown.length)">
           <canvas #expenseBreakdownCanvas class="block max-w-full"></canvas>
         </div>
       } @else {
@@ -245,7 +245,7 @@
     <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle min-w-0">
       <h2 class="text-sm font-semibold text-text-primary mb-4">Ingresos por categoría</h2>
       @if (hasIncomeBreakdown) {
-        <div class="h-64 min-w-0">
+        <div class="min-w-0" [style.height.px]="breakdownChartHeight(incomeBreakdown.length)">
           <canvas #incomeBreakdownCanvas class="block max-w-full"></canvas>
         </div>
       } @else {
