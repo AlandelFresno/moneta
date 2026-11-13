@@ -219,9 +219,6 @@
               } @else {
                 <app-icon [name]="item.primary.categoryIcon" />
               }
-              @if (!item.isSplit && item.primary.items?.length) {
-                <span class="text-xs text-text-secondary truncate">{{ itemNames(item.primary) }}</span>
-              }
             </div>
 
             <div class="flex flex-col flex-1 gap-0.5">
@@ -238,6 +235,9 @@
                 <span class="text-sm whitespace-nowrap text-text-secondary">Dividida en {{ item.lines.length }} categorías</span>
               } @else if (item.primary.description) {
                 <span class="text-sm whitespace-nowrap text-text-secondary">{{ item.primary.description }}</span>
+              }
+              @if (!item.isSplit && item.primary.items?.length) {
+                <span class="text-xs whitespace-nowrap text-text-secondary">{{ itemNames(item.primary) }}</span>
               }
             </div>
 
@@ -392,12 +392,10 @@
     @if (!form.isSplit) {
       <label for="txn-category" class="text-sm font-medium mt-2 text-text-primary">Categoría</label>
       <div class="flex gap-2">
-        <p-select
+        <app-category-select
           class="w-full flex-1"
           inputId="txn-category"
           [options]="categoriesForType(form.type)"
-          optionLabel="name"
-          optionValue="id"
           placeholder="Seleccioná una categoría"
           [(ngModel)]="form.categoryId"
         />
@@ -423,11 +421,9 @@
       <div class="flex flex-col gap-2">
         @for (line of form.splitLines; track $index; let i = $index) {
           <div class="flex gap-2 items-center">
-            <p-select
+            <app-category-select
               class="flex-1"
               [options]="categoriesForType(form.type)"
-              optionLabel="name"
-              optionValue="id"
               placeholder="Categoría"
               [(ngModel)]="line.categoryId"
             />
@@ -543,6 +539,7 @@
             [maxFractionDigits]="2"
             placeholder="0.00"
             [(ngModel)]="item.amount"
+            (ngModelChange)="syncAmountToItems()"
           />
           <button
             type="button"
@@ -579,13 +576,10 @@
             </button>
           </div>
           <input type="text" pInputText [(ngModel)]="child.description" placeholder="Descripción (opcional)" />
-          <p-select
+          <app-category-select
             class="w-full"
             [options]="categoriesForType(form.type)"
-            optionLabel="name"
-            optionValue="id"
             placeholder="Categoría"
-            appendTo="body"
             [(ngModel)]="child.categoryId"
           />
           <div class="flex gap-2">
@@ -748,12 +742,10 @@
   @if (selectedCommonType) {
     <div class="flex flex-col gap-1.5">
       <label for="bulk-recategorize" class="text-sm font-medium mt-2 text-text-primary">Nueva categoría</label>
-      <p-select
+      <app-category-select
         inputId="bulk-recategorize"
         class="w-full"
         [options]="categoriesForType(selectedCommonType)"
-        optionLabel="name"
-        optionValue="id"
         placeholder="Seleccioná una categoría"
         [(ngModel)]="bulkRecategorizeCategoryId"
       />

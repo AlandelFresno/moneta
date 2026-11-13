@@ -2,7 +2,9 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, map, lastValueFrom } from 'rxjs';
 import { Bill, BillPayment, BillPeriod } from '../core/types/bill.types';
 import { Transaction } from '../core/types/transaction.types';
+import { LineItem } from '../core/types/line-item.types';
 import { TransactionService } from './transaction.service';
+import { TransactionCalculationService } from './transaction-calculation.service';
 
 interface StoredBillPayment extends Omit<BillPayment, 'paidDate' | 'periodDueDate'> {
   paidDate: string;
@@ -67,7 +69,10 @@ export class BillService {
   private readonly allSubject = new BehaviorSubject<Bill[]>(this.loadAll());
   readonly bills$: Observable<Bill[]> = this.allSubject.pipe(map((bills) => bills.filter((bill) => !bill.deletedAt)));
 
-  constructor(private readonly transactionService: TransactionService) {}
+  constructor(
+    private readonly transactionService: TransactionService,
+    private readonly transactionCalculationService: TransactionCalculationService
+  ) {}
 
   private loadAll(): Bill[] {
     const raw = localStorage.getItem(this.storageKey);
@@ -235,7 +240,14 @@ export class BillService {
    * every period (each payment records its equal share). Without it nothing is added to the ledger — for when
    * someone else paid, or the money moved outside this account.
    */
-  async payPeriods(bill: Bill, periods: Date[], amount: number, paidDate: Date, createTransaction: boolean): Promise<Transaction | null> {
+  async payPeriods(
+    bill: Bill,
+    periods: Date[],
+    amount: number,
+    paidDate: Date,
+    createTransaction: boolean,
+    details: { items: LineItem[]; calculatorExpression: string | null } = { items: bill.items ?? [], calculatorExpression: null }
+  ): Promise<Transaction | null> {
     const transaction = createTransaction
       ? await lastValueFrom(
           this.transactionService.create({
@@ -245,10 +257,16 @@ export class BillService {
             description: bill.description || `Pago de servicio: ${bill.name}`,
             amount,
             date: paidDate,
-            items: bill.items
+            items: details.items.length > 0 ? details.items : undefined
           })
         )
       : null;
+
+    if (transaction && details.calculatorExpression) {
+      await lastValueFrom(
+        this.transactionCalculationService.create({ transactionId: transaction.id, expression: details.calculatorExpression, result: amount })
+      );
+    }
 
     const share = amount / periods.length;
     await lastValueFrom(
