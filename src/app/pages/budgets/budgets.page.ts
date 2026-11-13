@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Subject, takeUntil, combineLatest, lastValueFrom } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -19,6 +20,8 @@ import { CategoryService } from '../../services/category.service';
 import { TransactionService } from '../../services/transaction.service';
 import { GoalService } from '../../services/goal.service';
 import { AccountService } from '../../services/account.service';
+import { SavingsPlanService } from '../../services/savings-plan.service';
+import { SavingsPlanSummary } from '../../core/types/savings-plan.types';
 import { PeriodSettingsService } from '../../services/period-settings.service';
 import { periodLabelMonth, periodRange, periodHistory, addMonths, PeriodOccurrence } from '../../core/utils/period.util';
 import { formatDate as formatDateDisplay, formatMonthLabel as formatMonthLabelDisplay } from '../../core/utils/date-display.util';
@@ -38,6 +41,7 @@ const EMPTY_ROLLOVER_FORM: RolloverForm = {
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
     ButtonModule,
     DialogModule,
     InputNumberModule,
@@ -63,6 +67,7 @@ export class BudgetsPage implements OnInit, OnDestroy {
   current: Budget | null = null;
   upcoming: Budget | null = null;
   progress: BudgetProgress | null = null;
+  savingsSummary: SavingsPlanSummary | null = null;
   history: Budget[] = [];
   historyPanelOpen = false;
   pendingRollovers: PendingGoalRollover[] = [];
@@ -106,6 +111,7 @@ export class BudgetsPage implements OnInit, OnDestroy {
     private readonly goalService: GoalService,
     private readonly accountService: AccountService,
     private readonly periodSettingsService: PeriodSettingsService,
+    private readonly savingsPlanService: SavingsPlanService,
     private readonly confirmationService: ConfirmationService,
     private readonly messageService: MessageService,
     private readonly cdr: ChangeDetectorRef
@@ -120,10 +126,11 @@ export class BudgetsPage implements OnInit, OnDestroy {
       this.transactionService.getAll(),
       this.categoryService.getAll(),
       this.goalService.getAll(),
-      this.accountService.getAll()
+      this.accountService.getAll(),
+      this.savingsPlanService.getPlan()
     ])
       .pipe(takeUntil(this.destroy$))
-      .subscribe(([budgets, transactions, categories, goals, accounts]) => {
+      .subscribe(([budgets, transactions, categories, goals, accounts, savingsPlan]) => {
         const reference = new Date();
         this.budgets = budgets;
         this.categories = categories;
@@ -138,6 +145,7 @@ export class BudgetsPage implements OnInit, OnDestroy {
         this.currentPeriodRange = periodRange(reference, this.periodStartDay, this.periodStartHour, transactions);
         this.periodHistoryList = this.computePeriodHistory(transactions, reference);
         this.progress = this.budgetService.currentPeriodProgress(this.current, transactions);
+        this.savingsSummary = savingsPlan ? this.savingsPlanService.summarize(savingsPlan, transactions, this.current, reference) : null;
 
         this.cdr.markForCheck();
       });

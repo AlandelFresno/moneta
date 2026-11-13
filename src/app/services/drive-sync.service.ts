@@ -26,6 +26,7 @@ import {
   toGoalContribution,
   fromGoalContribution
 } from './goal.service';
+import { SavingsPlanService, StoredSavingsPlan, toSavingsPlan, fromSavingsPlan } from './savings-plan.service';
 import {
   TransactionCalculationService,
   StoredTransactionCalculation,
@@ -34,6 +35,7 @@ import {
 } from './transaction-calculation.service';
 import { Account, AccountTransfer } from '../core/types/account.types';
 import { Goal, GoalContribution } from '../core/types/goal.types';
+import { SavingsPlan } from '../core/types/savings-plan.types';
 import { TransactionCalculation } from '../core/types/transaction-calculation.types';
 import { mergeEntities, purgeOldTombstones } from '../core/utils/sync-merge.util';
 import { dedupeCategories } from '../core/utils/category-dedupe.util';
@@ -54,6 +56,7 @@ export interface SyncResult {
   goals: EntitySyncStats;
   goalContributions: EntitySyncStats;
   transactionCalculations: EntitySyncStats;
+  savingsPlans: EntitySyncStats;
 }
 
 export interface SyncSummaryItem {
@@ -70,7 +73,8 @@ const SYNC_SUMMARY_LABELS: { key: keyof SyncStats; label: string }[] = [
   { key: 'accounts', label: 'Cuentas' },
   { key: 'transfers', label: 'Transferencias' },
   { key: 'goals', label: 'Metas' },
-  { key: 'goalContributions', label: 'Aportes' }
+  { key: 'goalContributions', label: 'Aportes' },
+  { key: 'savingsPlans', label: 'Plan de ahorro' }
 ];
 
 export function buildSyncSummary(result: SyncResult): SyncSummaryItem[] {
@@ -102,6 +106,7 @@ interface DriveSyncPayload {
   goals: StoredGoal[];
   goalContributions: StoredGoalContribution[];
   transactionCalculations: StoredTransactionCalculation[];
+  savingsPlans: StoredSavingsPlan[];
 }
 
 const EMPTY_PAYLOAD: DriveSyncPayload = {
@@ -113,7 +118,8 @@ const EMPTY_PAYLOAD: DriveSyncPayload = {
   transfers: [],
   goals: [],
   goalContributions: [],
-  transactionCalculations: []
+  transactionCalculations: [],
+  savingsPlans: []
 };
 
 @Injectable({
@@ -134,7 +140,8 @@ export class DriveSyncService {
     private readonly budgetService: BudgetService,
     private readonly accountService: AccountService,
     private readonly goalService: GoalService,
-    private readonly transactionCalculationService: TransactionCalculationService
+    private readonly transactionCalculationService: TransactionCalculationService,
+    private readonly savingsPlanService: SavingsPlanService
   ) {}
 
   /** Downloads remote data, merges it into local storage, and writes the merged result locally. Does not upload. */
@@ -153,6 +160,7 @@ export class DriveSyncService {
     this.goalService.replaceAll(deduped.goals);
     this.goalService.replaceAllContributions(deduped.goalContributions);
     this.transactionCalculationService.replaceAll(deduped.transactionCalculations);
+    this.savingsPlanService.replaceAll(deduped.savingsPlans);
 
     return this.finalizeResult(stats);
   }
@@ -196,6 +204,7 @@ export class DriveSyncService {
     this.goalService.replaceAll(deduped.goals);
     this.goalService.replaceAllContributions(deduped.goalContributions);
     this.transactionCalculationService.replaceAll(deduped.transactionCalculations);
+    this.savingsPlanService.replaceAll(deduped.savingsPlans);
 
     return this.buildResult(stats);
   }
@@ -210,6 +219,7 @@ export class DriveSyncService {
     goals: Goal[];
     goalContributions: GoalContribution[];
     transactionCalculations: TransactionCalculation[];
+    savingsPlans: SavingsPlan[];
   }): DriveSyncPayload {
     return {
       transactions: deduped.transactions.map(fromTransaction),
@@ -220,7 +230,8 @@ export class DriveSyncService {
       transfers: deduped.transfers.map(fromTransfer),
       goals: deduped.goals.map(fromGoal),
       goalContributions: deduped.goalContributions.map(fromGoalContribution),
-      transactionCalculations: deduped.transactionCalculations.map(fromTransactionCalculation)
+      transactionCalculations: deduped.transactionCalculations.map(fromTransactionCalculation),
+      savingsPlans: deduped.savingsPlans.map(fromSavingsPlan)
     };
   }
 
@@ -231,6 +242,7 @@ export class DriveSyncService {
       goals: Goal[];
       goalContributions: GoalContribution[];
       transactionCalculations: TransactionCalculation[];
+      savingsPlans: SavingsPlan[];
     };
     stats: SyncStats;
   } {
@@ -278,6 +290,12 @@ export class DriveSyncService {
     );
     const mergedTransactionCalculations = purgeOldTombstones(transactionCalculationsResult.merged, now);
 
+    const savingsPlansResult = mergeEntities(
+      this.savingsPlanService.getAllIncludingDeleted(),
+      remotePayload.savingsPlans.map(toSavingsPlan)
+    );
+    const mergedSavingsPlans = purgeOldTombstones(savingsPlansResult.merged, now);
+
     const categoryDeduped = dedupeCategories(mergedCategories, mergedTransactions, mergedBills, mergedBudgets, now);
 
     return {
@@ -287,7 +305,8 @@ export class DriveSyncService {
         transfers: mergedTransfers,
         goals: mergedGoals,
         goalContributions: mergedGoalContributions,
-        transactionCalculations: mergedTransactionCalculations
+        transactionCalculations: mergedTransactionCalculations,
+        savingsPlans: mergedSavingsPlans
       },
       stats: {
         transactions: { added: transactionsResult.added, updated: transactionsResult.updated },
@@ -298,7 +317,8 @@ export class DriveSyncService {
         transfers: { added: transfersResult.added, updated: transfersResult.updated },
         goals: { added: goalsResult.added, updated: goalsResult.updated },
         goalContributions: { added: goalContributionsResult.added, updated: goalContributionsResult.updated },
-        transactionCalculations: { added: transactionCalculationsResult.added, updated: transactionCalculationsResult.updated }
+        transactionCalculations: { added: transactionCalculationsResult.added, updated: transactionCalculationsResult.updated },
+        savingsPlans: { added: savingsPlansResult.added, updated: savingsPlansResult.updated }
       }
     };
   }

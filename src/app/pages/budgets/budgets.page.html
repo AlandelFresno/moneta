@@ -24,6 +24,28 @@
 
   <app-period-start-day class="block mb-6" (settingsChange)="onPeriodSettingsChange()" />
 
+  @if (savingsSummary && savingsSummary.budgetTotal !== null) {
+    <a
+      routerLink="/savings-plan"
+      class="flex items-center justify-between gap-3 flex-wrap mb-6 px-4 py-3 rounded-xl bg-surface-card border border-border-subtle text-sm no-underline hover:border-border-strong transition-colors duration-150"
+    >
+      <span class="text-text-primary">
+        Presupuesto {{ savingsSummary.budgetTotal | number: '1.2-2' }} · Ticket de ahorro {{ savingsSummary.ticket | number: '1.2-2' }}
+      </span>
+      <span
+        class="font-medium [font-variant-numeric:tabular-nums]"
+        [class.text-income]="savingsSummary.budgetTotal <= savingsSummary.ticket"
+        [class.text-expense]="savingsSummary.budgetTotal > savingsSummary.ticket"
+      >
+        @if (savingsSummary.budgetTotal <= savingsSummary.ticket) {
+          Dentro de tu meta de {{ savingsSummary.targetPct | number: '1.0-2' }}%
+        } @else {
+          Supera el ticket por {{ savingsSummary.budgetTotal - savingsSummary.ticket | number: '1.2-2' }}
+        }
+      </span>
+    </a>
+  }
+
   @if (pendingRollovers.length > 0) {
     <div class="mb-6">
       <h2 class="text-sm font-semibold text-text-primary mb-3">Rollovers pendientes</h2>

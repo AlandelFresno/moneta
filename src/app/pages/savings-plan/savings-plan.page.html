@@ -1,0 +1,221 @@
+<div class="p-6 md:p-8 max-w-5xl mx-auto">
+  <div class="flex items-start justify-between gap-4 flex-wrap mb-7">
+    <div>
+      <h1 class="text-[1.75rem] font-semibold tracking-tight text-text-primary">Plan de ahorro</h1>
+      <p class="text-sm text-text-secondary mt-0.5">
+        @if (plan) {
+          Meta: ahorrar el {{ plan.targetPct | number: '1.0-2' }}% de tu ingreso
+        } @else {
+          Definí qué porcentaje de tu ingreso querés ahorrar
+        }
+      </p>
+    </div>
+
+    @if (plan) {
+      <div class="flex items-center gap-2">
+        <p-button label="Editar" severity="secondary" [outlined]="true" (onClick)="openDialog()" />
+        <p-button label="Eliminar" severity="danger" [outlined]="true" (onClick)="confirmDelete()" />
+      </div>
+    }
+  </div>
+
+  @if (summary) {
+    <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle mb-4">
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <span class="text-xs text-text-secondary">Ticket mensual (gasto máximo)</span>
+          <div class="text-3xl font-semibold text-text-primary [font-variant-numeric:tabular-nums]">
+            {{ summary.ticket | number: '1.2-2' }}
+          </div>
+          <span class="text-xs text-text-secondary">
+            Ingreso {{ summary.incomeIsEstimate ? 'estimado (promedio)' : 'fijado' }}: {{ summary.income | number: '1.2-2' }}
+          </span>
+        </div>
+
+        <div class="text-right">
+          <span class="text-xs text-text-secondary">Ahorrado este período</span>
+          <div
+            class="text-3xl font-semibold [font-variant-numeric:tabular-nums]"
+            [class.text-income]="onTarget"
+            [class.text-expense]="!onTarget"
+          >
+            @if (summary.savedPct !== null) {
+              {{ summary.savedPct | number: '1.0-1' }}%
+            } @else {
+              —
+            }
+          </div>
+          <span class="text-xs text-text-secondary [font-variant-numeric:tabular-nums]">{{ summary.saved | number: '1.2-2' }}</span>
+        </div>
+      </div>
+
+      <div class="mt-4 h-2.5 rounded-full bg-surface-input overflow-hidden">
+        <div
+          class="h-full rounded-full transition-all duration-300"
+          [class.bg-income]="onTarget"
+          [class.bg-expense]="!onTarget"
+          [style.width.%]="spentPct"
+        ></div>
+      </div>
+
+      <div class="mt-2 flex items-center justify-between gap-3 flex-wrap text-xs text-text-secondary [font-variant-numeric:tabular-nums]">
+        <span>Gastado {{ summary.spent | number: '1.2-2' }} de {{ summary.ticket | number: '1.2-2' }}</span>
+        <span [class.text-income]="onTarget" [class.text-expense]="!onTarget">
+          @if (onTarget) {
+            Margen: {{ summary.buffer | number: '1.2-2' }}
+          } @else {
+            Te pasaste por {{ -summary.buffer | number: '1.2-2' }}
+          }
+        </span>
+      </div>
+
+      <div class="mt-3 text-xs text-text-secondary [font-variant-numeric:tabular-nums]">
+        Meta de ahorro: {{ summary.savingsGoal | number: '1.2-2' }}
+        @if (summary.budgetTotal !== null) {
+          · Presupuesto del mes: {{ summary.budgetTotal | number: '1.2-2' }}
+          @if (summary.budgetTotal > summary.ticket) {
+            <span class="text-expense"> (supera el ticket por {{ summary.budgetTotal - summary.ticket | number: '1.2-2' }})</span>
+          }
+        }
+      </div>
+    </div>
+
+    <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle mb-4">
+      <h2 class="text-sm font-semibold text-text-primary mb-4">Gasto por categoría</h2>
+
+      @if (rows.length > 0) {
+        <div class="flex flex-col gap-1">
+          @for (row of rows; track row.categoryId) {
+            <div class="flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-surface-input transition-colors duration-150 min-w-0">
+              <div
+                class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm"
+                [style.color]="row.color"
+                [style.background-color]="row.color + '26'"
+              >
+                <app-icon [name]="row.icon" />
+              </div>
+
+              <div class="flex flex-col flex-1 min-w-0 gap-1">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-sm font-medium text-text-primary truncate">{{ row.name }}</span>
+                  <span class="text-xs text-text-secondary flex-shrink-0 [font-variant-numeric:tabular-nums]">
+                    {{ row.actual | number: '1.2-2' }}
+                    @if (row.planned !== null) {
+                      / {{ row.planned | number: '1.2-2' }}
+                    } @else {
+                      · sin presupuesto
+                    }
+                  </span>
+                </div>
+                @if (row.pct !== null) {
+                  <div class="h-1.5 rounded-full bg-surface-input overflow-hidden">
+                    <div
+                      class="h-full rounded-full"
+                      [class.bg-expense]="row.pct > 100"
+                      [style.background-color]="row.pct > 100 ? null : row.color"
+                      [style.width.%]="row.pct > 100 ? 100 : row.pct"
+                    ></div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="flex flex-col items-center justify-center gap-2 py-10 text-sm text-text-secondary">
+          <i class="pi pi-chart-bar text-3xl opacity-50"></i>
+          <span>No hay gastos ni presupuesto en este período.</span>
+        </div>
+      }
+    </div>
+
+    <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle">
+      <h2 class="text-sm font-semibold text-text-primary mb-4">% ahorrado por período</h2>
+
+      <div class="relative h-40 flex items-end gap-3">
+        <div
+          class="absolute left-0 right-0 border-t border-dashed border-border-strong pointer-events-none"
+          [style.bottom.%]="plan?.targetPct ?? 0"
+        >
+          <span class="absolute right-0 -top-4 text-[10px] text-text-secondary">meta {{ plan?.targetPct | number: '1.0-0' }}%</span>
+        </div>
+
+        @for (point of trend; track point.label) {
+          <div class="flex-1 h-full flex flex-col justify-end items-center gap-1 min-w-0">
+            <div
+              class="w-full max-w-10 rounded-t-md"
+              [class.bg-income]="trendMetTarget(point)"
+              [class.bg-expense]="!trendMetTarget(point)"
+              [style.height.%]="trendBarHeight(point)"
+              [title]="point.savedPct === null ? 'Sin ingresos' : (point.savedPct | number: '1.0-1') + '%'"
+            ></div>
+          </div>
+        }
+      </div>
+
+      <div class="flex gap-3 mt-2">
+        @for (point of trend; track point.label) {
+          <div class="flex-1 text-center min-w-0">
+            <div class="text-[10px] text-text-secondary truncate">{{ point.label }}</div>
+            <div class="text-xs font-medium text-text-primary [font-variant-numeric:tabular-nums]">
+              @if (point.savedPct === null) {
+                —
+              } @else {
+                {{ point.savedPct | number: '1.0-0' }}%
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="flex flex-col items-center justify-center gap-2 py-16 text-sm text-text-secondary">
+      <i class="pi pi-percentage text-3xl opacity-50"></i>
+      <span>Todavía no tenés un plan de ahorro.</span>
+      <p-button label="Crear plan" icon="pi pi-plus" class="mt-2" (onClick)="openDialog()" />
+    </div>
+  }
+</div>
+
+<p-dialog
+  [(visible)]="dialogVisible"
+  [modal]="true"
+  [style]="{ width: '24rem', maxWidth: '92vw' }"
+  [header]="plan ? 'Editar plan de ahorro' : 'Nuevo plan de ahorro'"
+>
+  <div class="flex flex-col gap-1.5">
+    <label for="plan-target" class="text-sm font-medium mt-2 text-text-primary">Porcentaje a ahorrar</label>
+    <p-inputnumber
+      inputId="plan-target"
+      class="w-full"
+      inputStyleClass="w-full"
+      [(ngModel)]="formTargetPct"
+      mode="decimal"
+      [minFractionDigits]="0"
+      [maxFractionDigits]="2"
+      suffix="%"
+      [min]="1"
+      [max]="99"
+    />
+
+    <label for="plan-income" class="text-sm font-medium mt-2 text-text-primary">
+      Ingreso mensual neto (ARS)
+      <span class="text-text-secondary font-normal">— opcional</span>
+    </label>
+    <p-inputnumber
+      inputId="plan-income"
+      class="w-full"
+      inputStyleClass="w-full"
+      [(ngModel)]="formIncome"
+      mode="decimal"
+      [minFractionDigits]="2"
+      [maxFractionDigits]="2"
+      placeholder="Vacío = promedio de los últimos 3 períodos"
+    />
+  </div>
+
+  <ng-template #footer>
+    <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="dialogVisible = false" />
+    <p-button label="Guardar" (onClick)="savePlan()" />
+  </ng-template>
+</p-dialog>

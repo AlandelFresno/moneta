@@ -114,6 +114,7 @@ describe('DriveSyncService', () => {
     expect(result.budgets).toEqual({ added: 0, updated: 0 });
     expect(result.goals).toEqual({ added: 0, updated: 0 });
     expect(result.transactionCalculations).toEqual({ added: 0, updated: 0 });
+    expect(result.savingsPlans).toEqual({ added: 0, updated: 0 });
   });
 
   it('push() uploads the merged payload and patches the existing file', async () => {
@@ -129,7 +130,8 @@ describe('DriveSyncService', () => {
       transfers: [],
       goals: [],
       goalContributions: [],
-      transactionCalculations: []
+      transactionCalculations: [],
+      savingsPlans: []
     });
 
     const upload = await expectAndFlush(isPatchUpload, { id: 'file-1' });
@@ -162,7 +164,8 @@ describe('DriveSyncService', () => {
       transfers: [],
       goals: [],
       goalContributions: [],
-      transactionCalculations: []
+      transactionCalculations: [],
+      savingsPlans: []
     });
 
     const result = await service.importFromJson(backup);
