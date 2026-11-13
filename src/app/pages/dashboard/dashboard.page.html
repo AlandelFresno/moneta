@@ -231,7 +231,7 @@
     <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle min-w-0">
       <h2 class="text-sm font-semibold text-text-primary mb-4">Gastos por categoría</h2>
       @if (hasExpenseBreakdown) {
-        <div class="h-64 min-w-0">
+        <div class="min-w-0" [style.height.px]="breakdownChartHeight(expenseBreakdown.length)">
           <canvas #expenseBreakdownCanvas class="block max-w-full"></canvas>
         </div>
       } @else {
@@ -245,7 +245,7 @@
     <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle min-w-0">
       <h2 class="text-sm font-semibold text-text-primary mb-4">Ingresos por categoría</h2>
       @if (hasIncomeBreakdown) {
-        <div class="h-64 min-w-0">
+        <div class="min-w-0" [style.height.px]="breakdownChartHeight(incomeBreakdown.length)">
           <canvas #incomeBreakdownCanvas class="block max-w-full"></canvas>
         </div>
       } @else {
@@ -355,12 +355,22 @@
     }
   </div>
 
-  <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle min-w-0">
-    <h2 class="text-sm font-semibold text-text-primary mb-4">Mayores transacciones</h2>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle min-w-0">
+      <h2 class="text-sm font-semibold text-text-primary mb-4">Mayores ingresos</h2>
+      <ng-container *ngTemplateOutlet="txnList; context: { $implicit: topIncomes, empty: 'No hay ingresos en este período.' }" />
+    </div>
 
-    @if (topTransactions.length > 0) {
+    <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle min-w-0">
+      <h2 class="text-sm font-semibold text-text-primary mb-4">Mayores gastos</h2>
+      <ng-container *ngTemplateOutlet="txnList; context: { $implicit: topExpenses, empty: 'No hay gastos en este período.' }" />
+    </div>
+  </div>
+
+  <ng-template #txnList let-items let-empty="empty">
+    @if (items.length > 0) {
       <div class="flex flex-col gap-1 min-w-0">
-        @for (txn of topTransactions; track txn.id) {
+        @for (txn of items; track txn.id) {
           <div class="flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-surface-input transition-colors duration-150 min-w-0">
             <div
               class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm"
@@ -386,8 +396,8 @@
     } @else {
       <div class="flex flex-col items-center justify-center gap-2 py-16 text-sm text-text-secondary">
         <i class="pi pi-list text-3xl opacity-50"></i>
-        <span>No hay transacciones en este período.</span>
+        <span>{{ empty }}</span>
       </div>
     }
-  </div>
+  </ng-template>
 </div>
