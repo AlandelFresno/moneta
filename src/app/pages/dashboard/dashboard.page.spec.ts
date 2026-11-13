@@ -355,8 +355,7 @@ describe('DashboardPage', () => {
     it('formatRange: dash for null, formatted "start – end" otherwise', () => {
       expect(component.formatRange(null)).toBe('—');
       const formatted = component.formatRange({ start: new Date(2026, 0, 1), end: new Date(2026, 0, 31) });
-      expect(formatted).toContain('–');
-      expect(formatted).toContain('2026');
+      expect(formatted).toBe('01 enero (01/01) – 31 enero (31/01)');
     });
   });
 

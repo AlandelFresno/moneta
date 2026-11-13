@@ -5,11 +5,35 @@
 <aside
   class="w-56 flex-shrink-0 h-screen fixed inset-y-0 left-0 z-40 flex flex-col bg-surface-card border-r border-border-subtle transform transition-transform duration-200 md:translate-x-0"
   [class.-translate-x-full]="!open"
+  [class]="collapsed ? 'md:w-16' : ''"
 >
-  <div class="flex items-center gap-2 px-5 py-5 font-semibold text-lg text-text-primary">
+  <div
+    class="flex items-center gap-2 px-5 py-5 font-semibold text-lg text-text-primary"
+    [class]="collapsed ? 'md:justify-center md:px-0' : ''"
+  >
     <i class="pi pi-wallet text-accent"></i>
-    <span>Moneta</span>
+    <span class="flex-1" [class]="collapsed ? 'md:hidden' : ''">Moneta</span>
+    <button
+      type="button"
+      class="hidden md:flex w-7 h-7 items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary hover:bg-surface-input hover:text-text-primary transition-colors duration-150"
+      [class]="collapsed ? 'md:hidden' : ''"
+      [title]="'Colapsar menú'"
+      (click)="collapseToggled.emit()"
+    >
+      <i class="pi pi-angle-double-left"></i>
+    </button>
   </div>
+
+  @if (collapsed) {
+    <button
+      type="button"
+      class="hidden md:flex mx-auto mb-2 w-9 h-9 items-center justify-center rounded-md cursor-pointer border-none bg-transparent text-text-secondary hover:bg-surface-input hover:text-text-primary transition-colors duration-150"
+      title="Expandir menú"
+      (click)="collapseToggled.emit()"
+    >
+      <i class="pi pi-angle-double-right"></i>
+    </button>
+  }
 
   <nav class="flex flex-col gap-1 px-3 flex-1 overflow-y-auto">
     @for (item of menuItems; track item.route) {
@@ -17,10 +41,12 @@
         [routerLink]="item.route"
         routerLinkActive="bg-accent/15 text-accent"
         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-text-secondary hover:bg-surface-input hover:text-text-primary transition-colors duration-150"
+        [class]="collapsed ? 'md:justify-center' : ''"
+        [title]="collapsed ? item.label : ''"
         (click)="closeRequested.emit()"
       >
         <i class="pi pi-{{ item.icon }}"></i>
-        <span>{{ item.label }}</span>
+        <span [class]="collapsed ? 'md:hidden' : ''">{{ item.label }}</span>
       </a>
     }
   </nav>
@@ -29,6 +55,8 @@
     <a
       routerLink="/sync"
       class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 text-text-secondary hover:bg-surface-input hover:text-text-primary"
+      [class]="collapsed ? 'md:justify-center' : ''"
+      [title]="syncStatusLabel"
       (click)="closeRequested.emit()"
     >
       <span
@@ -37,16 +65,18 @@
         [class.bg-income]="syncStatusColor === 'green'"
         [class.bg-expense]="syncStatusColor === 'amber'"
       ></span>
-      <span class="truncate">{{ syncStatusLabel }}</span>
+      <span class="truncate" [class]="collapsed ? 'md:hidden' : ''">{{ syncStatusLabel }}</span>
     </a>
 
     <button
       type="button"
       class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 cursor-pointer bg-transparent border-none text-text-secondary hover:bg-surface-input hover:text-text-primary"
+      [class]="collapsed ? 'md:justify-center' : ''"
+      [title]="themeService.theme() === 'dark' ? 'Tema claro' : 'Tema oscuro'"
       (click)="toggleTheme()"
     >
       <i class="pi" [class.pi-moon]="themeService.theme() === 'light'" [class.pi-sun]="themeService.theme() === 'dark'"></i>
-      <span>{{ themeService.theme() === 'dark' ? 'Tema claro' : 'Tema oscuro' }}</span>
+      <span [class]="collapsed ? 'md:hidden' : ''">{{ themeService.theme() === 'dark' ? 'Tema claro' : 'Tema oscuro' }}</span>
     </button>
   </div>
 </aside>

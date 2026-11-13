@@ -23,7 +23,9 @@ type SyncStatusColor = 'grey' | 'amber' | 'green';
 })
 export class SidebarComponent implements OnInit, OnDestroy {
   @Input() open = false;
+  @Input() collapsed = false;
   @Output() closeRequested = new EventEmitter<void>();
+  @Output() collapseToggled = new EventEmitter<void>();
 
   private readonly destroy$ = new Subject<void>();
 

@@ -1,0 +1,16 @@
+<p-autocomplete
+  styleClass="w-full"
+  inputStyleClass="w-full"
+  optionLabel="name"
+  appendTo="body"
+  [inputId]="inputId"
+  [ngModel]="selected"
+  [suggestions]="suggestions"
+  [dropdown]="true"
+  [forceSelection]="true"
+  [completeOnFocus]="true"
+  [placeholder]="placeholder"
+  (completeMethod)="search($event)"
+  (ngModelChange)="onSelectionChange($event)"
+  (onBlur)="onBlur()"
+/>

@@ -2,10 +2,13 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, map, lastValueFrom } from 'rxjs';
 import { Bill, BillPayment, BillPeriod } from '../core/types/bill.types';
 import { Transaction } from '../core/types/transaction.types';
+import { LineItem } from '../core/types/line-item.types';
 import { TransactionService } from './transaction.service';
+import { TransactionCalculationService } from './transaction-calculation.service';
 
-interface StoredBillPayment extends Omit<BillPayment, 'paidDate'> {
+interface StoredBillPayment extends Omit<BillPayment, 'paidDate' | 'periodDueDate'> {
   paidDate: string;
+  periodDueDate?: string;
 }
 
 export interface StoredBill extends Omit<Bill, 'dueDate' | 'endDate' | 'payments' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
@@ -22,7 +25,7 @@ export function toBill(stored: StoredBill): Bill {
     ...stored,
     dueDate: new Date(stored.dueDate),
     endDate: stored.endDate ? new Date(stored.endDate) : undefined,
-    payments: stored.payments.map((p) => ({ ...p, paidDate: new Date(p.paidDate) })),
+    payments: stored.payments.map((p) => ({ ...p, paidDate: new Date(p.paidDate), periodDueDate: p.periodDueDate ? new Date(p.periodDueDate) : undefined })),
     createdAt: new Date(stored.createdAt),
     updatedAt: new Date(stored.updatedAt),
     deletedAt: stored.deletedAt ? new Date(stored.deletedAt) : undefined
@@ -34,7 +37,7 @@ export function fromBill(bill: Bill): StoredBill {
     ...bill,
     dueDate: bill.dueDate.toISOString(),
     endDate: bill.endDate ? bill.endDate.toISOString() : undefined,
-    payments: bill.payments.map((p) => ({ ...p, paidDate: p.paidDate.toISOString() })),
+    payments: bill.payments.map((p) => ({ ...p, paidDate: p.paidDate.toISOString(), periodDueDate: p.periodDueDate ? p.periodDueDate.toISOString() : undefined })),
     createdAt: bill.createdAt.toISOString(),
     updatedAt: bill.updatedAt.toISOString(),
     deletedAt: bill.deletedAt ? bill.deletedAt.toISOString() : undefined
@@ -53,6 +56,9 @@ export interface BillHistoryEntry {
   paid: boolean;
   paidDate?: Date;
   amount: number;
+  paymentId?: string;
+  /** True when the payment was marked without a transaction (someone else paid). */
+  external?: boolean;
 }
 
 @Injectable({
@@ -63,7 +69,10 @@ export class BillService {
   private readonly allSubject = new BehaviorSubject<Bill[]>(this.loadAll());
   readonly bills$: Observable<Bill[]> = this.allSubject.pipe(map((bills) => bills.filter((bill) => !bill.deletedAt)));
 
-  constructor(private readonly transactionService: TransactionService) {}
+  constructor(
+    private readonly transactionService: TransactionService,
+    private readonly transactionCalculationService: TransactionCalculationService
+  ) {}
 
   private loadAll(): Bill[] {
     const raw = localStorage.getItem(this.storageKey);
@@ -137,16 +146,15 @@ export class BillService {
     });
   }
 
-  recordPayment(id: string, amount: number, transactionId: string, paidDate: Date): Observable<void> {
-    const payment: BillPayment = {
-      id: this.generateId(),
-      paidDate,
-      amount,
-      transactionId
-    };
+  recordPayment(id: string, amount: number, transactionId: string, paidDate: Date, periodDueDate?: Date): Observable<void> {
+    return this.recordPayments(id, [{ amount, transactionId, paidDate, periodDueDate }]);
+  }
+
+  private recordPayments(id: string, entries: Omit<BillPayment, 'id'>[]): Observable<void> {
+    const payments: BillPayment[] = entries.map((entry) => ({ ...entry, id: this.generateId() }));
 
     const bills = this.allSubject.value.map((bill) =>
-      bill.id === id ? { ...bill, payments: [...bill.payments, payment], updatedAt: new Date() } : bill
+      bill.id === id ? { ...bill, payments: [...bill.payments, ...payments], updatedAt: new Date() } : bill
     );
     this.persist(bills);
     this.allSubject.next(bills);
@@ -194,6 +202,79 @@ export class BillService {
     );
 
     await lastValueFrom(this.recordPayment(bill.id, amount, transaction.id, paidDate));
+    return transaction;
+  }
+
+  /** Removes one payment entry by id. Used to undo a payment marked without a transaction; never touches transactions. */
+  removePayment(id: string, paymentId: string): Observable<void> {
+    const bills = this.allSubject.value.map((bill) =>
+      bill.id === id ? { ...bill, payments: bill.payments.filter((p) => p.id !== paymentId), updatedAt: new Date() } : bill
+    );
+    this.persist(bills);
+    this.allSubject.next(bills);
+
+    return new Observable((subscriber) => {
+      subscriber.next();
+      subscriber.complete();
+    });
+  }
+
+  /** Unpaid periods due today or earlier (consecutive, oldest first). When the bill isn't overdue, just the next upcoming period. */
+  payablePeriods(bill: Bill, now: Date): Date[] {
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const anchor = new Date(bill.dueDate.getFullYear(), bill.dueDate.getMonth(), bill.dueDate.getDate());
+    const dates: Date[] = [];
+
+    let date = this.currentPeriodDueDate(bill, now);
+    while (date.getTime() <= today.getTime() && date.getTime() >= anchor.getTime()) {
+      if (this.isPaidForPeriod(bill, date)) break;
+      dates.unshift(date);
+      date = this.previousPeriod(bill, date);
+    }
+
+    return dates.length > 0 ? dates : [this.nextDueDate(bill, now)];
+  }
+
+  /**
+   * Marks `periods` paid. With `createTransaction`, `amount` is the total of one expense transaction shared by
+   * every period (each payment records its equal share). Without it nothing is added to the ledger — for when
+   * someone else paid, or the money moved outside this account.
+   */
+  async payPeriods(
+    bill: Bill,
+    periods: Date[],
+    amount: number,
+    paidDate: Date,
+    createTransaction: boolean,
+    details: { items: LineItem[]; calculatorExpression: string | null } = { items: bill.items ?? [], calculatorExpression: null }
+  ): Promise<Transaction | null> {
+    const transaction = createTransaction
+      ? await lastValueFrom(
+          this.transactionService.create({
+            categoryId: bill.categoryId,
+            type: 'expense',
+            name: bill.name,
+            description: bill.description || `Pago de servicio: ${bill.name}`,
+            amount,
+            date: paidDate,
+            items: details.items.length > 0 ? details.items : undefined
+          })
+        )
+      : null;
+
+    if (transaction && details.calculatorExpression) {
+      await lastValueFrom(
+        this.transactionCalculationService.create({ transactionId: transaction.id, expression: details.calculatorExpression, result: amount })
+      );
+    }
+
+    const share = amount / periods.length;
+    await lastValueFrom(
+      this.recordPayments(
+        bill.id,
+        periods.map((periodDueDate) => ({ amount: share, transactionId: transaction?.id, paidDate, periodDueDate }))
+      )
+    );
     return transaction;
   }
 
@@ -285,7 +366,7 @@ export class BillService {
   }
 
   isPaidForPeriod(bill: Bill, periodDueDate: Date): boolean {
-    return bill.payments.some((payment) => this.isSamePeriod(bill.period, payment.paidDate, periodDueDate));
+    return bill.payments.some((payment) => this.isSamePeriod(bill.period, payment.periodDueDate ?? payment.paidDate, periodDueDate));
   }
 
   private isSamePeriod(period: BillPeriod, a: Date, b: Date): boolean {
@@ -316,13 +397,15 @@ export class BillService {
     while (date.getTime() >= anchor.getTime()) {
       const withinRange = date.getTime() <= today.getTime() && (bill.endDate === undefined || date.getTime() <= bill.endDate.getTime());
       if (withinRange) {
-        const payment = bill.payments.find((p) => this.isSamePeriod(bill.period, p.paidDate, date));
+        const payment = bill.payments.find((p) => this.isSamePeriod(bill.period, p.periodDueDate ?? p.paidDate, date));
         entries.push({
           bill,
           periodDueDate: date,
           paid: payment !== undefined,
           paidDate: payment?.paidDate,
-          amount: payment?.amount ?? bill.approxAmount
+          amount: payment?.amount ?? bill.approxAmount,
+          paymentId: payment?.id,
+          external: payment !== undefined && !payment.transactionId
         });
       }
       date = this.previousPeriod(bill, date);

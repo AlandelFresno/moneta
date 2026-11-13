@@ -1,5 +1,10 @@
 <div class="min-h-screen bg-surface-page">
-  <app-sidebar [open]="sidebarOpen()" (closeRequested)="sidebarOpen.set(false)" />
+  <app-sidebar
+    [open]="sidebarOpen()"
+    [collapsed]="sidebarCollapsed()"
+    (closeRequested)="sidebarOpen.set(false)"
+    (collapseToggled)="toggleCollapsed()"
+  />
 
   <div class="md:hidden sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-surface-card border-b border-border-subtle">
     <button
@@ -12,7 +17,7 @@
     <span class="font-semibold text-text-primary">Moneta</span>
   </div>
 
-  <main class="flex-1 min-w-0 ml-0 md:ml-56">
+  <main class="flex-1 min-w-0 ml-0 transition-[margin] duration-200" [class]="sidebarCollapsed() ? 'md:ml-16' : 'md:ml-56'">
     <router-outlet />
   </main>
 </div>

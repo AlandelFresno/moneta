@@ -28,6 +28,7 @@ import { AccountService } from '../../services/account.service';
 import { BudgetService } from '../../services/budget.service';
 import { PeriodSettingsService } from '../../services/period-settings.service';
 import { IconComponent } from '../../shared/icon/icon.component';
+import { CategorySelectComponent } from '../../shared/category-select/category-select.component';
 import { BudgetProgressComponent } from '../../shared/budget-progress/budget-progress.component';
 import { PeriodStartDayComponent } from '../../shared/period-start-day/period-start-day.component';
 import { TransactionWithCategory, withCategory } from '../../core/utils/transaction-display.util';
@@ -56,24 +57,26 @@ interface TransactionGroup {
   items: TransactionListItem[];
 }
 
-const EMPTY_FORM: TransactionForm = {
-  id: null,
-  categoryId: '',
-  accountId: null,
-  type: 'expense',
-  name: '',
-  description: '',
-  amount: null,
-  date: new Date(),
-  isSplit: false,
-  splitGroupId: null,
-  splitLines: [],
-  calculatorExpression: null,
-  isPeriodStart: false,
-  items: [],
-  nestedCounting: 'parent',
-  children: []
-};
+function emptyForm(): TransactionForm {
+  return {
+    id: null,
+    categoryId: '',
+    accountId: null,
+    type: 'expense',
+    name: '',
+    description: '',
+    amount: null,
+    date: new Date(),
+    isSplit: false,
+    splitGroupId: null,
+    splitLines: [],
+    calculatorExpression: null,
+    isPeriodStart: false,
+    items: [],
+    nestedCounting: 'parent',
+    children: []
+  };
+}
 
 interface CategoryQuickForm {
   name: string;
@@ -103,6 +106,7 @@ const EMPTY_CATEGORY_FORM: CategoryQuickForm = {
     DatePickerModule,
     ToggleSwitchModule,
     IconComponent,
+    CategorySelectComponent,
     BudgetProgressComponent,
     PeriodStartDayComponent
   ],
@@ -141,7 +145,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
   };
 
   dialogVisible = false;
-  form: TransactionForm = { ...EMPTY_FORM };
+  form: TransactionForm = emptyForm();
   /** The bill this transaction is linked to as a payment (expense-only, not for splits) — editable in the dialog. */
   formBillId: string | null = null;
   /** `formBillId` as it was when the dialog opened, to diff against on save and only touch bill links that actually changed. */
@@ -442,9 +446,12 @@ export class TransactionsPage implements OnInit, OnDestroy {
     return formatMonthLabel(date);
   }
 
-  /** Plain "Month Year" when the period's real start is still the untouched calendar-month boundary; the actual date range + day count once a marker has shifted it. */
+  /** Plain "Month Year" when both the period's real start and end are still the untouched calendar-month boundaries; the actual date range + day count once a marker has shifted either one (a later marker pulls the end into the next month). */
   private periodGroupLabel(occurrence: PeriodOccurrence): string {
-    const isPlainCalendarMonth = occurrence.start.getDate() === 1 && occurrence.start.getHours() === 0 && occurrence.start.getMinutes() === 0;
+    const nextStart = new Date(occurrence.end.getTime() + 1);
+    const startsOnMonthBoundary = occurrence.start.getDate() === 1 && occurrence.start.getHours() === 0 && occurrence.start.getMinutes() === 0;
+    const endsOnMonthBoundary = nextStart.getDate() === 1 && nextStart.getHours() === 0 && nextStart.getMinutes() === 0;
+    const isPlainCalendarMonth = startsOnMonthBoundary && endsOnMonthBoundary;
     if (isPlainCalendarMonth) return formatMonthLabel(occurrence.start);
     return `${this.formatDate(occurrence.start)} – ${this.formatDate(occurrence.end)} · ${occurrence.days} días`;
   }
@@ -539,7 +546,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
   }
 
   openCreateDialog(type: TransactionType = 'expense'): void {
-    this.form = { ...EMPTY_FORM, type, date: new Date(), children: [] };
+    this.form = { ...emptyForm(), type };
     this.formBillId = null;
     this.originalFormBillId = null;
     this.resetCalculator();
@@ -596,7 +603,7 @@ export class TransactionsPage implements OnInit, OnDestroy {
     }
 
     this.form = {
-      ...EMPTY_FORM,
+      ...emptyForm(),
       id: null,
       splitGroupId: item.key,
       accountId: item.primary.accountId ?? null,
@@ -683,6 +690,14 @@ export class TransactionsPage implements OnInit, OnDestroy {
 
   removeItem(index: number): void {
     this.form.items = this.form.items.filter((_, i) => i !== index);
+    this.syncAmountToItems();
+  }
+
+  syncAmountToItems(): void {
+    const total = this.formItemsTotal;
+    if (total <= 0) return;
+    this.form.amount = Math.round(total * 100) / 100;
+    this.form.calculatorExpression = null;
   }
 
   get formItemsTotal(): number {

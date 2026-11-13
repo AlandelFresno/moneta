@@ -1,4 +1,5 @@
 import { Transaction } from '../types/transaction.types';
+import { formatDateTime } from './date-display.util';
 
 /** First day of the period containing `date`, given a period start day (1–28). Before `startDay` this month, the period started `startDay` of last month. */
 export function periodStart(date: Date, startDay: number): Date {
@@ -46,7 +47,7 @@ export function periodOverrideNote(occurrence: PeriodOccurrence, startDay: numbe
   const isNominal = start.getDate() === startDay && start.getHours() === startHour && start.getMinutes() === 0;
   if (isNominal) return null;
 
-  const formatted = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(start);
+  const formatted = formatDateTime(start);
   return `Este período arrancó el ${formatted} por una transacción marcada, no el día ${startDay} configurado.`;
 }
 

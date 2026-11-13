@@ -9,6 +9,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { formatDate as formatDateDisplay } from '../../core/utils/date-display.util';
 
 import { Account, AccountType, AccountTransfer } from '../../core/types/account.types';
 import { Category } from '../../core/types/category.types';
@@ -259,7 +260,7 @@ export class AccountsPage implements OnInit, OnDestroy {
   }
 
   formatDate(date: Date): string {
-    return new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+    return formatDateDisplay(date);
   }
 
   openReconcileDialog(account: Account): void {

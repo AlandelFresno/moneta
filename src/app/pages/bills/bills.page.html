@@ -59,8 +59,18 @@
             class="text-xs px-2 py-0.5 rounded-full flex-shrink-0"
             [ngClass]="entry.paid ? 'bg-income/15 text-income' : 'bg-expense/15 text-expense'"
           >
-            {{ entry.paid ? 'Pagado' : 'No pagado' }}
+            {{ entry.paid ? (entry.external ? 'Pagado (externo)' : 'Pagado') : 'No pagado' }}
           </span>
+
+          @if (entry.external) {
+            <button
+              type="button"
+              class="text-xs cursor-pointer border-none bg-transparent text-text-secondary hover:text-accent transition-colors duration-150"
+              (click)="undoExternalPayment(entry)"
+            >
+              Deshacer
+            </button>
+          }
         </div>
       }
     </div>
@@ -219,12 +229,10 @@
     <input id="bill-description" type="text" pInputText [(ngModel)]="form.description" placeholder="Opcional" />
 
     <label for="bill-category" class="text-sm font-medium mt-2 text-text-primary">Categoría</label>
-    <p-select
+    <app-category-select
       inputId="bill-category"
       class="w-full"
       [options]="categories"
-      optionLabel="name"
-      optionValue="id"
       placeholder="Seleccioná una categoría"
       [(ngModel)]="form.categoryId"
     />
@@ -332,8 +340,31 @@
   @if (payingBill) {
     <div class="flex flex-col gap-1.5">
       <p class="text-sm text-text-secondary mb-2">
-        Esto va a crear una transacción de gasto para <strong class="text-text-primary">{{ payingBill.name }}</strong>.
+        @if (payCreateTransaction) {
+          Esto va a crear una transacción de gasto para <strong class="text-text-primary">{{ payingBill.name }}</strong>.
+        } @else {
+          Se marca <strong class="text-text-primary">{{ payingBill.name }}</strong> como pagado sin crear ninguna transacción.
+        }
       </p>
+
+      <div class="flex items-center gap-2 mb-2">
+        <p-toggleswitch inputId="pay-create-tx" [(ngModel)]="payCreateTransaction" />
+        <label for="pay-create-tx" class="text-sm text-text-primary">Crear transacción (desactivá si pagó otra persona)</label>
+      </div>
+
+      @if (maxPayPeriods > 1) {
+        <label for="pay-periods" class="text-sm font-medium text-text-primary">Períodos que cubre este pago</label>
+        <p-select
+          inputId="pay-periods"
+          class="w-full mb-2"
+          [options]="payPeriodsOptions"
+          optionLabel="label"
+          optionValue="value"
+          [(ngModel)]="payPeriodsCount"
+          (onChange)="onPayPeriodsChange()"
+          appendTo="body"
+        />
+      }
 
       @if (payingBill.totalInstallments !== undefined) {
         <p class="text-sm text-text-secondary mb-2">
@@ -341,16 +372,85 @@
         </p>
       }
 
-      <label for="pay-amount" class="text-sm font-medium text-text-primary">Monto pagado (ARS)</label>
+      <div class="flex items-center justify-between">
+        <label for="pay-amount" class="text-sm font-medium text-text-primary">
+          {{ payCreateTransaction ? 'Monto pagado (ARS)' : 'Monto (ARS)' }}{{ payPeriodsCount > 1 ? ' — total' : '' }}
+        </label>
+        <button
+          type="button"
+          class="text-xs flex items-center gap-1 bg-transparent border-none cursor-pointer text-accent"
+          (click)="togglePayCalculator()"
+        >
+          <i class="pi pi-calculator"></i> {{ payCalculatorOpen ? 'Cerrar' : 'Calculadora' }}
+        </button>
+      </div>
       <p-inputnumber
         inputId="pay-amount"
         class="w-full"
         inputStyleClass="w-full"
         [(ngModel)]="payAmount"
+        (ngModelChange)="onPayAmountManuallyChanged()"
         mode="decimal"
         [minFractionDigits]="2"
         [maxFractionDigits]="2"
       />
+
+      @if (payCalculatorOpen) {
+        <div class="flex flex-col gap-1.5 p-3 rounded-lg bg-surface-input border border-border-subtle">
+          <input
+            type="text"
+            pInputText
+            placeholder="Ej: 1200 + 350 * 2 - 100"
+            [(ngModel)]="payCalculatorInput"
+            (ngModelChange)="onPayCalculatorInputChange()"
+            (keydown.enter)="applyPayCalculator()"
+          />
+          @if (payCalculatorError) {
+            <span class="text-xs text-expense">{{ payCalculatorError }}</span>
+          } @else if (payCalculatorPreview !== null) {
+            <span class="text-sm font-semibold text-text-primary [font-variant-numeric:tabular-nums]">
+              = {{ payCalculatorPreview | number: '1.2-2' }}
+            </span>
+          }
+          <div class="flex justify-end gap-2 mt-1">
+            <p-button label="Cancelar" severity="secondary" [text]="true" size="small" (onClick)="payCalculatorOpen = false" />
+            <p-button label="Usar resultado" size="small" [disabled]="payCalculatorPreview === null" (onClick)="applyPayCalculator()" />
+          </div>
+        </div>
+      } @else if (payCalculatorExpression) {
+        <span class="text-xs text-text-secondary">Calculado: {{ payCalculatorExpression }}</span>
+      }
+
+      @if (payCreateTransaction) {
+        <div class="flex items-center justify-between mt-3">
+          <span class="text-sm font-medium text-text-primary">Ítems</span>
+          <p-button label="Agregar" icon="pi pi-plus" size="small" severity="secondary" [text]="true" (onClick)="addPayItem()" />
+        </div>
+
+        @for (item of payItems; track $index; let i = $index) {
+          <div class="flex gap-2 items-center">
+            <input type="text" pInputText class="flex-1 min-w-0" [(ngModel)]="item.name" placeholder="Ej: Seguro de salud" />
+            <p-inputnumber
+              class="w-32 flex-shrink-0"
+              inputStyleClass="w-full"
+              mode="decimal"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+              placeholder="0.00"
+              [(ngModel)]="item.amount"
+              (ngModelChange)="syncPayAmountToItems()"
+            />
+            <button
+              type="button"
+              class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-md border-none bg-transparent text-text-secondary cursor-pointer transition-colors duration-150 hover:bg-surface-input hover:text-expense"
+              title="Quitar ítem"
+              (click)="removePayItem(i)"
+            >
+              <i class="pi pi-trash"></i>
+            </button>
+          </div>
+        }
+      }
     </div>
   }
 
