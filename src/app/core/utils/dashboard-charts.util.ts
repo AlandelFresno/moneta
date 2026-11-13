@@ -164,7 +164,7 @@ export function renderCategoryBreakdownChart(canvas: HTMLCanvasElement, entries:
         },
         y: {
           grid: { display: false },
-          ticks: { color: colors.textPrimary }
+          ticks: { color: colors.textPrimary, autoSkip: false }
         }
       }
     }
