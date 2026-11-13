@@ -4,6 +4,7 @@ import { SavingsPlan, SavingsPlanCategoryRow, SavingsPlanSummary, SavingsTrendPo
 import { Budget } from '../core/types/budget.types';
 import { Transaction } from '../core/types/transaction.types';
 import { addMonths, periodHistory, periodLabelMonth, periodRange } from '../core/utils/period.util';
+import { currentTargetPct, targetForPeriod, withTarget } from '../core/utils/savings-target.util';
 import { formatMonthLabel } from '../core/utils/date-display.util';
 import { DashboardService } from './dashboard.service';
 import { PeriodSettingsService } from './period-settings.service';
@@ -12,15 +13,27 @@ export const SAVINGS_PLAN_ID = 'savings-plan';
 export const DEFAULT_SAVINGS_TARGET_PCT = 80;
 const INCOME_AVERAGE_PERIODS = 3;
 
-export interface StoredSavingsPlan extends Omit<SavingsPlan, 'createdAt' | 'updatedAt' | 'deletedAt'> {
+export interface StoredSavingsTarget {
+  from: string;
+  pct: number;
+}
+
+export interface StoredSavingsPlan extends Omit<SavingsPlan, 'targets' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
+  targets: StoredSavingsTarget[];
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
 }
 
+/** Shape stored before targets became period-scoped; only read by the one-time migration in SavingsPlanService. */
+interface LegacyStoredSavingsPlan extends Omit<StoredSavingsPlan, 'targets'> {
+  targetPct: number;
+}
+
 export function toSavingsPlan(stored: StoredSavingsPlan): SavingsPlan {
   return {
     ...stored,
+    targets: stored.targets.map((target) => ({ from: new Date(target.from), pct: target.pct })),
     createdAt: new Date(stored.createdAt),
     updatedAt: new Date(stored.updatedAt),
     deletedAt: stored.deletedAt ? new Date(stored.deletedAt) : undefined
@@ -30,6 +43,7 @@ export function toSavingsPlan(stored: StoredSavingsPlan): SavingsPlan {
 export function fromSavingsPlan(plan: SavingsPlan): StoredSavingsPlan {
   return {
     ...plan,
+    targets: plan.targets.map((target) => ({ from: target.from.toISOString(), pct: target.pct })),
     createdAt: plan.createdAt.toISOString(),
     updatedAt: plan.updatedAt.toISOString(),
     deletedAt: plan.deletedAt ? plan.deletedAt.toISOString() : undefined
@@ -54,8 +68,20 @@ export class SavingsPlanService {
   private loadAll(): SavingsPlan[] {
     const raw = localStorage.getItem(this.storageKey);
     if (!raw) return [];
-    const stored: StoredSavingsPlan[] = JSON.parse(raw);
-    return stored.map((plan) => toSavingsPlan(plan));
+    const stored: (StoredSavingsPlan | LegacyStoredSavingsPlan)[] = JSON.parse(raw);
+    const migrated = stored.map((plan) => ('targets' in plan ? plan : this.migrateLegacyPlan(plan)));
+    if (migrated.some((plan, index) => plan !== stored[index])) {
+      localStorage.setItem(this.storageKey, JSON.stringify(migrated));
+    }
+    return migrated.map((plan) => toSavingsPlan(plan));
+  }
+
+  /** The legacy single target applied to the whole plan; carry it forward from the month the plan was created. */
+  private migrateLegacyPlan(legacy: LegacyStoredSavingsPlan): StoredSavingsPlan {
+    const { targetPct, ...rest } = legacy;
+    const created = new Date(legacy.createdAt);
+    const from = new Date(created.getFullYear(), created.getMonth(), 1).toISOString();
+    return { ...rest, targets: [{ from, pct: targetPct }] };
   }
 
   private persist(plans: SavingsPlan[]): void {
@@ -75,12 +101,14 @@ export class SavingsPlanService {
     this.allSubject.next(plans);
   }
 
-  save(targetPct: number, incomeOverride: number | null): Observable<SavingsPlan> {
+  /** A changed target applies from `reference`'s period onward; earlier periods keep the target they had. */
+  save(targetPct: number, incomeOverride: number | null, reference: Date = new Date()): Observable<SavingsPlan> {
     const now = new Date();
-    const existing = this.allSubject.value.find((plan) => plan.id === SAVINGS_PLAN_ID);
+    const existing = this.allSubject.value.find((plan) => plan.id === SAVINGS_PLAN_ID && !plan.deletedAt);
+    const labelMonth = periodLabelMonth(reference, this.periodSettings.getStartDay());
     const saved: SavingsPlan = {
       id: SAVINGS_PLAN_ID,
-      targetPct,
+      targets: withTarget(existing?.targets ?? [], targetPct, labelMonth),
       incomeOverride: incomeOverride ?? undefined,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now
@@ -119,7 +147,8 @@ export class SavingsPlanService {
     const estimated = priorIncomes.length > 0 ? priorIncomes.reduce((sum, value) => sum + value, 0) / priorIncomes.length : currentStats.income;
     const income = plan.incomeOverride ?? estimated;
 
-    const savingsGoal = (income * plan.targetPct) / 100;
+    const targetPct = currentTargetPct(plan);
+    const savingsGoal = (income * targetPct) / 100;
     const ticket = income - savingsGoal;
     const saved = income - currentStats.expense;
     const savedPct = income > 0 ? (saved / income) * 100 : null;
@@ -127,31 +156,33 @@ export class SavingsPlanService {
     return {
       income,
       incomeIsEstimate: plan.incomeOverride === undefined,
-      targetPct: plan.targetPct,
+      targetPct,
       savingsGoal,
       ticket,
       spent: currentStats.expense,
       saved,
       savedPct,
       buffer: ticket - currentStats.expense,
-      bufferPct: savedPct === null ? null : savedPct - plan.targetPct,
+      bufferPct: savedPct === null ? null : savedPct - targetPct,
       budgetTotal: budget ? budget.totalAmount : null,
       rows: this.categoryRows(current, budget)
     };
   }
 
-  /** Saved % for each of the last `count` periods (current included), oldest first. */
-  periodTrend(transactions: Transaction[], reference: Date, count: number): SavingsTrendPoint[] {
+  /** Saved % for each of the last `count` periods (current included), oldest first, each against the target that was in force then. */
+  periodTrend(plan: SavingsPlan | null, transactions: Transaction[], reference: Date, count: number): SavingsTrendPoint[] {
     const startDay = this.periodSettings.getStartDay();
     const startHour = this.periodSettings.getStartHour();
 
     return periodHistory(addMonths(reference, -(count - 1)), reference, startDay, startHour, transactions).map((occurrence) => {
+      const labelMonth = periodLabelMonth(occurrence.start, startDay);
       const stats = this.dashboardService.periodStats(this.dashboardService.transactionsInPeriod(transactions, occurrence));
       return {
-        label: formatMonthLabel(periodLabelMonth(occurrence.start, startDay)),
+        label: formatMonthLabel(labelMonth),
         income: stats.income,
         expense: stats.expense,
-        savedPct: stats.savingsRate
+        savedPct: stats.savingsRate,
+        targetPct: plan ? targetForPeriod(plan, labelMonth) : null
       };
     });
   }

@@ -39,6 +39,11 @@ export function periodLabelMonth(date: Date, startDay: number): Date {
   return new Date(start.getFullYear(), start.getMonth(), 1);
 }
 
+/** The transaction marked `isPeriodStart` whose exact timestamp opens `occurrence`, if any — i.e. why this period doesn't start on the configured day/hour. */
+export function periodMarkerTransaction(occurrence: PeriodOccurrence, transactions: Transaction[]): Transaction | undefined {
+  return transactions.find((txn) => txn.isPeriodStart && txn.date.getTime() === occurrence.start.getTime());
+}
+
 /** Null when `occurrence` starts exactly on the configured day/hour (nothing to call out). Otherwise a short
  * note explaining that a marked transaction pushed this period's real start off the configured default —
  * so the UI can stop implying the default applies to a period it doesn't. */

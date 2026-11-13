@@ -1,6 +1,13 @@
+/** Target % in force from the period labelled `from` (day-1-normalized month) until the next entry. */
+export interface SavingsTarget {
+  from: Date;
+  pct: number;
+}
+
 export interface SavingsPlan {
   id: string;
-  targetPct: number;
+  /** Oldest first. Periods before the first entry have no target. */
+  targets: SavingsTarget[];
   /** Net monthly income to plan against; when unset the plan uses the average of recent periods. */
   incomeOverride?: number;
   createdAt: Date;
@@ -36,4 +43,6 @@ export interface SavingsTrendPoint {
   income: number;
   expense: number;
   savedPct: number | null;
+  /** Target in force during that period; null for periods before the plan existed. */
+  targetPct: number | null;
 }

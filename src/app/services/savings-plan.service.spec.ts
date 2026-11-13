@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { SavingsPlanService } from './savings-plan.service';
+import { DashboardService } from './dashboard.service';
+import { PeriodSettingsService } from './period-settings.service';
 import { Budget } from '../core/types/budget.types';
 import { Transaction } from '../core/types/transaction.types';
 
@@ -57,7 +59,7 @@ describe('SavingsPlanService', () => {
       await firstValueFrom(service.save(70, 5000));
 
       const plan = await firstValueFrom(service.getPlan());
-      expect(plan?.targetPct).toBe(70);
+      expect(plan?.targets.map((target) => target.pct)).toEqual([70]);
       expect(plan?.incomeOverride).toBe(5000);
       expect(service.getAllIncludingDeleted().length).toBe(1);
     });
@@ -68,6 +70,23 @@ describe('SavingsPlanService', () => {
 
       expect(await firstValueFrom(service.getPlan())).toBeNull();
       expect(service.getAllIncludingDeleted()[0].deletedAt).toBeDefined();
+    });
+  });
+
+  describe('legacy migration', () => {
+    it('converts a stored single targetPct into a target from the creation month and persists it', async () => {
+      localStorage.setItem(
+        'savings_plans',
+        JSON.stringify([
+          { id: 'savings-plan', targetPct: 25, createdAt: new Date(2026, 10, 13).toISOString(), updatedAt: new Date(2026, 10, 13).toISOString() }
+        ])
+      );
+
+      const migrated = TestBed.runInInjectionContext(() => new SavingsPlanService(TestBed.inject(DashboardService), TestBed.inject(PeriodSettingsService)));
+      const plan = await firstValueFrom(migrated.getPlan());
+
+      expect(plan?.targets).toEqual([{ from: new Date(2026, 10, 1), pct: 25 }]);
+      expect(JSON.parse(localStorage.getItem('savings_plans') as string)[0].targetPct).toBeUndefined();
     });
   });
 
@@ -147,7 +166,8 @@ describe('SavingsPlanService', () => {
   });
 
   describe('periodTrend', () => {
-    it('returns one point per period, oldest first, with saved % per period', () => {
+    it('returns one point per period, oldest first, with saved % per period', async () => {
+      const plan = await firstValueFrom(service.save(80, null, new Date(2026, 1, 1)));
       const transactions = [
         makeTransaction({ type: 'income', amount: 1000, date: new Date(2026, 1, 5) }),
         makeTransaction({ type: 'expense', amount: 200, date: new Date(2026, 1, 8) }),
@@ -155,12 +175,25 @@ describe('SavingsPlanService', () => {
         makeTransaction({ type: 'expense', amount: 500, date: new Date(2026, 2, 8) })
       ];
 
-      const trend = service.periodTrend(transactions, reference, 3);
+      const trend = service.periodTrend(plan, transactions, reference, 3);
 
       expect(trend.length).toBe(3);
       expect(trend[0].savedPct).toBeNull();
       expect(trend[1].savedPct).toBe(80);
       expect(trend[2].savedPct).toBe(50);
+    });
+
+    it('keeps earlier periods on the target they had when the target changes later', async () => {
+      await firstValueFrom(service.save(80, null, new Date(2026, 1, 1)));
+      const plan = await firstValueFrom(service.save(25, null, reference));
+
+      const trend = service.periodTrend(plan, [], reference, 3);
+
+      expect(trend.map((point) => point.targetPct)).toEqual([null, 80, 25]);
+    });
+
+    it('has no target for any period when there is no plan', () => {
+      expect(service.periodTrend(null, [], reference, 2).map((point) => point.targetPct)).toEqual([null, null]);
     });
   });
 });

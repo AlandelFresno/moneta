@@ -10,6 +10,7 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { SavingsPlan, SavingsPlanSummary, SavingsTrendPoint } from '../../core/types/savings-plan.types';
 import { Category } from '../../core/types/category.types';
 import { SavingsPlanService, DEFAULT_SAVINGS_TARGET_PCT } from '../../services/savings-plan.service';
+import { currentTargetPct } from '../../core/utils/savings-target.util';
 import { BudgetService } from '../../services/budget.service';
 import { TransactionService } from '../../services/transaction.service';
 import { CategoryService } from '../../services/category.service';
@@ -76,7 +77,7 @@ export class SavingsPlanPage implements OnInit, OnDestroy {
           const budget = this.budgetService.currentBudget(budgets, reference);
           this.summary = this.savingsPlanService.summarize(plan, transactions, budget, reference);
           this.rows = this.buildRows(this.summary, categories);
-          this.trend = this.savingsPlanService.periodTrend(transactions, reference, TREND_PERIODS);
+          this.trend = this.savingsPlanService.periodTrend(plan, transactions, reference, TREND_PERIODS);
         }
 
         this.cdr.markForCheck();
@@ -97,17 +98,48 @@ export class SavingsPlanPage implements OnInit, OnDestroy {
     return Math.min((this.summary.spent / this.summary.ticket) * 100, 100);
   }
 
-  trendBarHeight(point: SavingsTrendPoint): number {
-    if (point.savedPct === null) return 0;
-    return Math.max(0, Math.min(point.savedPct, 100));
+  get currentTarget(): number {
+    return this.plan ? currentTargetPct(this.plan) : DEFAULT_SAVINGS_TARGET_PCT;
   }
 
-  trendMetTarget(point: SavingsTrendPoint): boolean {
-    return point.savedPct !== null && this.plan !== null && point.savedPct >= this.plan.targetPct;
+  /** Vertical scale shared by every bar: from the lowest negative result (or 0) up to 100%. */
+  private get trendFloor(): number {
+    const lowest = Math.min(0, ...this.trend.map((point) => point.savedPct ?? 0));
+    return Math.max(lowest, -100);
+  }
+
+  private trendPosition(value: number): number {
+    const floor = this.trendFloor;
+    const clamped = Math.max(floor, Math.min(value, 100));
+    return ((clamped - floor) / (100 - floor)) * 100;
+  }
+
+  get trendZeroBottom(): number {
+    return this.trendPosition(0);
+  }
+
+  trendBarBottom(point: SavingsTrendPoint): number {
+    return point.savedPct === null ? 0 : this.trendPosition(Math.min(point.savedPct, 0));
+  }
+
+  trendBarHeight(point: SavingsTrendPoint): number {
+    if (point.savedPct === null) return 0;
+    const top = this.trendPosition(Math.max(point.savedPct, 0));
+    return top - this.trendBarBottom(point);
+  }
+
+  trendTargetBottom(point: SavingsTrendPoint): number | null {
+    return point.targetPct === null ? null : this.trendPosition(point.targetPct);
+  }
+
+  /** null: the plan didn't exist in that period, so there is nothing to compare against. */
+  trendMetTarget(point: SavingsTrendPoint): boolean | null {
+    if (point.savedPct === null || point.targetPct === null) return null;
+    return point.savedPct >= point.targetPct;
   }
 
   openDialog(): void {
-    this.formTargetPct = this.plan?.targetPct ?? DEFAULT_SAVINGS_TARGET_PCT;
+    this.formTargetPct = this.currentTarget;
     this.formIncome = this.plan?.incomeOverride ?? null;
     this.dialogVisible = true;
   }

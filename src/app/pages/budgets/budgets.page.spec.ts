@@ -82,7 +82,7 @@ describe('BudgetsPage', () => {
     return holder;
   }
 
-  describe('ngOnInit / onPeriodSettingsChange', () => {
+  describe('ngOnInit', () => {
     it('loads categories, goals, accounts and computes current/upcoming/history budgets and progress', async () => {
       const cat = await firstValueFrom(categoryService.create(categoryPayload()));
       await firstValueFrom(budgetService.save(currentMonth, 500, [{ categoryId: cat.id, amount: 500 }]));
@@ -103,18 +103,13 @@ describe('BudgetsPage', () => {
       expect(component.progress).toBeNull();
     });
 
-    it('onPeriodSettingsChange re-reads the period start hour and shifts currentPeriodRange accordingly', async () => {
+    it('reads the configured period start hour and shifts currentPeriodRange accordingly', async () => {
       await firstValueFrom(budgetService.save(currentMonth, 500, []));
-      createComponent();
-      const budgetBefore = component.current;
-
       periodSettingsService.setStartHour(9);
-      component.onPeriodSettingsChange();
+      createComponent();
 
       expect(component.periodStartHour).toBe(9);
       expect(component.currentPeriodRange?.start.getHours()).toBe(9);
-      // Only the hour boundary changed — startDay (and so the budget month label) is untouched.
-      expect(component.current?.id).toBe(budgetBefore?.id);
     });
   });
 
@@ -436,7 +431,6 @@ describe('BudgetsPage', () => {
 
       await firstValueFrom(goalService.delete(goal.id));
       await firstValueFrom(accountService.delete(account.id));
-      component.onPeriodSettingsChange();
       // goals/accounts are cached from ngOnInit's last emission; re-fetch to reflect the deletions.
       component.goals = await firstValueFrom(goalService.getAll());
       component.accounts = await firstValueFrom(accountService.getAll());

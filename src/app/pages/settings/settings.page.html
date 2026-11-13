@@ -1,0 +1,49 @@
+<div class="p-6 md:p-8 max-w-3xl mx-auto">
+  <div class="mb-7">
+    <h1 class="text-[1.75rem] font-semibold tracking-tight text-text-primary">Configuración</h1>
+    <p class="text-sm text-text-secondary mt-0.5">Ajustes generales de la app</p>
+  </div>
+
+  <h2 class="text-sm font-semibold text-text-primary mb-3">Inicio del período</h2>
+  <app-period-start-day class="block mb-4" (settingsChange)="onPeriodSettingsChange()" />
+
+  @if (currentMarker) {
+    <div class="flex items-start gap-3 p-3.5 mb-4 rounded-2xl bg-surface-card border border-border-subtle text-sm">
+      <i class="pi pi-info-circle text-accent mt-0.5"></i>
+      <span class="text-text-primary">
+        El período actual no usa el día {{ startDay }} a las {{ startHour }} hs: arrancó el {{ formatDateTime(currentMarker.date) }} por la
+        transacción marcada <span class="font-medium">{{ currentMarker.name }}</span>.
+      </span>
+    </div>
+  } @else {
+    <div class="flex items-start gap-3 p-3.5 mb-4 rounded-2xl bg-surface-card border border-border-subtle text-sm text-text-secondary">
+      <i class="pi pi-check-circle mt-0.5"></i>
+      <span>El período actual usa la fecha configurada (día {{ startDay }} a las {{ startHour }} hs).</span>
+    </div>
+  }
+
+  <h2 class="text-sm font-semibold text-text-primary mt-6 mb-3">Períodos recientes</h2>
+  <div class="flex flex-col gap-2">
+    @for (period of periods; track period.start.getTime()) {
+      <div class="flex items-center justify-between gap-3 flex-wrap px-4 py-3 rounded-xl bg-surface-card border border-border-subtle text-sm">
+        <div class="flex flex-col min-w-0">
+          <span class="font-medium text-text-primary">
+            {{ period.label }}
+            @if (period.isCurrent) {
+              <span class="text-xs text-text-secondary font-normal">· actual</span>
+            }
+          </span>
+          <span class="text-xs text-text-secondary [font-variant-numeric:tabular-nums]">
+            {{ formatDateTime(period.start) }} – {{ formatDate(period.end) }} · {{ period.days }} días
+          </span>
+        </div>
+
+        @if (period.marker) {
+          <span class="text-xs px-2 py-1 rounded-full bg-accent/15 text-accent">Transacción: {{ period.marker.name }}</span>
+        } @else {
+          <span class="text-xs px-2 py-1 rounded-full bg-surface-input text-text-secondary">Fecha configurada</span>
+        }
+      </div>
+    }
+  </div>
+</div>

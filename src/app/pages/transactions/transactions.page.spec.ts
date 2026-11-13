@@ -949,7 +949,6 @@ describe('TransactionsPage', () => {
       await firstValueFrom(budgetService.save(new Date(), 1000, [{ categoryId: expenseCategory.id, amount: 400 }]));
       await createTxn(transactionService, { categoryId: expenseCategory.id, amount: 100, date: new Date() });
 
-      component.onPeriodSettingsChange();
 
       expect(component.budgetProgress?.totalAllocated).toBe(400);
       expect(component.budgetProgress?.totalSpent).toBeGreaterThanOrEqual(100);

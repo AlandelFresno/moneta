@@ -23,7 +23,7 @@ import { BillService } from '../../services/bill.service';
 import { BudgetService } from '../../services/budget.service';
 import { AccountService } from '../../services/account.service';
 import { BudgetProgressComponent } from '../../shared/budget-progress/budget-progress.component';
-import { PeriodStartDayComponent } from '../../shared/period-start-day/period-start-day.component';
+import { PeriodOverrideNoticeComponent } from '../../shared/period-override-notice/period-override-notice.component';
 import { Budget, BudgetProgress } from '../../core/types/budget.types';
 import { Account } from '../../core/types/account.types';
 import {
@@ -84,7 +84,7 @@ const EMPTY_COMPARISON: PeriodComparison = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, SelectModule, DatePickerModule, ToggleSwitchModule, BudgetProgressComponent, PeriodStartDayComponent],
+  imports: [CommonModule, FormsModule, SelectModule, DatePickerModule, ToggleSwitchModule, BudgetProgressComponent, PeriodOverrideNoticeComponent],
   templateUrl: './dashboard.page.html',
   styleUrl: './dashboard.page.scss'
 })
@@ -212,12 +212,6 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
         this.recomputeBudgetProgress();
         this.cdr.markForCheck();
       });
-  }
-
-  onPeriodSettingsChange(): void {
-    this.recomputeBudgetProgress();
-    this.computePeriodOccurrences();
-    this.recompute();
   }
 
   onPeriodHistorySelectionChange(): void {

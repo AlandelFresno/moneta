@@ -23,11 +23,11 @@ import { AccountService } from '../../services/account.service';
 import { SavingsPlanService } from '../../services/savings-plan.service';
 import { SavingsPlanSummary } from '../../core/types/savings-plan.types';
 import { PeriodSettingsService } from '../../services/period-settings.service';
-import { periodLabelMonth, periodRange, periodHistory, addMonths, PeriodOccurrence } from '../../core/utils/period.util';
+import { periodLabelMonth, periodRange, periodHistory, periodOverrideNote, addMonths, PeriodOccurrence } from '../../core/utils/period.util';
 import { formatDate as formatDateDisplay, formatMonthLabel as formatMonthLabelDisplay } from '../../core/utils/date-display.util';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { BudgetProgressComponent } from '../../shared/budget-progress/budget-progress.component';
-import { PeriodStartDayComponent } from '../../shared/period-start-day/period-start-day.component';
+import { PeriodOverrideNoticeComponent } from '../../shared/period-override-notice/period-override-notice.component';
 
 const EMPTY_ROLLOVER_FORM: RolloverForm = {
   action: 'saved',
@@ -49,7 +49,7 @@ const EMPTY_ROLLOVER_FORM: RolloverForm = {
     CheckboxModule,
     IconComponent,
     BudgetProgressComponent,
-    PeriodStartDayComponent
+    PeriodOverrideNoticeComponent
   ],
   templateUrl: './budgets.page.html',
   styleUrl: './budgets.page.scss'
@@ -151,16 +151,10 @@ export class BudgetsPage implements OnInit, OnDestroy {
       });
   }
 
-  onPeriodSettingsChange(): void {
-    this.periodStartDay = this.periodSettingsService.getStartDay();
-    this.periodStartHour = this.periodSettingsService.getStartHour();
-    const reference = new Date();
-    this.current = this.budgetService.currentBudget(this.budgets, reference);
-    this.upcoming = this.budgetService.upcomingBudget(this.budgets, reference);
-    this.history = this.budgetService.historyBudgets(this.budgets, reference);
-    this.currentPeriodRange = periodRange(reference, this.periodStartDay, this.periodStartHour, this.allTransactions);
-    this.periodHistoryList = this.computePeriodHistory(this.allTransactions, reference);
-    this.progress = this.budgetService.currentPeriodProgress(this.current, this.allTransactions);
+  /** Explains it when today's period was pushed off the configured day/hour by a marked transaction — null otherwise. `periodHistoryList[0]` is today's period (newest first). */
+  get currentPeriodOverrideNote(): string | null {
+    const occurrence = this.periodHistoryList[0];
+    return occurrence ? periodOverrideNote(occurrence, this.periodStartDay, this.periodStartHour) : null;
   }
 
   /** Every period's real span up to now, most recent first — lengths vary once a marked transaction shifts a boundary off the nominal startDay. */

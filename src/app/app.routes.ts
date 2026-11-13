@@ -56,6 +56,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/import-statements/import-statements.page').then((m) => m.ImportStatementsPage)
       },
       {
+        path: 'settings',
+        loadComponent: () => import('./pages/settings/settings.page').then((m) => m.SettingsPage)
+      },
+      {
         path: 'sync',
         loadComponent: () => import('./pages/sync/sync.page').then((m) => m.SyncPage)
       }

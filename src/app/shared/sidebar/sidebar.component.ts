@@ -42,7 +42,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
     { label: 'Plan de ahorro', icon: 'percentage', route: '/savings-plan' },
     { label: 'Metas', icon: 'flag', route: '/goals' },
     { label: 'Importar extractos', icon: 'upload', route: '/import-statements' },
-    { label: 'Sincronización', icon: 'cloud', route: '/sync' }
+    { label: 'Sincronización', icon: 'cloud', route: '/sync' },
+    { label: 'Configuración', icon: 'cog', route: '/settings' }
   ];
 
   constructor(

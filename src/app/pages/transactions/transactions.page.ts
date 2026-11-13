@@ -30,7 +30,7 @@ import { PeriodSettingsService } from '../../services/period-settings.service';
 import { IconComponent } from '../../shared/icon/icon.component';
 import { CategorySelectComponent } from '../../shared/category-select/category-select.component';
 import { BudgetProgressComponent } from '../../shared/budget-progress/budget-progress.component';
-import { PeriodStartDayComponent } from '../../shared/period-start-day/period-start-day.component';
+import { PeriodOverrideNoticeComponent } from '../../shared/period-override-notice/period-override-notice.component';
 import { TransactionWithCategory, withCategory } from '../../core/utils/transaction-display.util';
 import { CATEGORY_ICON_OPTIONS } from '../../core/utils/category-icons.util';
 import { evaluateCalculatorInput } from '../../core/utils/math-expression.util';
@@ -108,7 +108,7 @@ const EMPTY_CATEGORY_FORM: CategoryQuickForm = {
     IconComponent,
     CategorySelectComponent,
     BudgetProgressComponent,
-    PeriodStartDayComponent
+    PeriodOverrideNoticeComponent
   ],
   templateUrl: './transactions.page.html',
   styleUrl: './transactions.page.scss'
@@ -255,14 +255,6 @@ export class TransactionsPage implements OnInit, OnDestroy {
         this.recomputeBudgetProgress();
         this.cdr.markForCheck();
       });
-  }
-
-  onPeriodSettingsChange(): void {
-    this.periodStartDay = this.periodSettingsService.getStartDay();
-    this.periodStartHour = this.periodSettingsService.getStartHour();
-    this.periodOccurrences = this.computePeriodOccurrences(this.transactions);
-    this.recomputeBudgetProgress();
-    this.cdr.markForCheck();
   }
 
   private recomputeBudgetProgress(): void {
