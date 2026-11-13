@@ -12,7 +12,15 @@ import { BillNotificationService } from '../../services/bill-notification.servic
   styleUrl: './layout.component.scss'
 })
 export class LayoutComponent {
+  private readonly collapsedKey = 'sidebar_collapsed';
   readonly sidebarOpen = signal(false);
+  readonly sidebarCollapsed = signal(localStorage.getItem(this.collapsedKey) === 'true');
+
+  toggleCollapsed(): void {
+    const next = !this.sidebarCollapsed();
+    this.sidebarCollapsed.set(next);
+    localStorage.setItem(this.collapsedKey, String(next));
+  }
 
   /** Injected only to instantiate the app-wide budget threshold and bill-reminder watchers. */
   constructor(

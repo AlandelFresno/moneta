@@ -324,7 +324,7 @@ describe('BillService', () => {
         })
       );
 
-      const fresh = new BillService(new TransactionService(new AccountService(), new TransactionCalculationService()));
+      const fresh = new BillService(new TransactionService(new AccountService(), new TransactionCalculationService()), new TransactionCalculationService());
       const all = await firstValueFrom(fresh.getAll());
       expect(all.some((b) => b.name === 'Persistente')).toBeTrue();
     });
