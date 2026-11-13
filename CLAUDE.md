@@ -36,6 +36,7 @@ One component per folder: `.ts` + `.html` + `.scss`. No component logic outside 
 - **State/lifecycle**: `takeUntil(this.destroy$)` pattern (Subject + `ngOnDestroy`) for subscriptions. Debounce inputs with `debounceTime` + `distinctUntilChanged`, not `setTimeout`.
 - **No legacy shims**: don't add deprecated/optional fields for backward compatibility with old data shapes. If a data migration is needed, write an explicit one-time migration, not a runtime fallback (`resolveXxx()` style resolvers) sprinkled through the domain model.
 - **Comments**: only when the *why* isn't obvious (hidden constraint, workaround, subtle invariant). Never explain *what* the code does.
+- **No attribution.** Never add `Co-Authored-By: Claude` or any Claude/Claude Code mention to commit messages or PR descriptions.
 
 ## Domain scope
 
