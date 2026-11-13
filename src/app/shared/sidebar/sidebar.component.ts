@@ -39,6 +39,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     { label: 'Categorías', icon: 'tags', route: '/categories' },
     { label: 'Servicios', icon: 'calendar-clock', route: '/bills' },
     { label: 'Presupuesto', icon: 'wallet', route: '/budgets' },
+    { label: 'Plan de ahorro', icon: 'percentage', route: '/savings-plan' },
     { label: 'Metas', icon: 'flag', route: '/goals' },
     { label: 'Importar extractos', icon: 'upload', route: '/import-statements' },
     { label: 'Sincronización', icon: 'cloud', route: '/sync' }
