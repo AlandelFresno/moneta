@@ -4,7 +4,7 @@
       <h1 class="text-[1.75rem] font-semibold tracking-tight text-text-primary">Plan de ahorro</h1>
       <p class="text-sm text-text-secondary mt-0.5">
         @if (plan) {
-          Meta: ahorrar el {{ plan.targetPct | number: '1.0-2' }}% de tu ingreso
+          Meta actual: ahorrar el {{ currentTarget | number: '1.0-2' }}% de tu ingreso
         } @else {
           Definí qué porcentaje de tu ingreso querés ahorrar
         }
@@ -132,23 +132,28 @@
     <div class="p-5 rounded-2xl bg-surface-card border border-border-subtle">
       <h2 class="text-sm font-semibold text-text-primary mb-4">% ahorrado por período</h2>
 
-      <div class="relative h-40 flex items-end gap-3">
+      <div class="relative h-40 flex gap-3">
         <div
-          class="absolute left-0 right-0 border-t border-dashed border-border-strong pointer-events-none"
-          [style.bottom.%]="plan?.targetPct ?? 0"
-        >
-          <span class="absolute right-0 -top-4 text-[10px] text-text-secondary">meta {{ plan?.targetPct | number: '1.0-0' }}%</span>
-        </div>
+          class="absolute left-0 right-0 border-t border-border-strong pointer-events-none"
+          [style.bottom.%]="trendZeroBottom"
+        ></div>
 
         @for (point of trend; track point.label) {
-          <div class="flex-1 h-full flex flex-col justify-end items-center gap-1 min-w-0">
+          <div class="relative flex-1 h-full min-w-0" [title]="point.savedPct === null ? 'Sin ingresos' : (point.savedPct | number: '1.0-1') + '%'">
             <div
-              class="w-full max-w-10 rounded-t-md"
-              [class.bg-income]="trendMetTarget(point)"
-              [class.bg-expense]="!trendMetTarget(point)"
+              class="absolute left-1/2 -translate-x-1/2 w-full max-w-10 rounded-sm"
+              [class.bg-income]="trendMetTarget(point) === true"
+              [class.bg-expense]="trendMetTarget(point) === false"
+              [class.bg-text-secondary]="trendMetTarget(point) === null"
+              [style.bottom.%]="trendBarBottom(point)"
               [style.height.%]="trendBarHeight(point)"
-              [title]="point.savedPct === null ? 'Sin ingresos' : (point.savedPct | number: '1.0-1') + '%'"
             ></div>
+            @if (trendTargetBottom(point) !== null) {
+              <div
+                class="absolute left-0 right-0 border-t-2 border-dashed border-text-primary opacity-70 pointer-events-none"
+                [style.bottom.%]="trendTargetBottom(point)"
+              ></div>
+            }
           </div>
         }
       </div>
@@ -162,6 +167,13 @@
                 —
               } @else {
                 {{ point.savedPct | number: '1.0-0' }}%
+              }
+            </div>
+            <div class="text-[10px] text-text-secondary">
+              @if (point.targetPct === null) {
+                sin meta
+              } @else {
+                meta {{ point.targetPct | number: '1.0-0' }}%
               }
             </div>
           </div>
