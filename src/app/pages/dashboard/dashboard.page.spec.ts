@@ -121,8 +121,8 @@ describe('DashboardPage', () => {
       expect(component.expenseBreakdown[0].categoryName).toBe('Almacén');
       expect(component.hasExpenseBreakdown).toBeTrue();
       expect(component.hasIncomeBreakdown).toBeTrue();
-      expect(component.topTransactions.length).toBe(2);
-      expect(component.topTransactions.map((t) => t.categoryName)).toEqual(jasmine.arrayContaining(['Almacén', 'Salario']));
+      expect(component.topIncomes.map((t) => t.categoryName)).toEqual(['Salario']);
+      expect(component.topExpenses.map((t) => t.categoryName)).toEqual(['Almacén']);
     });
 
     it('starts with empty stats and no breakdowns when there is no data at all', () => {
@@ -134,7 +134,8 @@ describe('DashboardPage', () => {
       expect(component.hasExpenseBreakdown).toBeFalse();
       expect(component.hasIncomeBreakdown).toBeFalse();
       expect(component.hasCategoryTrend).toBeFalse();
-      expect(component.topTransactions).toEqual([]);
+      expect(component.topIncomes).toEqual([]);
+      expect(component.topExpenses).toEqual([]);
     });
 
     it('sorts accounts alphabetically for the account filter dropdown', async () => {

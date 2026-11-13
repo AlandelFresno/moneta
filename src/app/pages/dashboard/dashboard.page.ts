@@ -148,7 +148,8 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
   hasExpenseBreakdown = false;
   hasIncomeBreakdown = false;
 
-  topTransactions: TransactionWithCategory[] = [];
+  topIncomes: TransactionWithCategory[] = [];
+  topExpenses: TransactionWithCategory[] = [];
   upcomingBills: UpcomingBillDisplay[] = [];
   hasCategoryTrend = false;
 
@@ -450,8 +451,11 @@ export class DashboardPage implements OnInit, AfterViewInit, OnDestroy {
     this.hasExpenseBreakdown = this.expenseBreakdown.length > 0;
     this.hasIncomeBreakdown = this.incomeBreakdown.length > 0;
 
-    this.topTransactions = this.dashboardService
-      .topTransactionsByAmount(inRange, 10)
+    this.topIncomes = this.dashboardService
+      .topTransactionsByAmount(inRange.filter((txn) => txn.type === 'income'), 10)
+      .map((txn) => withCategory(txn, this.categories));
+    this.topExpenses = this.dashboardService
+      .topTransactionsByAmount(inRange.filter((txn) => txn.type === 'expense'), 10)
       .map((txn) => withCategory(txn, this.categories));
 
     this.hasCategoryTrend = this.dashboardService.categoryBreakdown(inRange, this.categories, 'expense').length > 0;
