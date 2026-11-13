@@ -197,19 +197,6 @@ describe('DashboardPage', () => {
       expect(fixture.componentInstance.activeBudget).toBeNull();
       expect(fixture.componentInstance.budgetProgress).toBeNull();
     });
-
-    it('onPeriodSettingsChange() recomputes both the budget progress and the period stats', async () => {
-      await seedBasicData();
-      const fixture = TestBed.createComponent(DashboardPage);
-      fixture.detectChanges();
-      const component = fixture.componentInstance;
-
-      const rangeBefore = component.currentRange;
-      component.onPeriodSettingsChange();
-
-      expect(component.currentRange).not.toBeNull();
-      expect(component.currentRange).not.toBe(rangeBefore);
-    });
   });
 
   describe('preset / range controls', () => {

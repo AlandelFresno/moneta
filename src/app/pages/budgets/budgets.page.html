@@ -22,7 +22,7 @@
     }
   </div>
 
-  <app-period-start-day class="block mb-6" (settingsChange)="onPeriodSettingsChange()" />
+  <app-period-override-notice class="mb-6" [note]="currentPeriodOverrideNote" />
 
   @if (savingsSummary && savingsSummary.budgetTotal !== null) {
     <a

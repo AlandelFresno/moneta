@@ -1,4 +1,4 @@
-import { periodStart, actualPeriodStart, periodRange, periodLabelMonth, addMonths, periodHistory, periodOverrideNote } from './period.util';
+import { periodStart, actualPeriodStart, periodRange, periodLabelMonth, addMonths, periodHistory, periodOverrideNote, periodMarkerTransaction } from './period.util';
 import { Transaction } from '../types/transaction.types';
 
 function makeTxn(overrides: Partial<Transaction>): Transaction {
@@ -165,5 +165,35 @@ describe('periodHistory', () => {
     const result = periodHistory(new Date(2026, 7, 8), new Date(2026, 7, 20), 6, 0, []);
     expect(result.length).toBe(1);
     expect(result[0]).toEqual({ start: new Date(2026, 7, 6), end: new Date(new Date(2026, 8, 6).getTime() - 1), days: 31 });
+  });
+});
+
+describe('periodMarkerTransaction', () => {
+  const marker = {
+    id: 'm1',
+    categoryId: 'c',
+    type: 'income',
+    name: 'Sueldo',
+    description: '',
+    amount: 1000,
+    date: new Date(2026, 6, 26, 9, 30),
+    isPeriodStart: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  } as Transaction;
+
+  it('returns the marked transaction that opens the occurrence', () => {
+    const occurrence = { start: new Date(2026, 6, 26, 9, 30), end: new Date(2026, 7, 25), days: 30 };
+    expect(periodMarkerTransaction(occurrence, [marker])?.id).toBe('m1');
+  });
+
+  it('returns undefined when the occurrence starts on the configured boundary', () => {
+    const occurrence = { start: new Date(2026, 6, 1, 0, 0), end: new Date(2026, 6, 31), days: 31 };
+    expect(periodMarkerTransaction(occurrence, [marker])).toBeUndefined();
+  });
+
+  it('ignores unmarked transactions that share the timestamp', () => {
+    const occurrence = { start: marker.date, end: new Date(2026, 7, 25), days: 30 };
+    expect(periodMarkerTransaction(occurrence, [{ ...marker, isPeriodStart: false }])).toBeUndefined();
   });
 });
